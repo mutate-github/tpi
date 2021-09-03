@@ -135,7 +135,7 @@ set feedback off
 declare
  ora_version varchar2(100);
 begin
- select substr(VERSION,1,instr(VERSION,'.')-1) into ora_version from product_component_version where product like 'Oracle%';
+ select substr(version,1,instr(version,'.')-1) into ora_version from v\$instance;
  case 
    when ora_version in  ('9','10') then null;
    when ora_version = 11 then execute immediate 'alter session set "_optimizer_use_feedback"=false';
@@ -1273,7 +1273,7 @@ P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
 case "$P2_" in
 PROPERTIES)
 $SP <<EOF > $LOGF
-set lines 180
+set lines 230
 set echo off feed off veri off tab off pages 40
 prompt
 prompt database_properties:
@@ -1286,7 +1286,7 @@ EOF
 ;;
 NLS)
 $SP <<'END' > $LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
 column parameter for a30
 column value for a40
@@ -1295,7 +1295,7 @@ END
 ;;
 OPTION)
 $SP <<'END' > $LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
 column parameter for a50
 column value for a20
@@ -1315,7 +1315,7 @@ END
    ;;
   esac
 $SP <<EOF > $LOGF
-set lines 180
+set lines 230
 set echo off feed off veri off tab off pages 50
 prompt v\$instance:
 column instance_name for a15
@@ -1346,7 +1346,7 @@ $SQL_TEXT
 EOF
 
 $SP <<END >> $LOGF
-set lines 180
+set lines 230
 set echo off feed off veri off tab off pages 40
 column COMP_ID for a10
 ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD/MM/YYYY HH24:MI:SS';
