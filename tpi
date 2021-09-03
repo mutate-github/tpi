@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 01.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 03.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -241,14 +241,14 @@ col username for a20 truncated
 col osuser for a17 truncated
 col machine for a17 truncated
 col pma for a62 heading "PROGRAM / MODULE / ACTION" truncated
-col pgau for 999
+col pgau for 99999
 col logon_time for a11 heading "LOGON"
-col last_call_et for 9999999 heading "LAST"
+col last_call_et for 999999 heading "LAST"
 col status for a1 heading "S" truncated
 col command_name for a6 heading "CMD" truncated
 col sql_id for a13
 col event for a27 truncated
-col sw for 9999999
+col sw for 999999
 col oot for a40 heading "ACCESS OBJECT" truncated
 SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
        p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
