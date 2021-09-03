@@ -100,6 +100,7 @@ ID="$1"
 ORD=`echo $2 | tr '~' '$'`
 ALL=`echo $* | tr '~' '$'`
 
+#for tnsnames connection through .tpi_login file
 #format .tpi_login file: sid username/password@tns_alias
 path_to_tpi=`dirname $0`
 #echo "path_to_tpi: "$path_to_tpi
@@ -172,8 +173,7 @@ DB_VER_=$(db_version)
 case "$DB_VER_" in
  9)  F_UNIC_CONVERT_="" ;;
  *)
-F_UNIC_CONVERT_="
-FUNCTION unic_convert(str in varchar2) return varchar2
+F_UNIC_CONVERT_="FUNCTION tpi_unic_convert(str in varchar2) return varchar2
   IS
 begin
 return
@@ -216,27 +216,12 @@ case "$DB_VER_" in
  *) : ;;
 esac
 
+
 $SP <<EOF >$LOGF
-create or replace function tpi_unic_convert(str in varchar2) return varchar2
-  IS
-begin
-return
-  CASE WHEN REGEXP_LIKE(ASCIISTR(str), '\FFFD')
-      THEN REGEXP_REPLACE(convert(str,'AL32UTF8','CL8MSWIN1251'), '[^[:print:]]', '')
-  ELSE
-      CASE WHEN REGEXP_LIKE(ASCIISTR(CONVERT(UNISTR(ASCIISTR(str)), 'CL8MSWIN1251')), '\FFFD')
-        THEN str
-        ELSE
-          CASE WHEN replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(str)), 'AL32UTF8','CL8MSWIN1251'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null
-            THEN convert(str, 'AL32UTF8','CL8MSWIN1251')
-            ELSE str
-          END
---          '3='||UNISTR(ASCIISTR(str))
-      END
-  END;
-exception when others then return case when not REGEXP_LIKE(ASCIISTR(str), '\FFFD') then '-'||UNISTR(ASCIISTR(str)) else '='||REGEXP_REPLACE(convert(str,'AL32UTF8','CL8MSWIN1251'), '[^[:print:]]', '') end;
-end;
+/*
+create or replace $F_UNIC_CONVERT_
 /
+*/
 set lines 300 pages 1000
 set echo off feed off veri off tab off
 col spid for a8
@@ -257,13 +242,13 @@ col sw for 999999
 col oot for a40 heading "ACCESS OBJECT" truncated
 SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
        p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
-       --REGEXP_REPLACE(s.osuser, '[^[:print:]]', '') osuser,
-       tpi_unic_convert(s.osuser) osuser,
+       REGEXP_REPLACE(s.osuser, '[^[:print:]]', '') osuser,
+       --tpi_unic_convert(s.osuser) osuser,
        replace(s.machine,CHR(0),'') machine,
-       s.program||' / '||s.module||' / '||tpi_unic_convert(s.action) pma, trunc(p.pga_used_mem/1024/1024) pgau, c.command_name,
-       DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id, w.event /*,w.p1text,w.p1,w.p2text,w.p2*/, 
+       s.program||' / '||s.module||' / '||s.action pma, trunc(p.pga_used_mem/1024/1024) pgau, c.command_name,
+       DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id, w.event /*,w.p1text,w.p1,w.p2text,w.p2*/,
        case when w.seconds_in_wait>8640000 then w.seconds_in_wait/60/60/24*-1 else w.seconds_in_wait/60/60 end sw,
-       to_char(s.logon_time,'dd/mm hh24:mi') logon_time, 
+       to_char(s.logon_time,'dd/mm hh24:mi') logon_time,
        case when s.last_call_et>8640000 then s.last_call_et/60/60/24*-1 else s.last_call_et end last_call_et, s.status
        $access_p1_str --,a.owner, a.object, a.type
    FROM v\$session s, v\$process p, v\$session_wait w, v\$sqlcommand c $access_p2_str  --,v\$access a
@@ -271,7 +256,7 @@ SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
        and s.command = c.command_type AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL
        AND (s.status = 'ACTIVE' or nvl('$P1_',' ') = 'a')
    order by to_char(s.last_call_et,'0000000.00') desc, s.osuser,w.event, to_char(s.logon_time,'hh24:mi') ;
-drop function tpi_unic_convert;
+--drop function tpi_unic_convert;
 EOF
 logf
 }
@@ -287,8 +272,8 @@ case "$DB_VER_" in
     S2_="rpad(nvl(i.program||' / '||i.module||' / '||i.action,' '),70)||' '||"
     ;;
  *) S0_="$F_UNIC_CONVERT_"
-    S1_="rpad(nvl(unic_convert(i.osuser),' '),10)||' '||"
-    S2_="rpad(nvl(i.program||' / '||i.module||' / '||unic_convert(i.action),' '),70)||' '||"
+    S1_="rpad(nvl(tpi_unic_convert(i.osuser),' '),10)||' '||"
+    S2_="rpad(nvl(i.program||' / '||i.module||' / '||tpi_unic_convert(i.action),' '),70)||' '||"
     ;;
 esac
 
@@ -335,13 +320,13 @@ BEGIN
 --           rpad(nvl(lat_win(i.osuser),' '),8)||' '||
 --           rpad(nvl(i.osuser,' '),10)||' '||
 --           rpad(nvl(REGEXP_REPLACE(i.osuser, '[^[:print:]]', ''),' '),10)||' '||
---           rpad(nvl(unic_convert(i.osuser),' '),10)||' '||
+--           rpad(nvl(tpi_unic_convert(i.osuser),' '),10)||' '||
            $S1_
 
            rpad(nvl(replace(i.machine,CHR(0),''),' '),22)||' '||
 
 --           rpad(nvl(i.program||' / '||i.module||' / '||i.action,' '),70)||' '||
---           rpad(nvl(i.program||' / '||i.module||' / '||unic_convert(i.action),' '),70)||' '||
+--           rpad(nvl(i.program||' / '||i.module||' / '||tpi_unic_convert(i.action),' '),70)||' '||
            $S2_
 --           rpad(nvl(REGEXP_REPLACE(i.program||' / '||i.module||' / '||i.action, '[^[:print:]]', ''),' '),70)||' '||
 --           rpad(nvl(convert(REGEXP_REPLACE(i.program||' / '||i.module||' / '||i.action, '[^[:print:]]', ''), 'AL32UTF8','CL8MSWIN1251'),' '),70)||' '||
