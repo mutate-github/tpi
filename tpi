@@ -91,8 +91,9 @@ if [ "$sid" = "" ]; then
 fi
 ORACLE_SID=$sid
 export ORACLE_SID
-NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
-export NLS_LANG
+#NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
+#NLS_LANG=AMERICAN_AMERICA.UTF8
+#export NLS_LANG
 shift
 ID="$1"
 # ORD="$2"
@@ -113,6 +114,13 @@ storgco)  SP="eval sqlplus -S $login_str" ;;
 ikb)      SP="eval sqlplus -S $login_str" ;;
 *)        SP="eval sqlplus -S '/ as sysdba'" ;;
 esac
+
+NLS_VALUE=`sqlplus -S '/as sysdba' <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select case when value like '%UTF%' then 'UTF8' else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
+END`
+NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
+export NLS_LANG
 
 # SP="eval sqlplus -S '/ as sysdba'"
 # SP="eval sqlplus -S sys/sys@$sid as sysdba"
