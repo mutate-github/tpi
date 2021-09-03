@@ -100,12 +100,17 @@ ID="$1"
 ORD=`echo $2 | tr '~' '$'`
 ALL=`echo $* | tr '~' '$'`
 
+#format .tpi_login file: sid username/password@tns_alias
+path_to_tpi=`dirname $(readlink -e "$0")`
+#echo "path_to_tpi: "$path_to_tpi
+login_str=`awk '/^'$sid' /{print $2}' $path_to_tpi/.tpi_login`
+#echo "login_str: "$login_str
 
 case $sid in
-Xaxapta)  SP="eval sqlplus -S tal/tal#123@axapta" ;;
-storgco)  SP="eval sqlplus -S tal/tal#123@storgco" ;;
-ikb)  SP="eval sqlplus -S tal/tal#123@ikb" ;;
-*) SP="eval sqlplus -S '/ as sysdba'" ;;
+Xaxapta)  SP="eval sqlplus -S $login_str" ;;
+storgco)  SP="eval sqlplus -S $login_str" ;;
+ikb)      SP="eval sqlplus -S $login_str" ;;
+*)        SP="eval sqlplus -S '/ as sysdba'" ;;
 esac
 
 # SP="eval sqlplus -S '/ as sysdba'"
