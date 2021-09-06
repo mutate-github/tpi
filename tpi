@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 03.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 06.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -117,7 +117,7 @@ esac
 
 NLS_VALUE=`sqlplus -S '/as sysdba' <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
-select case when value like '%UTF%' then 'UTF8' else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
+select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
 END`
 NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
 export NLS_LANG
@@ -238,7 +238,7 @@ col serial# for 999999
 col username for a20 truncated
 col osuser for a17 truncated
 col machine for a17 truncated
-col pma for a62 heading "PROGRAM / MODULE / ACTION" truncated
+col pma for a60 heading "PROGRAM / MODULE / ACTION" truncated
 col pgau for 99999
 col logon_time for a11 heading "LOGON"
 col last_call_et for 999999 heading "LAST"
