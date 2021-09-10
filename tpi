@@ -118,6 +118,7 @@ NLS_VALUE=`$SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
 END`
+NLS_VALUE=`echo $NLS_VALUE | tr -d '\r'`
 NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
 export NLS_LANG
 WINCP="CL8MSWIN1251"
