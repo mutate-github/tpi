@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 09.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 10.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -178,34 +178,6 @@ echo $VALUE | tr -d '\r'
 }
 
 
-case "$(db_version)" in
- 9)  F_UNIC_CONVERT_="" ;;
- *)
-F_UNIC_CONVERT_="FUNCTION tpi_unic_convert(str in varchar2) return varchar2
-  IS
-begin
-return
-  CASE WHEN REGEXP_LIKE(ASCIISTR(str), '\FFFD')
-      THEN REGEXP_REPLACE(convert(str,'AL32UTF8','CL8MSWIN1251'), '[^[:print:]]', '')
-  ELSE
-      CASE WHEN REGEXP_LIKE(ASCIISTR(CONVERT(UNISTR(ASCIISTR(str)), 'CL8MSWIN1251')), '\FFFD')
-        THEN str
-        ELSE
-          CASE WHEN replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(str)), 'AL32UTF8','CL8MSWIN1251'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null
-            THEN convert(str, 'AL32UTF8','CL8MSWIN1251')
-            ELSE str
-          END
---          '3='||UNISTR(ASCIISTR(str))
-      END
-  END;
-exception when others then return case when not REGEXP_LIKE(ASCIISTR(str), '\FFFD') then '-'||UNISTR(ASCIISTR(str)) else '='||REGEXP_REPLACE(convert(str,'AL32UTF8','CL8MSWIN1251'), '[^[:print:]]', '') end;
-end;
-"
-;;
-esac
-
-
-
 active_sessions()
 {
 P1_=$1 #; echo "P1_: "$P1_
@@ -217,10 +189,18 @@ case "$P1_" in
 esac
 
 case "$(db_version)" in
- 9) active_sessions_
-    return
+ 9) SQL_ID_=""
+    SQLACTION_="s.action pma,"
+    SQLCMD1_=""
+    SQLCMD2_=""
+    SQLCMD3_=""
     ;;
- *) : ;;
+ *) SQL_ID_="DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id,"
+    SQLACTION_="CASE when '$NLS_VALUE'='$WINCP' then s.action when replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(s.action)), '$NLS_VALUE','$WINCP'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null then UTL_RAW.CAST_TO_VARCHAR2(UTL_RAW.CONVERT(UTL_RAW.CAST_TO_RAW(nvl(s.action,' ')),'AMERICAN_AMERICA.$NLS_VALUE', 'AMERICAN_AMERICA.$WINCP')) else s.action end pma,"
+    SQLCMD1_="c.command_name, "
+    SQLCMD2_=", v\$sqlcommand c "
+    SQLCMD3_="and s.command = c.command_type "
+    ;;
 esac
 
 
@@ -245,123 +225,23 @@ col sw for 999999
 col oot for a40 heading "ACCESS OBJECT" truncated
 SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
        p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
-       REGEXP_REPLACE(s.osuser, '[^[:print:]]', '') osuser,
-       --tpi_unic_convert(s.osuser) osuser,
+       s.osuser,
        replace(s.machine,CHR(0),'') machine,
-       s.program||' / '||s.module||' / '|| --s.action pma, 
- CASE when '$NLS_VALUE'='$WINCP' then s.action 
-      when replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(s.action)), '$NLS_VALUE','$WINCP'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null
-         then UTL_RAW.CAST_TO_VARCHAR2(UTL_RAW.CONVERT(UTL_RAW.CAST_TO_RAW(nvl(s.action,' ')),'AMERICAN_AMERICA.$NLS_VALUE', 'AMERICAN_AMERICA.$WINCP'))
- else s.action end pma, 
-       trunc(p.pga_used_mem/1024/1024) pgau, c.command_name,
-       DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id, w.event /*,w.p1text,w.p1,w.p2text,w.p2*/,
+       s.program||' / '||s.module||' / '|| $SQLACTION_
+       trunc(p.pga_used_mem/1024/1024) pgau, $SQLCMD1_ $SQL_ID_
+       w.event /*,w.p1text,w.p1,w.p2text,w.p2*/,
        case when w.seconds_in_wait>8640000 then w.seconds_in_wait/60/60/24*-1 else w.seconds_in_wait/60/60 end sw,
        to_char(s.logon_time,'dd/mm hh24:mi') logon_time,
-       case when s.last_call_et>864000 then s.last_call_et/60/60/24*-1 else s.last_call_et end last_call_et, s.status
-       $access_p1_str --,a.owner, a.object, a.type
-   FROM v\$session s, v\$process p, v\$session_wait w, v\$sqlcommand c $access_p2_str  --,v\$access a
-   WHERE p.addr = s.paddr $access_p3_str --and s.sid=a.sid and a.OBJECT like 'STOMVT%'
-       and s.command = c.command_type AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL
+       case when s.last_call_et>864000 then s.last_call_et/60/60/24*-1 else s.last_call_et end last_call_et, s.status  $access_p1_str
+   FROM v\$session s, v\$process p, v\$session_wait w $SQLCMD2_  $access_p2_str
+   WHERE p.addr = s.paddr $access_p3_str $SQLCMD3_
+       AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL
        AND (s.status = 'ACTIVE' or nvl('$P1_',' ') = 'a')
    order by to_char(s.last_call_et,'0000000.00') desc, s.osuser,w.event, to_char(s.logon_time,'hh24:mi') ;
 EOF
 logf
 }
 
-
-
-active_sessions_()
-{
-case "$(db_version)" in
- 9) S0_=""
-    S1_="rpad(nvl(i.osuser,' '),10)||' '||"
-    S2_="rpad(nvl(i.program||' / '||i.module||' / '||i.action,' '),70)||' '||"
-    ;;
- *) S0_="$F_UNIC_CONVERT_"
-    S1_="rpad(nvl(tpi_unic_convert(i.osuser),' '),10)||' '||"
-    S2_="rpad(nvl(i.program||' / '||i.module||' / '||tpi_unic_convert(i.action),' '),70)||' '||"
-    ;;
-esac
-
-$SP <<EOF >$LOGF
-set serveroutput on size 900000
-set lines 210
-set echo off feed off veri off tab off
-DECLARE
-  par varchar2(1);
-  ord varchar2(10);
-
-$F_UNIC_CONVERT_
-
-BEGIN
-      select '$ID' into par from dual;
-      select '$ORD' into ord from dual;
-      dbms_output.put_line(chr(0)||'===============================================================================');
-      if par = 'a' then
-        dbms_output.put_line(chr(126)||'-------------============= A L L   S E S S I O N S ===============-------------');
-      else
-        dbms_output.put_line(chr(126)||'-----------=========== A C T I V E   S E S S I O N S ==============------------');
-      end if;
-      dbms_output.put_line(chr(126)||'    SPID  SID   SER#  USER                      OSUSER     MACHINE                PROGRAM / MODULE / ACTION                                              LOGON     LAST S WAIT                      SW');
-      begin
-    for i in (
-        SELECT p.spid, s.sid, s.serial#, s.audsid, s.username, s.status,
-               s.osuser, s.machine, s.program, s.module, s.action, s.logon_time, s.last_call_et,
-                       w.event,w.p1text,w.p1,w.p2text,w.p2,w.seconds_in_wait sw
-          FROM v\$session s, v\$process p, v\$session_wait w
-         WHERE p.addr = s.paddr 
-                   AND s.sid=w.sid 
-                   --AND p.background IS NULL 
-                   AND p.spid IS NOT NULL
-                   AND s.username IS NOT NULL
-           AND (s.status = 'ACTIVE' or nvl(par,' ') = 'a') 
-                 order by decode(nvl(ord,' '),'u',s.username,'m',s.module,'l',to_char(s.last_call_et,'0000000.00'),'o',s.osuser,'w',w.event, to_char(s.logon_time,'hh24:mi') )
-        )
-    loop
-           dbms_output.put_line(chr(126)||
-           lpad(i.spid,8)||' '||
-           substr(to_char(i.sid,'99999'),2)||' '||
-           substr(to_char(i.serial#,'999999'),2)||' '||
-           rpad(nvl(i.username,' '),25)||' '||
---           rpad(nvl(lat_win(i.osuser),' '),8)||' '||
---           rpad(nvl(i.osuser,' '),10)||' '||
---           rpad(nvl(REGEXP_REPLACE(i.osuser, '[^[:print:]]', ''),' '),10)||' '||
---           rpad(nvl(tpi_unic_convert(i.osuser),' '),10)||' '||
-           $S1_
-
-           rpad(nvl(replace(i.machine,CHR(0),''),' '),22)||' '||
-
---           rpad(nvl(i.program||' / '||i.module||' / '||i.action,' '),70)||' '||
---           rpad(nvl(i.program||' / '||i.module||' / '||tpi_unic_convert(i.action),' '),70)||' '||
-           $S2_
---           rpad(nvl(REGEXP_REPLACE(i.program||' / '||i.module||' / '||i.action, '[^[:print:]]', ''),' '),70)||' '||
---           rpad(nvl(convert(REGEXP_REPLACE(i.program||' / '||i.module||' / '||i.action, '[^[:print:]]', ''), 'AL32UTF8','CL8MSWIN1251'),' '),70)||' '||
---           rpad(nvl(REGEXP_REPLACE(convert(i.program||' / '||i.module||' / '||i.action,'CL8MSWIN1251') , '[^[:print:]]', ''),' '),70)||' '||
-
-
---           rpad(nvl(i.program,' '),23)||' '||
---           rpad(nvl(i.module,' '),25)||' '||
-           to_char(i.logon_time,'hh24:mi')||' '||
-           substr(to_char(i.last_call_et/60, '999990.0'),2)||' '||
-           substr(i.status,1,1)||' '||
---           rpad(nvl(lat_win(replace(i.machine,CHR(0),'')),' '),22)||' '||
---           rpad(nvl(replace(i.machine,CHR(0),''),' '),22)||' '||
-           rpad(nvl(i.event,' '),25)||' '||
-           rpad(i.sw,5)
-);
-    end loop;
-      exception when others then
-          dbms_output.put_line(chr(126)||sqlerrm);
-          return;
-      end;
-      dbms_output.put_line(chr(126)||'===============================================================================');
-END;
-/
-exit
-EOF
-logf
-echo Usage: \"tpi\" \; \"tpi a\" \; \"tpi ID\", where ID - OSID, PID, SERIAL# or AUDSID
-}
 
 process_info()
 {
@@ -5006,6 +4886,5 @@ dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL  ;;
 spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL  ;;
 *)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
-
 
 
