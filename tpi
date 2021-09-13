@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 10.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 13.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -1529,9 +1529,10 @@ column owner for a20
 column segment_name for a30
 column table_name for a30
 column segment_type for a20
-column tablespace_name for a15
+column tablespace_name for a22
 column compress for a8
 column compress_for for a15
+column iot_type for a8
 select tablespace_name, owner, table_name, logging, num_rows, avg_row_len, last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
 from dba_tables where upper(table_name) like upper('$ORD') order by owner;
 
@@ -1540,6 +1541,8 @@ prompt indexes:
 column index_type for a15
 column index_name for a33
 column compression for a15
+column UNIQUENESS for a10
+column status for a10
 select tablespace_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned
 from dba_indexes where upper(table_name) = upper('$ORD') order by owner,index_name;
 
@@ -4886,4 +4889,7 @@ dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL  ;;
 spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL  ;;
 *)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
+
+
+
 
