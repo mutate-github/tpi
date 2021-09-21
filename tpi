@@ -73,7 +73,7 @@ init_msg()
   liblock__="liblock - library lock object and session" 
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
-  longops__="longops [SESSION_ID | MESSAGE] [rman] - active session longops for SESSION_ID or MESSAGE or rman backup elapsed time" 
+  longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler - dba_scheduler_jobs information" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
@@ -2184,7 +2184,7 @@ SET PAGESIZE 60
 SET LINESIZE 230
 COLUMN tablespace FORMAT A10
 COLUMN temp_size FORMAT 99,999,999 heading "TEMP_SIZE Mb"
-COLUMN inst_id FORMAT 99
+COLUMN spid FORMAT a8
 COLUMN sid_serial FORMAT A15
 COLUMN username FORMAT A20
 COLUMN osuser FORMAT A20
@@ -2193,7 +2193,7 @@ COLUMN program FORMAT A45
 COLUMN STATUS FORMAT A8
 SELECT b.tablespace,
         ROUND(((b.blocks*p.value)/1024/1024),2) temp_size,
-        a.inst_id,
+        p.spid,
         a.sid||' '||a.serial# AS sid_serial,
         NVL(a.username, '(oracle)') AS username,
         a.osuser AS osuser,
@@ -2202,9 +2202,12 @@ SELECT b.tablespace,
         a.status,
         a.sql_id
 FROM gv$session a,
-        gv$sort_usage b,
-        gv$parameter p
-WHERE p.name  = 'db_block_size'
+     v$process p,
+     gv$sort_usage b,
+     gv$parameter p
+WHERE p.addr(+) = a.paddr
+AND a.type <> 'BACKGROUND'
+AND p.name  = 'db_block_size'
 AND a.saddr = b.session_addr
 AND a.inst_id=b.inst_id
 AND a.inst_id=p.inst_id
