@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 13.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 21.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -21,8 +21,7 @@ bd*)       . /home/oracle/db12kik.env ;;
 EPS*)      . ~oracle/db12.env ;;
 creditc)   . /home/oracle/db12.env ;;
 KIKOPDR)   . /home/oracle/db11.env ;;
-jet)       . /etc/profile.ora ;;
-ja)        . /etc/profile.ora ;;
+jet|ja)       . /etc/profile.ora ;;
 aisutf*)   . ~/.ora_env ;;
 unit*)     . ~/.ora_env ;;
 askona*)   . ~/.profile ;;
@@ -31,10 +30,19 @@ sbaskona)  . ~/.profile ;;
 egais*)    . ~/.bashrc ;;
 GOLD506*)  . ~/.bashrc ;;
 goldwhs)   . ~/.bash_profile ;;
-*)         if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
-           if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
-#           if [ -f ~/.profile ]; then . ~/.profile ; fi ;;
+*) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
+   #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
+#           if [ -f ~/.profile ]; then . ~/.profile ; fi 
+   case `uname | awk -F_ '{print $1}'` in
+      Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi ;;
+      AIX)    if [ -f ~/.profile ]; then . ~/.profile ; fi
+              if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi 
+              ;;
+      *) ;;
+   esac
+;;
 esac > /dev/null 2>&1
+
 
 init_msg()
 {
@@ -65,7 +73,7 @@ init_msg()
   liblock__="liblock - library lock object and session" 
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
-  longops__="longops [MESSAGE] [rman] - active session longops or for like MESSAGE or rman backup elapsed time" 
+  longops__="longops [SESSION_ID | MESSAGE] [rman] - active session longops for SESSION_ID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler - dba_scheduler_jobs information" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
@@ -107,10 +115,12 @@ path_to_tpi=`dirname $0`
 login_str=`awk '/^'$sid' /{print $2}' $path_to_tpi/.tpi_login 2>/dev/null`
 #echo "login_str: "$login_str
 
+
 case $sid in
 Xaxapta)  SP="eval sqlplus -S $login_str" ;;
 storgco)  SP="eval sqlplus -S $login_str" ;;
 ikb)      SP="eval sqlplus -S $login_str" ;;
+sdfo)     SP="eval sqlplus -S $login_str" ;;
 *)        SP="eval sqlplus -S '/ as sysdba'" ;;
 esac
 
@@ -120,8 +130,10 @@ select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_
 END`
 NLS_VALUE=`echo $NLS_VALUE | tr -d '\r'`
 NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
+# NLS_LANG=AMERICAN_AMERICA.AL32UTF8
 export NLS_LANG
 WINCP="CL8MSWIN1251"
+
 
 # SP="eval sqlplus -S '/ as sysdba'"
 # SP="eval sqlplus -S sys/sys@$sid as sysdba"
@@ -161,6 +173,10 @@ rm -f $LOGINSQL >/dev/null 2>&1
 
 is_number()
 {
+if [ -z "$1" ]; then
+ echo 0
+ return
+fi
 case "$1"  in
   *[!0-9]*)  echo 0 ;;
   *)         echo 1 ;;
@@ -2401,29 +2417,31 @@ logf
 fra()
 {
 $SP <<EOF >$LOGF
-set lines 180
-set echo off feed off veri off tab off pages 40
+set lines 230
+set echo off feed off veri off tab off pages 50
 alter session set nls_date_format='dd/mm/yyyy';
 column NAME for a32
 column DISPLAY_VALUE for a50
 column DEFAULT_VALUE for a13
 column ismodified for a10
 column description for a57
-select name,display_value,default_value,ismodified,description from SYS.V_\$PARAMETER 
+select name,display_value,default_value,ismodified,description from SYS.V_\$PARAMETER
 where name like 'db_recovery_file_dest%'  or name = 'db_flashback_retention_target';
 ttitle left "View: V\$FLASH_RECOVERY_AREA_USAGE"
 select * from V\$FLASH_RECOVERY_AREA_USAGE;
 column name for a60
 column space_limit for 999,999,999,999,999
+column space_available for 999,999,999,999,999
 column space_used for 999,999,999,999,999
 column space_reclaimable for 999,999,999,999,999
 ttitle left "View: v\$recovery_file_dest"
-select name,to_char(space_limit, '999,999,999,999,999') as space_limit, to_char(space_limit - space_used + space_reclaimable, '999,999,999,999,999') as space_available, round((space_used - space_reclaimable)/space_limit * 100, 1) as pct_full from v\$recovery_file_dest;
+select name, space_limit, (space_limit - space_used + space_reclaimable) space_available, round((space_used - space_reclaimable)/space_limit * 100, 1) as pct_full from v\$recovery_file_dest;
 select name,space_limit,space_used, space_reclaimable, number_of_files from v\$recovery_file_dest;
 ttitle off
 EOF
 logf
 }
+
 
 
 size()
@@ -2856,8 +2874,13 @@ EOF
 ;;
 *)
 MESSAGE_=`echo $* | awk '{print $2}'`
+case "$(is_number $MESSAGE_)" in
+0) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$MESSAGE_%'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+1) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and a.sid = $MESSAGE_ and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+esac
+
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set serveroutput on size 1000000
@@ -2892,9 +2915,7 @@ exception
 end;
 
 begin
- print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$MESSAGE_%''
-  and SOFAR <> TOTALWORK
-  order by b.sid,b.start_time');
+ $SQL_
 end;
 /
 EOF
