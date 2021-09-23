@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 21.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 23.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -200,8 +200,8 @@ P1_=$1 #; echo "P1_: "$P1_
 P2_=$2 #; echo "P2_: "$P2_
 
 case "$P1_" in
- access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT like upper('$P2_%')" ;;
- *) : ;;
+ access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT like upper('$P2_%')" ; P1_="a" ;;
+ *)      : ;;
 esac
 
 case "$(db_version)" in
@@ -425,13 +425,13 @@ $CMD2_
   
   for c1 in (select /*+ rule*/ substr(s1.username,1,10) WAITER, substr(s1.osuser,1,10) OS_userW, substr(to_char(w.session_id),1,5) SIDW,
         P1.spid SPIDW, substr(s2.username,1,10) HOLDER, substr(s2.osuser,1,10) OS_userH, substr(to_char(h.session_id),1,5) SIDH,
-        P2.spid SPIDH, w.lock_type, o.name
+        P2.spid SPIDH, s2.status, w.lock_type, o.name
     from sys.v_\$process P1, sys.v_\$process P2, sys.v_\$session S1, sys.v_\$session S2, sys.dba_lock w, sys.dba_lock h, sys.obj\$ o
     where h.mode_held='Exclusive' and w.mode_requested!='None' and w.lock_type (+) =h.lock_type and w.lock_id1 (+) = h.lock_id1 
     and w.lock_id2 (+) = h.lock_id2 and w.session_id = S1.sid (+) and h.session_id = S2.sid (+) and S1.paddr = P1.addr (+) 
     and S2.paddr = P2.addr (+) and o.obj#=s1.row_wait_obj# ) loop
     if c = 0 then
-      dbms_output.put_line(chr(126)||chr(32)||'WAIT-User:    OS_user   SID       SPID      HOLD-User:    OS_user   SID       SPID         TYPE          OBJECT');
+      dbms_output.put_line(chr(126)||chr(32)||'WAIT-User:    OS_user   SID       SPID      HOLD-User:    OS_user   SID       SPID     STATUS         TYPE          OBJECT');
     end if;
     c := 1;
     dbms_output.put_line(chr(126)||chr(32)||
@@ -443,13 +443,14 @@ $CMD2_
                 lpad(nvl(c1.OS_userH,'-'),10)||' '||
                 lpad(c1.sidh,5)||' '||
                 lpad(c1.spidh,10)||' '||
+                lpad(c1.status,10)||' '||
                 lpad(c1.lock_type,12)||' '||
                 lpad(c1.name,15)  );
    null;
   end loop;
 
 
-  for c1 in ( SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.username, /*w.id1, w.id2,*/ w.lmode, w.request, w.type, o.name
+  for c1 in ( SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ w.lmode, w.request, w.type, o.name
                 FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
                  WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK WHERE request>0)
                  and o.obj# (+) = s1.row_wait_obj#
@@ -457,13 +458,15 @@ $CMD2_
                  and S1.paddr = P1.addr (+)
                  ORDER BY id1, request) loop
      if c2 = 0 then
-       dbms_output.put_line(chr(126)||chr(32)||'Action    SID        PID                  USERNAME      LMODE    REQUEST     TYPE               OBJECT_NAME');
+--       dbms_output.put_line(chr(126)||chr(32)||'Action    SID        PID                  USERNAME      LMODE    REQUEST     TYPE               OBJECT_NAME');
+       dbms_output.put_line(chr(10)||chr(126)||chr(32)||'Action    SID        PID     STATUS                  USERNAME      LMODE    REQUEST     TYPE               OBJECT_NAME');
      end if;
      c2 := 1;
      dbms_output.put_line(chr(126)||chr(32)||
                 lpad(c1.Action,7)||' '||
                 lpad(c1.sid,5)||' '||
                 lpad(c1.pid,10)||' '||
+                lpad(c1.status,10)||' '||
                 lpad(c1.username,25)||' '||
                 lpad(c1.lmode,10)||' '||
                 lpad(c1.REQUEST,10)||' '||
@@ -2853,6 +2856,8 @@ col sysdate for a9
 PROMPT
 PROMPT v\$rman_status Estimate time of current backup if block_change_tracking is disabled:
 alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
+col status for a10
+col object_type for a15
 select recid, status, object_type, start_time, end_time, output_device_type, dbsize_gbytes
 , input_bytes/1024/1024/1024 input_gbytes, output_bytes/1024/1024/1024 output_gbytes
 , (output_bytes/input_bytes*100) compression , ((mbytes_processed)/dbsize_gbytes/1024*100) complete
