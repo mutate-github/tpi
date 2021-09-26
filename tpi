@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 23.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 26.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -2875,9 +2875,9 @@ from (SELECT count(vbd.file#) df_backuped
 FROM v\$rman_backup_job_details vrbjd, v\$backup_datafile vbd
 WHERE vbd.file#>0 and vbd.completion_time BETWEEN vrbjd.start_time AND vrbjd.end_time
 AND vrbjd.input_type <> 'ARCHIVELOG'
-and vrbjd.start_time >= (select max(start_time) from v\$rman_status where status like 'RUNNING%' and operation like 'BACKUP%')
+and vrbjd.start_time >= (select max(start_time) from v\$rman_status where status like 'RUNNING%' and operation like 'RMAN%')
 ), (select count(*) df_total from v\$datafile),
-(select max(start_time) start_time from v\$rman_status where status like 'RUNNING%' and operation like 'BACKUP%') ;
+(select max(start_time) start_time from v\$rman_status where status like 'RUNNING%' and operation like 'RMAN%') ;
 EOF
 ;;
 *)
