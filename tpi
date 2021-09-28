@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 26.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 28.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -64,13 +64,13 @@ init_msg()
   t__="t TABLE_NAME - dba_tables information" 
   i__="i INDEX_NAME - dba_indexes information" 
   l__="l LOB_NAME - dba_lobs information" 
-  c__="c CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %)  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
+  c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u USERNAME - dba_users information"
   invalid__="invalid - invalid objects" 
   profile__="profile - profiles information"
   links__="links - links information"
   latch__="latch - latch information"
-  liblock__="liblock - library lock object and session" 
+  lock__="lock [lib] - locks information, library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
@@ -92,8 +92,8 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | liblock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i. | l. | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
-  echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$liblock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
+  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i. | l. | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
+  echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
 fi
@@ -341,8 +341,6 @@ DECLARE
   v_sid number;
   s sys.v_\$session%ROWTYPE;
   p sys.v_\$process%ROWTYPE;
-  c integer := 0;
-  c2 integer := 0;
 BEGIN
   select '$ID' into id from dual;
   begin
@@ -420,59 +418,8 @@ BEGIN
 
 $CMD1_
 $CMD2_
+-- lock was here
 
-  dbms_output.put_line(chr(126)||'Blocking locks:');
-  
-  for c1 in (select /*+ rule*/ substr(s1.username,1,10) WAITER, substr(s1.osuser,1,10) OS_userW, substr(to_char(w.session_id),1,5) SIDW,
-        P1.spid SPIDW, substr(s2.username,1,10) HOLDER, substr(s2.osuser,1,10) OS_userH, substr(to_char(h.session_id),1,5) SIDH,
-        P2.spid SPIDH, s2.status, w.lock_type, o.name
-    from sys.v_\$process P1, sys.v_\$process P2, sys.v_\$session S1, sys.v_\$session S2, sys.dba_lock w, sys.dba_lock h, sys.obj\$ o
-    where h.mode_held='Exclusive' and w.mode_requested!='None' and w.lock_type (+) =h.lock_type and w.lock_id1 (+) = h.lock_id1 
-    and w.lock_id2 (+) = h.lock_id2 and w.session_id = S1.sid (+) and h.session_id = S2.sid (+) and S1.paddr = P1.addr (+) 
-    and S2.paddr = P2.addr (+) and o.obj#=s1.row_wait_obj# ) loop
-    if c = 0 then
-      dbms_output.put_line(chr(126)||chr(32)||'WAIT-User:    OS_user   SID       SPID      HOLD-User:    OS_user   SID       SPID     STATUS         TYPE          OBJECT');
-    end if;
-    c := 1;
-    dbms_output.put_line(chr(126)||chr(32)||
-                lpad(c1.WAITER,10)||' '||
-                lpad(nvl(c1.OS_userW,'-'),10)||' '||
-                lpad(c1.sidw,5)||' '||
-                lpad(c1.spidw,10)||' '||'     '||
-                lpad(c1.HOLDER,10)||' '||
-                lpad(nvl(c1.OS_userH,'-'),10)||' '||
-                lpad(c1.sidh,5)||' '||
-                lpad(c1.spidh,10)||' '||
-                lpad(c1.status,10)||' '||
-                lpad(c1.lock_type,12)||' '||
-                lpad(c1.name,15)  );
-   null;
-  end loop;
-
-
-  for c1 in ( SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ w.lmode, w.request, w.type, o.name
-                FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
-                 WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK WHERE request>0)
-                 and o.obj# (+) = s1.row_wait_obj#
-                 and w.sid = S1.sid (+)
-                 and S1.paddr = P1.addr (+)
-                 ORDER BY id1, request) loop
-     if c2 = 0 then
---       dbms_output.put_line(chr(126)||chr(32)||'Action    SID        PID                  USERNAME      LMODE    REQUEST     TYPE               OBJECT_NAME');
-       dbms_output.put_line(chr(10)||chr(126)||chr(32)||'Action    SID        PID     STATUS                  USERNAME      LMODE    REQUEST     TYPE               OBJECT_NAME');
-     end if;
-     c2 := 1;
-     dbms_output.put_line(chr(126)||chr(32)||
-                lpad(c1.Action,7)||' '||
-                lpad(c1.sid,5)||' '||
-                lpad(c1.pid,10)||' '||
-                lpad(c1.status,10)||' '||
-                lpad(c1.username,25)||' '||
-                lpad(c1.lmode,10)||' '||
-                lpad(c1.REQUEST,10)||' '||
-                lpad(c1.type,8)||' '||
-                lpad(c1.name,25) );
-   end loop;
 ------------
   dbms_output.put_line(chr(126)||'Previous SQL statement:');
   for c1 in ( select * from sys.v_\$sqltext
@@ -491,8 +438,73 @@ logf
 }
 
 
-liblock()
+lock()
 {
+P2_=`echo $ALL | awk '{print $2}'`
+if [ -z "$P2_" ]; then
+$SP <<END > $LOGF
+set serveroutput on size 500000
+set echo off feed off veri off tab off
+set lines 230
+declare
+ c integer := 0;
+BEGIN
+  dbms_output.put_line(chr(126)||'Blocking locks:');
+
+  for c1 in (select /*+ rule*/ substr(s1.username,1,10) WAITER, substr(s1.osuser,1,10) OS_userW, substr(to_char(w.session_id),1,5) SIDW,
+        P1.spid SPIDW, substr(s2.username,1,10) HOLDER, substr(s2.osuser,1,10) OS_userH, substr(to_char(h.session_id),1,5) SIDH,
+        P2.spid SPIDH, s2.status, w.lock_type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
+    from sys.v_\$process P1, sys.v_\$process P2, sys.v_\$session S1, sys.v_\$session S2, sys.dba_lock w, sys.dba_lock h, sys.obj\$ o
+    where h.mode_held='Exclusive' and w.mode_requested!='None' and w.lock_type (+) =h.lock_type and w.lock_id1 (+) = h.lock_id1
+    and w.lock_id2 (+) = h.lock_id2 and w.session_id = S1.sid (+) and h.session_id = S2.sid (+) and S1.paddr = P1.addr (+)
+    and S2.paddr = P2.addr (+) and o.obj#=s1.row_wait_obj# ) loop
+    if c = 0 then
+      dbms_output.put_line(chr(126)||chr(32)||'     HOLD-User:    OS_user   SID       SPID        STATUS      WAIT-User:    OS_user   SID       SPID         TYPE  ET(min)          OBJECT');
+    end if;
+    c := 1;
+    dbms_output.put_line(chr(126)||chr(32)||
+                lpad(c1.HOLDER,15)||' '||
+                lpad(nvl(c1.OS_userH,'-'),10)||' '||
+                lpad(c1.sidh,5)||' '||
+                lpad(c1.spidh,10)||' '||'     '||
+                lpad(c1.status,8)||' '||
+                lpad(c1.WAITER,15)||' '||
+                lpad(nvl(c1.OS_userW,'-'),10)||' '||
+                lpad(c1.sidw,5)||' '||
+                lpad(c1.spidw,10)||' '||
+                lpad(c1.lock_type,12)||' '||
+                lpad(c1.last_call_et,8)||' '||
+                lpad(c1.name,15)  );
+   null;
+  end loop;
+  c := 0;
+  for c1 in ( SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ w.lmode, w.request, w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
+                FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
+                 WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK WHERE request>0)
+                 and o.obj# (+) = s1.row_wait_obj#
+                 and w.sid = S1.sid (+)
+                 and S1.paddr = P1.addr (+)
+                 ORDER BY id1, request) loop
+     if c = 0 then
+       dbms_output.put_line(chr(10)||chr(126)||chr(32)||'Action    SID        PID     STATUS                  USERNAME      LMODE    REQUEST     TYPE  ET(min)               OBJECT_NAME');
+     end if;
+     c := 1;
+     dbms_output.put_line(chr(126)||chr(32)||
+                lpad(c1.Action,7)||' '||
+                lpad(c1.sid,5)||' '||
+                lpad(c1.pid,10)||' '||
+                lpad(c1.status,10)||' '||
+                lpad(c1.username,25)||' '||
+                lpad(c1.lmode,10)||' '||
+                lpad(c1.REQUEST,10)||' '||
+                lpad(c1.type,8)||' '||
+                lpad(c1.last_call_et,8)||' '||
+                lpad(c1.name,25) );
+   end loop;
+end;
+/
+END
+elif [ "$P2_" = "lib" ]; then
 $SP <<'END' > $LOGF
 set lines 170
 set echo off feed off veri off tab off pages 40
@@ -520,6 +532,7 @@ WHERE p.kglpnuse=s.saddr and pr.addr = s.paddr and ob.kglhdadr=p.kglpnhdl
 and sw.event like 'lib%'
 and sw.p1raw = ob.kglhdadr;
 END
+fi
 logf
 }
 
@@ -1698,8 +1711,8 @@ set lines 230 pages 60
 column owner for a20
 column table_name for a30
 column constraint_name for a30
-column columns for a20
-column create_index_ddl for a120
+column columns for a22
+column create_index_ddl for a123
 PROMPT Tables with non-indexed foreign keys: Table: $P3_:
 SELECT   owner, table_name,
            constraint_name,
@@ -3019,6 +3032,8 @@ case "$type_" in
  TYPE_BODY)               o_type_='TYPE BODY' ;;  
  MATERIALIZED_VIEW)       o_type_='MATERIALIZED VIEW' ;;
  MATERIALIZED_VIEW_LOG)   o_type_='MATERIALIZED VIEW LOG' ;;
+ RMGR_CONSUMER_GROUP)     o_type_='CONSUMER GROUP' ;;
+ RMGR_PLAN)               o_type_='RESOURCE PLAN' ;;
  *)                       o_type_=$type_ ;;         
 esac
 
@@ -4874,7 +4889,7 @@ esac
 
 case "$ID" in
 ""|a|access)  echo $a__ ${reset}; active_sessions $ALL ;;
-liblock)   echo $liblock__ ${reset}; liblock ;;
+lock)   echo $lock__ ${reset}; lock $ALL ;;
 p|ph)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)  echo $db__ ${reset}; db ;;
 health)  echo $health__ ${reset}; health ;;
