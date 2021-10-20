@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 28.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 29.09.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -74,7 +74,7 @@ init_msg()
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
-  scheduler__="scheduler - dba_scheduler_jobs information" 
+  scheduler__="scheduler [log JOB_NAME [hours]] - dba_scheduler_jobs information, log JOB_NAME [hours] - dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
@@ -160,6 +160,7 @@ end;
 /
 alter session set statistics_level=basic;
 exec dbms_application_info.set_module('tpi script','Oracle');
+set timing on
 CREATELOGINSQL
 
 cd /tmp
@@ -1604,6 +1605,10 @@ prompt columns statistic information:
 col owner for a20
 col table_name for a25
 col COLUMN_NAME for a30
+col NUM_DISTINCT for 999999999999
+col NUM_NULLS for 999999999999
+col NUM_BUCKETS for 99999
+col SAMPLE_SIZE for 999999999999
 col low_value for a15
 col high_value for a15
 col HISTOGRAM for a30
@@ -2198,7 +2203,7 @@ $SP <<'EOF' >$LOGF
 TTitle left "TEMP Tablespace Usage information:" skip 1
 SET PAGESIZE 60
 SET LINESIZE 230
-COLUMN tablespace FORMAT A10
+COLUMN tablespace FORMAT A12
 COLUMN temp_size FORMAT 99,999,999 heading "TEMP_SIZE Mb"
 COLUMN spid FORMAT a8
 COLUMN sid_serial FORMAT A15
@@ -2373,14 +2378,15 @@ EOF
 ;;
 *)
 $SP <<'EOF' >$LOGF
-set lines 180
+set lines 230
 set echo off feed off veri off tab off pages 40
 set numwidth 15
 column file_id for 999
 column block_size for 99999
 column tablespace_name format a25
 column file_name format a60
-column status format a8
+column status format a10
+column enabled format a15
 ttitle left "DataFiles information:"
 select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible
 from v$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
@@ -2489,9 +2495,6 @@ arch()
 P1_=`echo $ALL | awk '{print $1}'`
 P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
 P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-#echo "P1_"$P1_
-#echo "P2_"$P2_
-#echo "P3_"$P3_
 
 $SP <<EOF >$LOGF
 set lines 230
@@ -2504,12 +2507,17 @@ select group#,thread#,sequence#,bytes,archived,status from v\$log;
 column "Archive_dest" for a50
 ttitle left "V\$ARCHIVE_DEST :"
 column DEST_ID for 99
+column status for a10
+column binding for a10
+column compression for a10
 column DESTINATION for a70
 column ERROR for a90
 SELECT DEST_ID, log_sequence,  STATUS, binding, compression, DESTINATION, ERROR FROM V\$ARCHIVE_DEST WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
 ttitle left "V\$ARCHIVE_DEST_STATUS :"
-SELECT DEST_ID, RECOVERY_MODE, status, database_mode, recovery_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
+column recovery_mode for a35
+column database_mode for a15
+SELECT DEST_ID, RECOVERY_MODE, status, database_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
 ttitle left "V\$ARCHIVED_LOG lag archivelog standby:"
 select
@@ -2948,15 +2956,41 @@ logf
 
 scheduler()
 {
+P1_=`echo $ALL | awk '{print $1}'`
+P2_=`echo $ALL | awk '{print $2}'`
+P3_=`echo $ALL | awk '{print $3}'`
+case "$P1_" in
+log)
+$SP <<EOF >$LOGF
+prompt dba_scheduler_job_run_details for job_name like '$P2_' and ACTUAL_START_DATE > nvl('$P3_',24) hours
+set echo off feed off veri off tab off pages 70
+set lines 230
+col owner for a25
+col job_name for a30
+col STATUS for a10
+col SESSION_ID for a14
+col SLAVE_PID for a10
+col ERROR# for 9999999
+col ACTUAL_START_DATE for a20
+col RUN_DURATION for a20
+alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
+select owner, job_name, STATUS, SESSION_ID, SLAVE_PID, ERROR#, cast(ACTUAL_START_DATE as date) ACTUAL_START_DATE, RUN_DURATION  from dba_scheduler_job_run_details
+where job_name like '$P2_' and ACTUAL_START_DATE > sysdate - (1*(nvl('$P3_',24)/24))
+--and run_duration > interval '10' second
+order by ACTUAL_START_DATE;
+EOF
+;;
+*)
 $SP <<'EOF' >$LOGF
 set echo off feed off veri off tab off pages 60
-set lines 250
+set lines 230
 col owner for a12
 col job_name for a30
 --col PROGRAM_OWNER for a10
 --col PROGRAM_NAME for a30
 col PROGRAM for a18
 col JOB_ACTION for a100
+col ENABLED for a7
 col REPEAT_INTERVAL for a22
 col LAST_START_DATE for a8
 col LAST_RUN_DURATION for a14
@@ -2964,7 +2998,7 @@ select owner, job_name, (PROGRAM_OWNER || CASE when PROGRAM_OWNER is null then '
 to_char(LAST_START_DATE,'dd/mm/yy hh24:mi') LAST_START_DATE, LAST_RUN_DURATION
 from dba_scheduler_jobs order by owner, job_name;
 
-ttitle left "View: dba_scheduler_running_jobs"
+prompt "View: dba_scheduler_running_jobs"
 col elapsed_time for a16
 col cpu_used for a16
 col job_action for a50
@@ -2974,8 +3008,11 @@ from dba_scheduler_running_jobs r, dba_scheduler_jobs s
 where s.owner=r.owner and s.job_name=r.job_name;
 ttitle off
 EOF
+;;
+esac
 logf
 }
+
 
 
 job()
@@ -2995,7 +3032,7 @@ select JOB, LOG_USER, LAST_DATE,NEXT_DATE,BROKEN,INTERVAL,FAILURES, WHAT from db
 
 PROMPT join views  dba_jobs_running, dba_jobs, v\$process, v\$session
 set lines 200
-column spid for a15
+column spid for a18
 column sid for 99999
 column serial# for 999999
 column job for 99999999
@@ -3003,7 +3040,7 @@ column username for a15
 column schemaname for a15
 column log_user for a15
 column program for a20
-column what for a40
+column what for a60
 column logon_time  for a10
 select /*+rule*/ 'kill -9 '||p.spid spid, d_j.job,
   s.sid, s.serial#, p.program,  s.username,  s.schemaname, 
@@ -3588,8 +3625,8 @@ $SP <<EOF >$LOGF
 PROMPT
 PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history by last 15 days for sql_id: $SQL_ID_ :"
 PROMPT
-select sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
-and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by sql_id,sql_plan_hash_value order by  min(snap_id);
+--select sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
+--and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by sql_id,sql_plan_hash_value order by  min(snap_id);
 
 PROMPT
 PROMPT "Plans from DBA_HIST_SQL_PLAN (dbms_xplan.display_awr) for sql_id: $SQL_ID_ "
@@ -4920,7 +4957,7 @@ latch)   echo $latch__ ${reset} ; latch ;;
 bind) shift ; ALL=$* ;  echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
 pipe) echo $pipe__ ${reset}; pipe  ;;
 longops)  echo $longops__ ${reset}; longops $ALL ;;
-scheduler)  echo $scheduler__ ${reset}; scheduler  ;;
+scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)  echo $job__ ${reset}; job $ORD  ;;
 get_ddl) shift ; ALL=$* ; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace) shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
