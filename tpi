@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 09.11.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 30.11.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -378,7 +378,7 @@ BEGIN
   dbms_output.put_line(chr(126)||'SID/Serial                : '|| s.sid||'  '||s.serial#);
   dbms_output.put_line(chr(126)||'AUDSID                    : '|| s.audsid);
   dbms_output.put_line(chr(126)||'Foreground                : '|| 'PID: '||s.process);
-  dbms_output.put_line(chr(126)||'Shadow                    : '|| 'PID: '||p.spid||' - '||p.program);
+  dbms_output.put_line(chr(126)||'Shadow                    : '|| 'PID: '||p.spid||' - '||p.program || '  Parent SID: ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
   dbms_output.put_line(chr(126)||'Terminal                  : '|| s.terminal || '/ ' || p.terminal);
   dbms_output.put_line(chr(126)||'OS User                   : '|| s.osuser||' on '||s.machine);
   dbms_output.put_line(chr(126)||'Oracle User               : '|| s.username);
@@ -3991,6 +3991,7 @@ from v\$active_session_history h, dba_users u where h.user_id=u.user_id
 and sql_id is not null
 group by session_id,"SESSION_SERIAL#",username,sql_id,event --,session_state,program,module,action,machine
 order by sum(decode(h.session_state,'ON CPU',1,1)) desc
+--order by sum(decode(h.session_state,'WAITING',1,0)) - sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0)) desc
 ) where sid = '$P1_' and serial = '$P2_' and rownum < 31;
 EOF
 elif [ -n "$P1_" ]; then 
