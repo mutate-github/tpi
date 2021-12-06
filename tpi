@@ -61,7 +61,7 @@ init_msg()
   topseg__="topseg - top 20 segments statistics information from V\$SEGMENT_STATISTICS" 
   o__="o OBJECT_NAME | OBJECT_ID - dba_objects information" 
   s__="s SEGMENT_NAME - dba_segments information" 
-  t__="t TABLE_NAME - dba_tables information" 
+  t__="t TABLE_NAME [OWNER] - dba_tables information" 
   i__="i INDEX_NAME - dba_indexes information" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
@@ -1552,6 +1552,8 @@ logf
 
 table()
 {
+P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ; SQL_TEXT2="" ;;
@@ -1571,7 +1573,7 @@ column compress for a8
 column compress_for for a15
 column iot_type for a8
 select tablespace_name, owner, table_name, logging, num_rows, avg_row_len, last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
-from dba_tables where upper(table_name) like upper('$ORD') order by owner;
+from dba_tables where upper(table_name) like '$P2_' and owner like nvl('$P3_','%') order by owner;
 
 prompt
 prompt indexes:
@@ -1580,8 +1582,9 @@ column index_name for a33
 column compression for a15
 column UNIQUENESS for a10
 column status for a10
-select tablespace_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned
-from dba_indexes where upper(table_name) = upper('$ORD') order by owner,index_name;
+column VISIBILITY for a9
+select tablespace_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
+from dba_indexes where upper(table_name) = '$P2_' and owner like nvl('$P3_','%') order by owner,index_name;
 
 prompt
 prompt index_columns:
@@ -1589,7 +1592,7 @@ column index_owner for a20
 column index_name for a33
 column COLUMN_NAME for a30
 select index_owner,index_name,column_name,column_position,column_length,descend
-from dba_ind_columns where upper(table_name)=upper('$ORD') order by index_owner,index_name,column_position;
+from dba_ind_columns where upper(table_name) = '$P2_' and table_owner like nvl('$P3_','%') order by index_owner,index_name,column_position;
 
 prompt
 prompt constraints:
@@ -1602,7 +1605,7 @@ col DEFERRABLE for a15
 col DEFERRED for a15
 col VALIDATED for a15
 select OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE, R_OWNER,R_CONSTRAINT_NAME, STATUS,DEFERRABLE,DEFERRED,VALIDATED,LAST_CHANGE,INVALID
-from dba_constraints where  upper(table_name)=upper('$ORD') order by owner,CONSTRAINT_NAME;
+from dba_constraints where upper(table_name) = '$P2_' and owner like nvl('$P3_','%') order by owner,CONSTRAINT_NAME;
 
 prompt
 prompt columns statistic information:
@@ -1617,7 +1620,7 @@ col low_value for a15
 col high_value for a15
 col HISTOGRAM for a30
 select OWNER,COLUMN_NAME,NUM_DISTINCT,DENSITY,NUM_NULLS,NUM_BUCKETS,LAST_ANALYZED,SAMPLE_SIZE,GLOBAL_STATS,USER_STATS,AVG_COL_LEN $SQL_TEXT2
-from dba_tab_col_statistics where table_name=upper('$ORD') order by owner,table_name,COLUMN_NAME;
+from dba_tab_col_statistics where table_name = '$P2_' and owner like nvl('$P3_','%') order by owner,table_name,COLUMN_NAME;
 EOF
 logf
 }
@@ -1639,8 +1642,9 @@ column index_name for a33
 column compression for a15
 column UNIQUENESS for a10
 column status for a10
+column VISIBILITY for a9
 prompt dba_indexes for index_name = $ORD
-select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned
+select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, VISIBILITY
 from dba_indexes where upper(index_name) = upper('$ORD') order by owner,index_name;
 
 set longc 100000000
@@ -4947,7 +4951,7 @@ sesstat)  shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat
 topseg) echo $topseg__ ${reset}; topseg ;;
 o)   echo $o__ ", OBJECT_NAME = " $ORD ${reset}; object $ORD ;;
 s)   echo $s__ ", SEGMENT_NAME = " $ORD ${reset}; segments $ORD ;;
-t)   echo $t__ ", TABLE_NAME = " $ORD ${reset}; table $ORD ;;
+t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL ;;
 i)   echo $i__ ", INDEX_NAME = " $ORD ${reset}; index $ORD ;;
 l)   echo $l__ ", LOB_NAME = " $ORD ${reset}; lob $ORD ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
