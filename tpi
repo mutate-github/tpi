@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 06.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 07.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -243,7 +243,7 @@ col sql_id for a13
 col event for a27 truncated
 col sw for 999999
 col oot for a40 heading "ACCESS OBJECT" truncated
-SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
+SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */ 
        p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
        s.osuser,
        replace(s.machine,CHR(0),'') machine,
@@ -1639,12 +1639,16 @@ column owner for a20
 column index_type for a15
 column table_name for a33
 column index_name for a33
-column compression for a15
+column compression for a12
 column UNIQUENESS for a10
+column distinct_keys for 9999999999
+column num_rows for 9999999999
 column status for a10
+column partitioned for a4
+column degree for a2
 column VISIBILITY for a9
 prompt dba_indexes for index_name = $ORD
-select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, VISIBILITY
+select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, degree, VISIBILITY
 from dba_indexes where upper(index_name) = upper('$ORD') order by owner,index_name;
 
 set longc 100000000
