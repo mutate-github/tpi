@@ -4,7 +4,7 @@
 # exit
 sid=$1
 # echo $sid
-#cd
+# cd
 
 #grant select_catalog_role to tal;
 #grant select on sys.x$kglpn to tal;
