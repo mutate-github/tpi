@@ -1,10 +1,10 @@
 #!/bin/sh
-# version 07.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 16.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
 # echo $sid
-# cd
+#  cd
 
 #grant select_catalog_role to tal;
 #grant select on sys.x$kglpn to tal;
@@ -1246,6 +1246,7 @@ column current_scn for 99999999999999
 column dbid for 99999999999999
 column name for a8
 column created for a10
+column LOG_MODE for a13
 column open_mode for a10
 column database_role for a13
 column protection_level for a19
