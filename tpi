@@ -1583,7 +1583,7 @@ column iot_type for a8
 select t.tablespace_name, owner, table_name, t.logging, num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
 last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
-from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name and upper(table_name) like '$P2_' and owner like nvl('$P3_','%') order by owner;
+from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name and table_name = '$P2_' and owner like nvl('$P3_','%') order by owner;
 
 prompt
 prompt indexes:
