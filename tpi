@@ -1558,7 +1558,7 @@ P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ; SQL_TEXT2="" ;;
-  *)   SQL_TEXT1=" compression, compress_for, " ; SQL_TEXT2=" , HISTOGRAM " ;;
+  *)   SQL_TEXT1=" t.compression, t.compress_for, " ; SQL_TEXT2=" , HISTOGRAM " ;;
 esac
 
 $SP <<EOF >$LOGF
@@ -1568,13 +1568,22 @@ alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 column owner for a20
 column segment_name for a30
 column table_name for a30
+column logging for a6
+column num_rows for 999999999
+column avg_row_len for 999999
+column "SIZE_MB" for 99999999
+column "EST_MB" for 99999999
+column "DIFF_MB" for 99999999
 column segment_type for a20
 column tablespace_name for a22
-column compress for a8
+column compression for a11
 column compress_for for a15
+column partitioned for a4
 column iot_type for a8
-select tablespace_name, owner, table_name, logging, num_rows, avg_row_len, last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
-from dba_tables where upper(table_name) like '$P2_' and owner like nvl('$P3_','%') order by owner;
+select t.tablespace_name, owner, table_name, t.logging, num_rows, avg_row_len,
+ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
+last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
+from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name and upper(table_name) like '$P2_' and owner like nvl('$P3_','%') order by owner;
 
 prompt
 prompt indexes:
@@ -1582,9 +1591,11 @@ column index_type for a15
 column index_name for a33
 column compression for a15
 column UNIQUENESS for a10
+column blevel for 99
+column distinct_keys for 99999999999
 column status for a10
 column VISIBILITY for a9
-select tablespace_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
+select tablespace_name, owner, index_name, index_type, uniqueness, blevel, distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
 from dba_indexes where upper(table_name) = '$P2_' and owner like nvl('$P3_','%') order by owner,index_name;
 
 prompt
