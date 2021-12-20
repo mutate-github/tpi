@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 16.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 20.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -53,7 +53,7 @@ init_msg()
   oratop__="oratop [ h ] - Different Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days] [ tbs | temp | df [io|usage|lastseg[TBS]] | maxseg [TBS] | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
+  size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg [TBS] | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
   arch__="arch - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -61,7 +61,7 @@ init_msg()
   topseg__="topseg - top 20 segments statistics information from V\$SEGMENT_STATISTICS" 
   o__="o OBJECT_NAME | OBJECT_ID - dba_objects information" 
   s__="s SEGMENT_NAME - dba_segments information" 
-  t__="t TABLE_NAME [OWNER] - dba_tables information" 
+  t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_part_partitions, dba_tab_subpartitions information" 
   i__="i INDEX_NAME - dba_indexes information" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
@@ -92,7 +92,7 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i. | l. | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
+  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i. | l. | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
   echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
@@ -1555,12 +1555,93 @@ table()
 {
 P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
 P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
+P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ; SQL_TEXT2="" ;;
   *)   SQL_TEXT1=" t.compression, t.compress_for, " ; SQL_TEXT2=" , HISTOGRAM " ;;
 esac
 
+case "$P2_" in
+PART)
+$SP <<EOF >$LOGF
+alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
+set lines 230 numw 6 pages 60
+col OWNER for a20
+col TABLE_NAME for a30
+col PARTITIONING_TYPE for a6
+col SUBPARTITIONING_TYPE for a6
+col PARTITION_COUNT for 9999999 heading "P_CNT"
+col DEF_SUBPARTITION_COUNT for 99 heading "DEF_SUBP_CNT"
+col PARTITIONING_KEY_COUNT for 99 heading "P_KEY_CNT"
+col SUBPARTITIONING_KEY_COUNT for 99 heading "SUBP_KEY_CNT"
+col STATUS for a8
+col DEF_TABLESPACE_NAME for a20 heading "DEF_TBS"
+col DEF_PCT_FREE for 99 heading "PCT_FR"
+col DEF_PCT_USED for 99 heading "PCT_US"
+col DEF_LOGGING for a6 heading "DEF_LOG"
+col DEF_COMPRESSION for a8 heading "DEF_COMPR"
+col DEF_COMPRESS_FOR for a8 heading "DEF_COM_FOR"
+col INTERVAL for a30
+prompt dba_part_tables:
+select owner,table_name,partitioning_type,subpartitioning_type,partition_count,def_subpartition_count,partitioning_key_count,subpartitioning_key_count,
+status,def_tablespace_name,def_pct_free,def_pct_used,def_logging,def_compression,def_compress_for, interval from dba_part_tables
+where table_name='$P3_' and owner like nvl('$P4_','%') order by owner,TABLE_NAME;
+
+col table_owner for a20
+col table_name for a30
+col partition_name for a30
+col high_value for a50 heading "HIGH_VALUE" 
+col high_value_length for 99 heading "HVLEN"
+col partition_position for 999 heading "PPOS"
+col tablespace_name for a20
+col logging for a4
+col compression for a8
+col compress_for for a8
+col num_rows for 999999999 heading "ROWS"
+col blocks for 999999
+col empty_blocks for 9999 heading "EMPBL"
+col avg_space for 9999 heading "AVGSP"
+col chain_cnt for 9999 heading "CHCNT"
+col avg_row_len for 9999 heading "AVGRLEN"
+col sample_size for 999999999
+col last_analyzed for a17
+col interval for a4
+col segment_created for a4  heading "SCR"
+prompt dba_tab_partitions:
+select table_owner,table_name,partition_name,high_value,/*high_value_length,*/partition_position,tablespace_name,logging,compression,compress_for, 
+num_rows,blocks,/*empty_blocks,avg_space, chain_cnt,avg_row_len,sample_size,*/last_analyzed,interval,segment_created from DBA_TAB_PARTITIONS
+where table_name='$P3_' and table_owner like nvl('$P4_','%') order by table_owner,TABLE_NAME,partition_position;
+
+set lines 230 
+set long 10000
+col table_owner for a20
+col table_name for a30
+col subpartition_name for a30
+col high_value for a50 heading "HIGH_VALUE" 
+col high_value_length for 99 heading "HVLEN"
+col subpartition_position for 999 heading "PPOS"
+col tablespace_name for a20
+col logging for a4
+col compression for a8
+col compress_for for a8
+col num_rows for 999999999 heading "ROWS"
+col blocks for 999999
+col empty_blocks for 9999 heading "EMPBL"
+col avg_space for 9999 heading "AVGSP"
+col chain_cnt for 9999 heading "CHCNT"
+col avg_row_len for 9999 heading "AVGRLEN"
+col sample_size for 999999999
+col last_analyzed for a17
+col interval for a4
+col segment_created for a4  heading "SCR"
+prompt dba_tab_subpartitions:
+select table_owner,table_name,subpartition_name,high_value,/*high_value_length,*/subpartition_position,tablespace_name,logging,compression,compress_for, 
+num_rows,blocks,/*empty_blocks,avg_space, chain_cnt,avg_row_len,sample_size,*/last_analyzed,interval,segment_created  from DBA_TAB_SUBPARTITIONS
+where table_name='$P3_' and table_owner like nvl('$P4_','%') order by table_owner,TABLE_NAME,subpartition_position;
+EOF
+;;
+*)
 $SP <<EOF >$LOGF
 set lines 300
 set echo off feed off veri off tab off pages 45
@@ -1634,6 +1715,8 @@ col HISTOGRAM for a30
 select OWNER,COLUMN_NAME,NUM_DISTINCT,DENSITY,NUM_NULLS,NUM_BUCKETS,LAST_ANALYZED,SAMPLE_SIZE,GLOBAL_STATS,USER_STATS,AVG_COL_LEN $SQL_TEXT2
 from dba_tab_col_statistics where table_name = '$P2_' and owner like nvl('$P3_','%') order by owner,table_name,COLUMN_NAME;
 EOF
+;;
+esac
 logf
 }
 
@@ -2191,6 +2274,9 @@ logf
 
 tbs()
 {
+P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
+case "$P1_" in
+FREE)
 $SP <<EOF >$LOGF
 set lines 170
 set echo off feed off veri off tab off pages 40
@@ -2219,6 +2305,25 @@ group by tablespace_name, block_size ) f,
 where f.tablespace_name=s.tablespace_name
 group by f.tablespace_name order by used_per desc;
 EOF
+;;
+*)
+$SP <<EOF >$LOGF
+set lines 230
+column TABLESPACE_NAME for a30
+column BLOCK_SIZE for 99999
+column status for a10
+column contents for a10
+column logging for a10
+column EXTENT_MANAGEMENT for a10
+column ALLOCATION_TYPE for a10
+column SEGMENT_SPACE_MANAGEMENT for a10
+column retention for a12
+column DEF_TAB_COMPRESSION for a13
+column encrypted for a10
+select TABLESPACE_NAME,BLOCK_SIZE,status,contents,logging,EXTENT_MANAGEMENT,ALLOCATION_TYPE,SEGMENT_SPACE_MANAGEMENT,retention,DEF_TAB_COMPRESSION,encrypted from dba_tablespaces order by contents,TABLESPACE_NAME;
+EOF
+;;
+esac
 logf
 }
 
@@ -2548,7 +2653,7 @@ P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 #echo "P2_"$P2_
 #echo "P3_"$P3_
 case "$P2_" in
-  TBS)      tbs ;;
+  TBS)      shift; shift; ALL=$* ; tbs $ALL ;;
   TEMP)     temp ;;
   DF)       shift; shift; ALL=$* ; df $ALL ;;
   MAXSEG)   maxseg $P3_ ;;
@@ -4957,7 +5062,7 @@ sga)  echo $sga__ ${reset}; sga ;;
 pga)  echo $pga__ ${reset}; pga ;;
 size) echo $size__ ${reset}; size $ALL ;;
 arch) echo $arch__ ${reset}; arch $ALL ;;
-tbs)  echo $size__ ${reset}; tbs ;;
+tbs)  shift; ALL=$*; echo $size__ ${reset}; tbs $ALL ;;
 df) shift; ALL=$*; echo $size__ ${reset}; df $ALL ;;
 maxseg) echo $size__ ", (TABLESPACE NAME = '"$ORD"'):" ${reset}; maxseg $ORD ;;
 fra) echo $size__ ${reset}; fra ;;
