@@ -74,7 +74,7 @@ init_msg()
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
-  scheduler__="scheduler [log JOB_NAME [hours]] - dba_scheduler_jobs information, log JOB_NAME [hours] - dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
+  scheduler__="scheduler [log|run JOB_NAME [hours]] - dba_scheduler_jobs information, log|run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
@@ -3088,6 +3088,25 @@ P2_=`echo $ALL | awk '{print $2}'`
 P3_=`echo $ALL | awk '{print $3}'`
 case "$P1_" in
 log)
+$SP <<EOF >$LOGF
+prompt dba_scheduler_job_log for job_name like '$P2_' and LOG_DATE > nvl('$P3_',24) hours
+set echo off feed off veri off tab off pages 70
+alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
+set lines 230 pages 60 long 10000
+col LOG_ID for 999999999
+col LOG_DATE for a17
+col OWNER for a20
+col JOB_NAME for a30
+col JOB_CLASS for a30
+col OPERATION for a10
+col STATUS for a10
+col USER_NAME for a20
+col ADDITIONAL_INFO for a50
+select LOG_ID,cast(LOG_DATE as date) LOG_DATE,OWNER,JOB_NAME,JOB_CLASS,OPERATION,STATUS,USER_NAME,ADDITIONAL_INFO from DBA_SCHEDULER_JOB_LOG 
+where job_name='$P2_' and LOG_DATE > sysdate - (1*(nvl('$P3_',24)/24)) order by LOG_DATE;
+EOF
+;;
+run)
 $SP <<EOF >$LOGF
 prompt dba_scheduler_job_run_details for job_name like '$P2_' and ACTUAL_START_DATE > nvl('$P3_',24) hours
 set echo off feed off veri off tab off pages 70
