@@ -84,7 +84,7 @@ init_msg()
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
   dhash__="dhash [hours - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID | growseg [SEGMENT] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
-  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sql_tuning SQL_ID | sql_tuning_report TASK_NAME | sql_tuning_accept TASK_NAME | sql_tuning_list [TASK_NAME] [cnt] | sql_tuning_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME ]"
+  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sql_tuning SQL_ID | sql_tuning_report TASK_NAME | sql_tuning_accept TASK_NAME | sql_tuning_list [TASK_NAME] [cnt] | sql_tuning_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME ]"
 }
 
 init_msg
@@ -162,6 +162,7 @@ end;
 /
 */
 alter session set statistics_level=basic;
+alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
@@ -672,7 +673,6 @@ prompt DCTR   - DB CPU time ratio  % Cpu/DB_Time                ASWA   - Active 
 prompt DWTR   - DB WAIT time ratio (red if>50 and high ASWA)    ASPQ   - Active Parallel Sessions                       PHYR   - Physical reads per sec
 prompt SPFR   - Shared pool free %                              UTPS   - User transactions per sec                      PHYW   - Physical writes per sec
 prompt TPGA   - Total pga allocated                             UCPS   - User calls per sec                             TEMP   - Temp space used (Mb)                   DBTM - Database Time Per Sec
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 col NCPU for 9999
 col HCPUB for 99999
 col CPUUPS for 99999
@@ -1237,7 +1237,6 @@ column ARCHIVER for a10
 column LOGINS for a10
 column DATABASE_STATUS for a15
 column instance_role for a20
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 select INSTANCE_NAME, HOST_NAME, VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from v\$instance;
 
 prompt
@@ -1539,7 +1538,6 @@ fi
 $SP <<EOF >$LOGF
 set lines 170
 set echo off feed off veri off tab off pages 40
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 prompt
 prompt dba_objects:
 column object_name for a30
@@ -1565,7 +1563,6 @@ esac
 case "$P2_" in
 PART)
 $SP <<EOF >$LOGF
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 set lines 230 numw 6 pages 60
 col OWNER for a20
 col TABLE_NAME for a30
@@ -1590,11 +1587,11 @@ where table_name='$P3_' and owner like nvl('$P4_','%') order by owner,TABLE_NAME
 
 col table_owner for a20
 col table_name for a30
-col partition_name for a30
+col partition_name for a25
 col high_value for a50 heading "HIGH_VALUE" 
 col high_value_length for 99 heading "HVLEN"
 col partition_position for 999 heading "PPOS"
-col tablespace_name for a20
+col tablespace_name for a15
 col logging for a4
 col compression for a8
 col compress_for for a8
@@ -1605,7 +1602,7 @@ col avg_space for 9999 heading "AVGSP"
 col chain_cnt for 9999 heading "CHCNT"
 col avg_row_len for 9999 heading "AVGRLEN"
 col sample_size for 999999999
-col last_analyzed for a17
+col last_analyzed for a19
 col interval for a4
 col segment_created for a4  heading "SCR"
 prompt dba_tab_partitions:
@@ -1645,7 +1642,6 @@ EOF
 $SP <<EOF >$LOGF
 set lines 300
 set echo off feed off veri off tab off pages 45
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 column owner for a20
 column segment_name for a30
 column table_name for a30
@@ -1726,7 +1722,6 @@ index()
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 
 prompt
 column tablespace_name for a15
@@ -1792,7 +1787,6 @@ $SP <<EOF >$LOGF
 set lines 230 pages 60
 set echo off feed off veri off tab off
 set longc 100000000
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 prompt
 prompt dba_constraints dba_cons_columns for table: $P3_
 $SET_COLUMNS
@@ -1882,7 +1876,6 @@ $SP <<EOF >$LOGF
 set lines 230 pages 60
 set echo off feed off veri off tab off
 set longc 100000000
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 prompt
 prompt dba_constraints dba_cons_columns for constraint: $P2_
 $SET_COLUMNS
@@ -1974,7 +1967,6 @@ recovery)
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 prompt
 prompt Recovering transactions v\$fast_start_transactions:
 col estimated for a18 heading "Estimated time"
@@ -1996,7 +1988,6 @@ EOF
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 60
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 prompt
 prompt Sessions with active transactions v\$session, v\$transaction, dba_undo_extents (F: 0-triansaction, 8-rollback), estimate USED_UBLK: (used_later / (used_now - used_later)) :
 col sid for 99999
@@ -2100,7 +2091,6 @@ fi
 $SP <<EOF >$LOGF
 set lines 180
 set echo off feed off veri off tab off pages 40
-alter session set nls_date_format='dd/mm/yyyy';
 --size by hour
 set numw 15 pages 50
 column sum_mb format 999,999,999,999
@@ -2575,14 +2565,14 @@ fra()
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
-alter session set nls_date_format='dd/mm/yyyy';
 column NAME for a32
 column DISPLAY_VALUE for a50
 column DEFAULT_VALUE for a13
 column ismodified for a10
 column description for a57
-select name,display_value,default_value,ismodified,description from SYS.V_\$PARAMETER
+select name,display_value,/*default_value,*/ismodified,description from SYS.V_\$PARAMETER
 where name like 'db_recovery_file_dest%'  or name = 'db_flashback_retention_target';
+
 ttitle left "View: V\$FLASH_RECOVERY_AREA_USAGE"
 select * from V\$FLASH_RECOVERY_AREA_USAGE;
 column name for a60
@@ -2674,7 +2664,6 @@ esac
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 50
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set numwidth 15
 column username for a30
 column table_name for a20
@@ -2988,7 +2977,6 @@ COLUMN SPID FORMAT 999999
 PROMPT
 PROMPT RMAN sessions:
 SELECT s.SID, p.SPID, s.CLIENT_INFO FROM V\$PROCESS p, V\$SESSION s WHERE p.ADDR = s.PADDR AND CLIENT_INFO LIKE 'rman%';
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 col dbsize_gbytes for 99,999,990.00 justify right head "DBSIZE_GB"
 col input_gbytes for 99,999,990.00 justify right head "READ_GB"
 col output_gbytes for 99,999,990.00 justify right head "WRITTEN_GB"
@@ -3003,7 +2991,6 @@ col est_complete for a9
 col sysdate for a9
 PROMPT
 PROMPT v\$rman_status Estimate time of current backup if block_change_tracking is disabled:
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 col status for a10
 col object_type for a15
 select recid, status, object_type, start_time, end_time, output_device_type, dbsize_gbytes
@@ -3038,7 +3025,6 @@ esac
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set serveroutput on size 1000000
 declare
 procedure print_table( p_query in varchar2 )
@@ -3091,10 +3077,9 @@ log)
 $SP <<EOF >$LOGF
 prompt dba_scheduler_job_log for job_name like '$P2_' and LOG_DATE > nvl('$P3_',24) hours
 set echo off feed off veri off tab off pages 70
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 set lines 230 pages 60 long 10000
 col LOG_ID for 999999999
-col LOG_DATE for a17
+col LOG_DATE for a19
 col OWNER for a20
 col JOB_NAME for a30
 col JOB_CLASS for a30
@@ -3117,9 +3102,8 @@ col STATUS for a10
 col SESSION_ID for a14
 col SLAVE_PID for a10
 col ERROR# for 9999999
-col ACTUAL_START_DATE for a20
+col ACTUAL_START_DATE for a19
 col RUN_DURATION for a20
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 select owner, job_name, STATUS, SESSION_ID, SLAVE_PID, ERROR#, cast(ACTUAL_START_DATE as date) ACTUAL_START_DATE, RUN_DURATION  from dba_scheduler_job_run_details 
 where job_name like '$P2_' and ACTUAL_START_DATE > sysdate - (1*(nvl('$P3_',24)/24)) 
 --and run_duration > interval '10' second
@@ -3130,7 +3114,7 @@ EOF
 $SP <<'EOF' >$LOGF
 set echo off feed off veri off tab off pages 60
 set lines 230
-col owner for a12
+col owner for a15
 col job_name for a30
 --col PROGRAM_OWNER for a10
 --col PROGRAM_NAME for a30
@@ -3138,10 +3122,10 @@ col PROGRAM for a18
 col JOB_ACTION for a100
 col ENABLED for a7
 col REPEAT_INTERVAL for a22
-col LAST_START_DATE for a8
+col LAST_START_DATE for a10
 col LAST_RUN_DURATION for a14
 select owner, job_name, (PROGRAM_OWNER || CASE when PROGRAM_OWNER is null then '' else '.' END || PROGRAM_NAME) PROGRAM, JOB_ACTION, ENABLED, REPEAT_INTERVAL,
-to_char(LAST_START_DATE,'dd/mm/yy hh24:mi') LAST_START_DATE, LAST_RUN_DURATION
+cast(LAST_START_DATE as date) LAST_START_DATE, LAST_RUN_DURATION
 from dba_scheduler_jobs order by owner, job_name;
 
 prompt "View: dba_scheduler_running_jobs"
@@ -3165,7 +3149,6 @@ job()
 $SP <<EOF >$LOGF
 set lines 250
 set echo off feed off veri off tab off pages 40
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 column job  for 999999999
 column log_user  for a12
 column last_date  for a10
@@ -3416,7 +3399,6 @@ if [ -z "$*" ]; then
 $SP <<EOF >$LOGF
 set lines 200 
 set feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD/MM/YYYY HH24:MI:SS';
 PROMPT
 PROMPT Snap_intervel and Retention period from view: DBA_HIST_WR_CONTROL
@@ -3710,7 +3692,7 @@ if [ -z "$SQL_ID_" ]; then
 $SP <<EOF >$LOGF
 PROMPT
 PROMPT "Top 10 SQL from DBA_HIST_ACTIVE_SESS_HISTORY by last $HH_ hours"
-set lines 200 pages 50
+set lines 200 pages 70
 set long 1000000000 longc 1000000000
 col type for a7
 col "CPU" for 999999.9
@@ -3755,8 +3737,7 @@ PROMPT "SQL from DBA_HIST_SQLTEXT by $PROMPT_"
 PROMPT
 set lines 220 pages 50
 set long 1000000000 longc 1000000000
-alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
-column sample_time for a9 heading "sample_time"
+column sample_time for a10 heading "sample_time"
 column sql_text for a100
 column sql_id for a15
 column plan_hash_value for 9999999999
@@ -3777,7 +3758,6 @@ PROMPT
 PROMPT "Plans from DBA_HIST_SQL_PLAN (dbms_xplan.display_awr) for sql_id: $SQL_ID_ "
 PROMPT
 set lines 220 pages 50 feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 BREAK ON timestamp ON sql_id ON plan_hash_value SKIP 1 NODUPLICATES
 column timestamp for a20 wrap
 
@@ -3807,7 +3787,6 @@ PROMPT
 PROMPT "SQLStats from DBA_HIST_SQL_PLAN  for sql_id: $SQL_ID_ by last: $HH_ hours"
 PROMPT
 set lines 220 pages 50 feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 
 column snap_id for 999999
 column end_interval_time for a9 heading "END_TIME"
@@ -3931,7 +3910,6 @@ if [ -z "$*" ]; then
 $SP <<EOF >$LOGF
 set echo off
 set feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set lines 180 
 PROMPT
 PROMPT "Avilable period at V\$ACTIVE_SESSION_HISTORY:"
@@ -4237,7 +4215,6 @@ PROMPT
 PROMPT "Current Plan from V\$SQL_PLAN and V\$ACTIVE_SESSION_HISTORY (dbms_xplan.display_cursor) for sql_id: $P1_"
 PROMPT
 set lines 180 pages 0 feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 column plan_hash_value for 9999999999
 column OBJECT_NAME for a30
 BREAK ON plan_hash_value SKIP 1 NODUPLICATES
@@ -4253,7 +4230,6 @@ PROMPT
 PROMPT "SQLStats from V\$SQLSTATS  for sql_id: $P1_"
 PROMPT
 set lines 220 pages 50 feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 
 col sql_id for a15
 col plan_hash_value for 9999999999 heading "PLAN_HASH_VALUE"
@@ -4305,7 +4281,6 @@ esac
 $SP <<EOF >$LOGF
 set lines 230
 set feedback off
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set echo off feed on veri off tab off pages 400
 PROMPT
 PROMPT Current records in dba_sql_plan_baselines by last days: $DAYS
@@ -4396,15 +4371,15 @@ EOF
 blexec)
 param=$2
 $SP <<EOF >$LOGF
-set lines 200
+set lines 230
 set echo off feed off veri off tab off pages 400
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 column SQL_HANDLE for a20
 column PLAN_NAME for a30
 column PARSING_SCHEMA_NAME for a20
 column optimizer_cost for 999999 heading COST
 column origin for a20
-column created for a11
+column created for a10
+column last_exec for a10
 column last_executed for a11 heading "LAST_EXEC"
 column executions for 999999999
 ttitle left "Join views v\$sql, dba_sql_plan_baselines where baselines.executions >= nvl('$param',1) :"
@@ -4521,12 +4496,14 @@ EOF
 ;;
 sqlset_list)
 sqlset_name="$2"
+sqlset_owner="$3"
+echo "sqlset_name="$sqlset_name
+echo "sqlset_owner="$sqlset_owner
 $SP <<EOF >$LOGF
 set echo off feed off veri off tab off pages 200
-set lines 200 
+set lines 230 
 set long 1000
 SET SERVEROUTPUT ON
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set feed off
 
 column name for a30
@@ -4535,21 +4512,21 @@ ttitle left "View dba_sqlset:"
 SELECT NAME,OWNER,CREATED,STATEMENT_COUNT FROM DBA_SQLSET order by CREATED;
 ttitle off
 
-COLUMN SQL_TEXT FORMAT a60
+COLUMN SQL_ID FORMAT a13
+COLUMN SQL_TEXT FORMAT a80
 COLUMN SCHEMA FORMAT a20
 COLUMN ELAPSED FORMAT 99999999999
- column plan_hash_value for 9999999999
- column optimizer_cost for 99999 heading COST
- column module for a12
- column executions for 999999999
- column buffer_gets for 99999999999
- column disk_reads for 999999999
- column rows_processed for 9999999999
- column fetches for 99999999
-
+column plan_hash_value for 9999999999
+column optimizer_cost for 9999999 heading COST
+column module for a12
+column executions for 999999999
+column buffer_gets for 99999999999
+column disk_reads for 999999999
+column rows_processed for 9999999999
+column fetches for 99999999
 ttitle left "Select details from TABLE( DBMS_SQLTUNE.SELECT_SQLSET( '$sqlset_name' ):"
 SELECT SQL_ID,PLAN_HASH_VALUE, PARSING_SCHEMA_NAME AS "SCHEMA", SQL_TEXT, ELAPSED_TIME AS "ELAPSED", BUFFER_GETS,disk_reads,rows_processed,fetches,executions,optimizer_cost
-FROM TABLE( DBMS_SQLTUNE.SELECT_SQLSET( '$sqlset_name' ) );
+FROM TABLE( DBMS_SQLTUNE.SELECT_SQLSET( sqlset_name => '$sqlset_name',  sqlset_owner => '$sqlset_owner' ) );
 EOF
 ;;
 sqlset_drop)
@@ -4600,7 +4577,6 @@ sql_id="$2"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 400
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 ttitle left "Usage baselines in view gv\$sql sql_id = $sql_id:"
 column SQL_PROFILE for a30
 column SQL_PATCH for a20
@@ -4723,7 +4699,6 @@ fi
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 400
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 set feed on
 column task_id for 999999
 column task_name for a30
@@ -4764,7 +4739,6 @@ column task_id for 999999
 column task_exec_name for a16
 column sql_text  for a70 word_wrapped
 ttitle left "Join Views DBA_SQL_PROFILES, DBA_HIST_SQLSTAT:"
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 select distinct p.name sql_profile_name, p.category, s.sql_id,s.plan_hash_value,cast(p.created as date) created,p.type,p.status,p.force_matching,p.task_id,p.task_exec_name
 from dba_sql_profiles p,DBA_HIST_SQLSTAT s
 where p.name=s.sql_profile(+)
