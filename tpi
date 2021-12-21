@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 20.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 21.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
