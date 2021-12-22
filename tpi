@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 21.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 22.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -4325,9 +4325,9 @@ declare
 BEGIN
  cnt:=0;
  dbms_output.put_line('SQL_ID       '||' '|| 'PLAN_HASH_VA'||' '||'SQL_HANDLE          '||' '||'PLAN_NAME                     '||' '||'CREATED            '||' '||'LAST_MODIFIED      '
-                    ||' '||'LAST_EXECUTED      '||' '||'ENA'||' '||'ACC'||' '||'FIX'||' '||' COST'||' '||'     EXEC'||' '||'CPU_T/EX'||' '||'ELA_T/EX'||' '||'BUFGETS/EX'||' '||'DISKR/EX'||' '||'ROWS/EX');
+                    ||' '||'LAST_EXECUTED      '||' '||'ENA'||' '||'ACC'||' '||'FIX'||' '||'   COST'||' '||'     EXEC'||' '||'CPU_T/EX'||' '||'ELA_T/EX'||' '||'BUFGETS/EX'||' '||'DISKR/EX'||' '||'ROWS/EX');
  dbms_output.put_line('-------------'||' '|| '------------'||' '||'--------------------'||' '||'------------------------------'||' '||'-------------------'||' '||'-------------------'
-                    ||' '||'-------------------'||' '||'---'||' '||'---'||' '||'---'||' '||'-----'||' '||'---------'||' '||'--------'||' '||'--------'||' '||'----------'||' '||'--------'||' '||'-------');
+                    ||' '||'-------------------'||' '||'---'||' '||'---'||' '||'---'||' '||'-------'||' '||'---------'||' '||'--------'||' '||'--------'||' '||'----------'||' '||'--------'||' '||'-------');
  for a in (select sql_handle, plan_name, trim(substr(g.PLAN_TABLE_OUTPUT,instr(g.PLAN_TABLE_OUTPUT,':')+1)) plan_hash_value, sql_text, 
             created,last_modified,last_executed,enabled,accepted,fixed,optimizer_cost,module,executions,
              decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/decode(executions, 0, 1, executions)/1000000, 4)) cpu_time,
@@ -4347,7 +4347,7 @@ BEGIN
     END LOOP;
     dbms_output.put_line(lpad(v_sqlid, 13, '0')||' '||rpad(a.plan_hash_value,12)||' '||rpad(a.sql_handle,20)||' '||rpad(a.plan_name,30)||' '||rpad(cast(a.created as date),19)||' '||
      rpad(cast(a.last_modified as date),19)||' '||rpad(nvl(rpad(cast(a.last_executed as date),19),' '),19)||' '||rpad(a.enabled,3)||' '||rpad(a.accepted,3)||' '||rpad(a.fixed,3)||' '||
-     lpad(a.optimizer_cost,5)||' '||lpad(a.executions,9)||' '||lpad(a.cpu_time,8)||' '||lpad(a.elapsed_time,8)||' '||lpad(a.buffer_gets,10)||' '||lpad(a.disk_reads,8)||' '||lpad(a.rows_processed,7)
+     lpad(a.optimizer_cost,7)||' '||lpad(a.executions,9)||' '||lpad(a.cpu_time,8)||' '||lpad(a.elapsed_time,8)||' '||lpad(a.buffer_gets,10)||' '||lpad(a.disk_reads,8)||' '||lpad(a.rows_processed,7)
      );
    cnt:=cnt+1;
  end loop;
