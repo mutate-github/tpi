@@ -3751,13 +3751,14 @@ $SP <<EOF >$LOGF
 PROMPT
 PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history by last 15 days for sql_id: $SQL_ID_ :"
 PROMPT
-select sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
-and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by sql_id,sql_plan_hash_value order by  min(snap_id);
+set lines 230 pages 50 feedback off
+col SQL_EXEC_START for a15
+select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
+and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by to_char(SQL_EXEC_START,'dd/mm/yyyy'),sql_id,sql_plan_hash_value order by  min(snap_id);
 
 PROMPT
 PROMPT "Plans from DBA_HIST_SQL_PLAN (dbms_xplan.display_awr) for sql_id: $SQL_ID_ "
 PROMPT
-set lines 220 pages 50 feedback off
 BREAK ON timestamp ON sql_id ON plan_hash_value SKIP 1 NODUPLICATES
 column timestamp for a20 wrap
 
