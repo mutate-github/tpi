@@ -61,8 +61,8 @@ init_msg()
   topseg__="topseg - top 20 segments statistics information from V\$SEGMENT_STATISTICS" 
   o__="o OBJECT_NAME | OBJECT_ID - dba_objects information" 
   s__="s SEGMENT_NAME - dba_segments information" 
-  t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_part_partitions, dba_tab_subpartitions information" 
-  i__="i INDEX_NAME - dba_indexes information" 
+  t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
+  i__="i [part] INDEX_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u USERNAME - dba_users information"
@@ -1719,9 +1719,63 @@ logf
 
 index()
 {
+P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
+P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
+
+case "$P2_" in
+PART)
+$SP <<EOF >$LOGF
+set lines 230 numw 6
+set echo off feed off veri off tab off pages 70
+col OWNER for a20
+col INDEX_NAME for a30
+col TABLE_NAME for a30
+col PARTITIONING_TYPE for a6
+col SUBPARTITIONING_TYPE for a6
+col PARTITION_COUNT for 9999999 heading "P_CNT"
+col PARTITIONING_KEY_COUNT for 99 heading "P_KEY_CNT"
+col SUBPARTITIONING_KEY_COUNT for 99 heading "SUBP_KEY_CNT"
+col DEF_TABLESPACE_NAME for a20 heading "DEF_TBS"
+col DEF_PCT_FREE for 99 heading "PCT_FR"
+prompt DBA_PART_INDEXES
+select owner,index_name,table_name,partitioning_type,subpartitioning_type,partition_count,partitioning_key_count,subpartitioning_key_count, def_tablespace_name,def_pct_free 
+from dba_part_indexes where (table_name='$P3_' or  index_name='$P3_') and owner like nvl('$P4_','%') order by owner,table_name,index_name;
+
+col index_owner for a20
+col index_name for a30
+col partition_name for a30
+col high_value for a25 heading "HIGH_VALUE" 
+--col high_value_length for 99 heading "HVLEN"
+col partition_position for 9999 heading "PPOS"
+col status for a8
+col tablespace_name for a20
+col pct_free for 999 heading "PFRE"
+col compression for a8
+col blevel for 999 heading "BLEV"
+col leaf_blocks for 9999999 heading "LEAF_B"
+col distinct_keys for 999999 heading "DIS_KEYS"
+col num_rows for 999999999 heading "ROWS"
+col last_analyzed for a19
+col global_stats  for a3 heading "GLST"
+col interval for a4
+col segment_created for a4  heading "SCR"
+prompt DBA_IND_PARTITIONS
+select index_owner,index_name,partition_name,high_value,/*high_value_length,*/ partition_position, status,tablespace_name, pct_free,compression,
+blevel, leaf_blocks,distinct_keys,num_rows,last_analyzed,global_stats,interval,segment_created 
+from DBA_IND_PARTITIONS where index_name='$P3_' and index_owner like nvl('$P4_','%') order by index_owner,index_name,partition_position;
+
+col subpartition_position for 999 heading "PPOS"
+prompt DBA_IND_SUBPARTITIONS
+select index_owner,index_name,partition_name,high_value,/*high_value_length,*/subpartition_position, status,tablespace_name, pct_free,compression,
+blevel, leaf_blocks,distinct_keys,num_rows,last_analyzed,global_stats,interval,segment_created 
+from DBA_IND_SUBPARTITIONS where index_name='$P3_' and index_owner like nvl('$P4_','%') order by index_owner,index_name,subpartition_position;
+EOF
+;;
+*)
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 50
+set echo off feed off veri off tab off pages 70
 
 prompt
 column tablespace_name for a15
@@ -1751,6 +1805,8 @@ column column_position for 99
 prompt dba_ind_expressions for index_name = $ORD
 select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where upper(index_name) = upper('$ORD') order by table_owner,table_name,index_name,column_position;
 EOF
+;;
+esac
 logf
 }
 
@@ -3750,7 +3806,6 @@ SQL_ID_=`echo $* | awk '{print $2}'`
 $SP <<EOF >$LOGF
 PROMPT
 PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history by last 15 days for sql_id: $SQL_ID_ :"
-PROMPT
 set lines 230 pages 50 feedback off
 col SQL_EXEC_START for a15
 select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
@@ -3758,10 +3813,8 @@ and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by to_char(SQL_EXEC_ST
 
 PROMPT
 PROMPT "Plans from DBA_HIST_SQL_PLAN (dbms_xplan.display_awr) for sql_id: $SQL_ID_ "
-PROMPT
 BREAK ON timestamp ON sql_id ON plan_hash_value SKIP 1 NODUPLICATES
 column timestamp for a20 wrap
-
 column id for 99
 column OBJECT_OWNER for a15
 column operation for a20
@@ -5067,7 +5120,7 @@ topseg) echo $topseg__ ${reset}; topseg ;;
 o)   echo $o__ ", OBJECT_NAME = " $ORD ${reset}; object $ORD ;;
 s)   echo $s__ ", SEGMENT_NAME = " $ORD ${reset}; segments $ORD ;;
 t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL ;;
-i)   echo $i__ ", INDEX_NAME = " $ORD ${reset}; index $ORD ;;
+i)   shift ; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
 l)   echo $l__ ", LOB_NAME = " $ORD ${reset}; lob $ORD ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)   echo $u__ ", USERNAME = " $ORD ${reset}; user $ORD ;;
