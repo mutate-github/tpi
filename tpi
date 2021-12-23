@@ -2714,8 +2714,8 @@ esac
 user()
 {
 case "$(db_version)" in
-8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,created, profile FROM dba_users where upper(username) like upper('$ORD');" ;;
-*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$ORD');" ;;
+8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$ORD');" ;;
+*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$ORD');" ;;
 esac
 
 $SP <<EOF >$LOGF
@@ -2727,6 +2727,7 @@ column table_name for a20
 column privilege for a15
 column account_status for a20
 column default_tablespace for a20
+column TEMPORARY_TABLESPACE for a20
 column profile for a20
 column last_login for a19
 $CMD1_
@@ -3042,10 +3043,10 @@ col complete for 990.00 justify right head "COMPLETE %"
 col compression for 990.00 justify right head "COMPRESS|% ORIG"
 col est_complete for a20 head "ESTIMATED COMPLETION"
 col recid for 9999999 head "ID"
-col start_time for a9
-col end_time for a9
-col est_complete for a9
-col sysdate for a9
+col start_time for a10
+col end_time for a10
+col est_complete for a10
+col sysdate for a10
 PROMPT
 PROMPT v\$rman_status Estimate time of current backup if block_change_tracking is disabled:
 col status for a10
@@ -3053,7 +3054,7 @@ col object_type for a15
 select recid, status, object_type, start_time, end_time, output_device_type, dbsize_gbytes
 , input_bytes/1024/1024/1024 input_gbytes, output_bytes/1024/1024/1024 output_gbytes
 , (output_bytes/input_bytes*100) compression , ((mbytes_processed)/dbsize_gbytes/1024*100) complete
-, to_char(start_time + (sysdate-start_time)/(mbytes_processed/dbsize_gbytes/1024),'DD/MM/YY HH24:MI:SS') est_complete , sysdate
+, to_char(start_time + (sysdate-start_time)/(mbytes_processed/dbsize_gbytes/1024),'DD/MM/YYYY HH24:MI:SS') est_complete , sysdate
 from v\$rman_status rs, (select sum(bytes)/1024/1024/1024 dbsize_gbytes from v\$datafile)
 where status like 'RUNNING%' and
 output_device_type is not null
@@ -3062,7 +3063,7 @@ order by  start_time;
 
 PROMPT v\$rman_backup_job_details v\$rman_status Estimate time of current backup if block_change_tracking is enabled:
 select df_total, df_backuped, round((df_backuped*100)/nvl(df_total,1),2) percent_complete, start_time
-, to_char(start_time + (sysdate-start_time)/decode( (df_backuped/df_total), '0', '1', df_backuped/df_total) , 'DD/MM/YY HH24:MI:SS') est_complete
+, to_char(start_time + (sysdate-start_time)/decode( (df_backuped/df_total), '0', '1', df_backuped/df_total) , 'DD/MM/YYYY HH24:MI:SS') est_complete
 from (SELECT count(vbd.file#) df_backuped
 FROM v\$rman_backup_job_details vrbjd, v\$backup_datafile vbd
 WHERE vbd.file#>0 and vbd.completion_time BETWEEN vrbjd.start_time AND vrbjd.end_time
