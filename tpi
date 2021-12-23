@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 22.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 23.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -2054,14 +2054,15 @@ col segment_name for a23
 col used_ublk for 9999999
 col undo for 99,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
-col pma for a84 heading "PROGRAM \ MODULE \ ACTION"
-col last_call_et for a26
+col pma for a75 heading "PROGRAM \ MODULE \ ACTION"
+col status for a10
+col last_call_et for a23
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
-round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2) undo, s.program||' \ '||s.module||' \ '||s.action pma,
+round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2) undo, s.program||' \ '||s.module||' \ '||s.action pma, u.status,
 to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || ltrim(to_char(s.last_call_et/60, '9999990.0')) || ' min' last_call_et
 FROM v\$session s, v\$transaction t, dba_undo_extents u, sys.v_\$parameter x
-WHERE s.taddr = t.addr and u.segment_name like '_SYSSMU'||t.xidusn||'_%$' and u.status = 'ACTIVE' and x.name  = 'db_block_size'
-GROUP BY s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.xid, to_char(t.flag,'0000000X'), t.used_ublk, round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2), s.program||' \ '||s.module||' \ '||s.action, s.last_call_et
+WHERE s.taddr = t.addr and u.segment_name like '_SYSSMU'||t.xidusn||'_%$' /*and u.status = 'ACTIVE'*/ and x.name  = 'db_block_size'
+GROUP BY s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.xid, to_char(t.flag,'0000000X'), t.used_ublk, round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2), s.program||' \ '||s.module||' \ '||s.action, u.status, s.last_call_et
 ORDER BY t.used_ublk desc, s.sid, s.serial#, s.username;
 EOF
 ;;
@@ -4279,12 +4280,22 @@ EOF
 ;;
 sqlstat)
 $SP <<EOF >$LOGF
-set lines 220 pages 50
+set lines 230 pages 70 feedback off
+PROMPT
+PROMPT "After change plan do not forget purge the old statistics:"
+col cmd for a70 heading "COMMAND TO PURGE SQL STATEMENT"
+col sql_id for a15
+col address for a20
+col hash_value for 9999999999 
+col executions for 999,999,999
+col loads for 999999999
+col version_count for 999999
+col PARSE_CALLS for 999,999,999
+col invalidations for 999,999
+select 'exec dbms_shared_pool.purge ('''||address||','||hash_value||''',''C'');' cmd, sql_id,address, hash_value, executions, loads, version_count, invalidations, parse_calls from v\$sqlarea where sql_id  = '$P1_';
+
 PROMPT
 PROMPT "SQLStats from V\$SQLSTATS  for sql_id: $P1_"
-PROMPT
-set lines 220 pages 50 feedback off
-
 col sql_id for a15
 col plan_hash_value for 9999999999 heading "PLAN_HASH_VALUE"
 col PARSE_CALLS for 999,999,999
