@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 23.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 24.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -3258,25 +3258,50 @@ echo "TYPE: "$type_"  OBJECT: "$object_"  OWNER: "$owner_
 
 case "$type_" in
  PACKAGE_SPEC)            o_type_='PACKAGE' ;;
- PACKAGE_BODY)            o_type_='PACKAGE BODY' ;;       
- JAVA_SOURCE)             o_type_='JAVA SOURCE' ;; 
+ PACKAGE_BODY)            o_type_='PACKAGE BODY' ;;
+ JAVA_SOURCE)             o_type_='JAVA SOURCE' ;;
  DB_LINK)                 o_type_='DATABASE LINK' ;;
- TYPE_BODY)               o_type_='TYPE BODY' ;;  
+ TYPE_BODY)               o_type_='TYPE BODY' ;;
  MATERIALIZED_VIEW)       o_type_='MATERIALIZED VIEW' ;;
  MATERIALIZED_VIEW_LOG)   o_type_='MATERIALIZED VIEW LOG' ;;
  RMGR_CONSUMER_GROUP)     o_type_='CONSUMER GROUP' ;;
  RMGR_PLAN)               o_type_='RESOURCE PLAN' ;;
- *)                       o_type_=$type_ ;;         
+ *)                       o_type_=$type_ ;;
 esac
 
+case "$type_" in
+USER)
+$SP <<EOF >>$LOGF
+SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 180 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+BEGIN
+   DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
+   DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'PRETTY', true);
+END;
+/
+-- SELECT dbms_metadata.get_ddl('USER','$object_') FROM dual;
+prompt "SYSTEM_GRANTS:"
+SELECT DBMS_METADATA.GET_GRANTED_DDL('SYSTEM_GRANT','$object_') from dual;
+prompt "ROLE_GRANTS:"
+SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT','$object_') from dual;
+prompt "OBJECT_GRANTS:"
+SELECT DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT','$object_') from dual;
+EOF
+;;
+JOB)
+$SP <<EOF >>$LOGF
+SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+SELECT dbms_metadata.get_ddl('PROCOBJ','$object_', '$owner_') from dual;
+EOF
+;;
+*)
 $SP <<EOF >$LOGF
-set echo off feed off veri off tab off 
+set echo off feed off veri off tab off
 alter session set NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss';
 prompt "NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss'"
 set linesize 230 pages 0
 set long 10000000 longc 10000000
 SET SERVEROUTPUT ON SIZE UNLIMITED;
-declare 
+declare
  c clob;
  PROCEDURE DISPLAY_CLOB (P_CLOB IN CLOB) IS
   l_amt NUMBER DEFAULT 32000;
@@ -3302,23 +3327,9 @@ end;
 --exec DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
 --select dbms_metadata.get_ddl('$type_','$object_','$owner_') from dual;
 EOF
-if [ "$type_" = "USER" ] ; then
-$SP <<EOF >>$LOGF
-SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 180 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
-BEGIN
-   DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
-   DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'PRETTY', true);
-END;
-/
--- SELECT dbms_metadata.get_ddl('USER','$object_') FROM dual;
-prompt "SYSTEM_GRANTS:"
-SELECT DBMS_METADATA.GET_GRANTED_DDL('SYSTEM_GRANT','$object_') from dual;
-prompt "ROLE_GRANTS:"
-SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT','$object_') from dual;
-prompt "OBJECT_GRANTS:"
-SELECT DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT','$object_') from dual;
-EOF
-fi
+;;
+esac
+logf
 else
 echo " ORACLE 9.0.1 "
 echo "  "
@@ -3397,10 +3408,10 @@ echo " TRANSPORTABLE_EXPORT            metadata for objects in a transportable t
 echo ""
 echo " Extract DDL for job:"
 echo " PROCOBJ YOURJOBNAME YOURJOBOWNER  Capture DDL for Scheduler Jobs"
-
 fi
-logf
 }
+
+
 
 psql()
 {
