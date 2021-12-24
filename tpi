@@ -1646,7 +1646,7 @@ column owner for a20
 column segment_name for a30
 column table_name for a30
 column logging for a6
-column num_rows for 999999999
+column num_rows for 9999999999
 column avg_row_len for 999999
 column "SIZE_MB" for 99999999
 column "EST_MB" for 99999999
@@ -2676,10 +2676,19 @@ column database_mode for a15
 SELECT DEST_ID, RECOVERY_MODE, status, database_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
 ttitle left "V\$ARCHIVED_LOG lag archivelog standby:"
-select
-(select max(sequence#) from v\$archived_log where standby_dest='NO' and archived='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))-
-(select max(sequence#) from v\$archived_log where standby_dest='YES' and archived='YES' and applied='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))
-diff from dual;
+--select
+--(select max(sequence#) from v\$archived_log where standby_dest='NO' and archived='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))-
+--(select max(sequence#) from v\$archived_log where standby_dest='YES' and archived='YES' and applied='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))
+--diff from dual;
+
+set linesize 230 pages 70
+col PRIMARY_TIME format a20
+col STANDBY_COMPLETION_TIME format a23
+SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.seq standby_seq,
+         TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_completion_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
+  FROM   (  SELECT   thread#, MAX (sequence#) seq, MAX (completion_time) tm FROM   v\$archived_log GROUP BY   thread#) prim,
+         (  SELECT   thread#, MAX (sequence#) seq, MAX (completion_time) tm FROM   v\$archived_log WHERE   dest_id IN (SELECT   dest_id FROM   v\$archive_dest WHERE   target = 'STANDBY') AND applied = 'YES' GROUP BY   thread#) tgt
+ WHERE   prim.thread# = tgt.thread#;
 
 ttitle left "GV\$MANAGED_STANDBY :"
 select thread#,sequence#,process,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
