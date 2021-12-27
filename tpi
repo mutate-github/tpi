@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 24.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 27.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -1994,21 +1994,28 @@ EOF
 $SP <<'EOF' >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
-prompt
-prompt Top 40 Sessions Generating Lots of Redo v$session, v$sess_io:
+prompt Top 25 ACTIVE Sessions Generating Lots of Redo v$session, v$sess_io:
 col sid for 99999
 col serial# for 9999999
 col username for a25
 col osuser for a25
-col pma for a90
+col pma for a100
 col changes for 999,999,999 heading "Changes Mb"
 select * from (
 --SELECT s.sid, s.serial#, s.username, s.osuser, REGEXP_REPLACE(CONVERT(s.program||' \ '||s.module||' \ '||s.action, 'AL32UTF8', 'CL8MSWIN1251'), '[^[:print:]]', '') pma, i.block_changes, round(i.block_changes * TO_NUMBER(x.value)/(1024*1024),0) changes
 SELECT s.sid, s.serial#, s.username, s.osuser, s.program||' \ '||s.module||' \ '||s.action pma, i.block_changes, round(i.block_changes * TO_NUMBER(x.value)/(1024*1024),0) changes
 FROM v$session s, v$sess_io i, sys.v_$parameter x
-WHERE s.sid = i.sid and BLOCK_CHANGES > 0 and s.serial#<>'1' and s.type <> 'BACKGROUND' and x.name  = 'db_block_size'
+WHERE s.sid = i.sid and BLOCK_CHANGES > 0 and s.serial#<>'1' and s.type <> 'BACKGROUND' and x.name  = 'db_block_size' and s.status='ACTIVE'
 ORDER BY i.block_changes desc, 1, 2, 3, 4
-) where rownum < 41;
+) where rownum < 26;
+
+prompt Top 25 ACTIVE Sessions Generating Lots of Redo v$session, v$transactionv Run the query multiple times and examine the delta between each occurrence of USED_UBLK and USED_UREC:
+select * from (
+SELECT s.sid, s.serial#, s.username, s.program, t.used_ublk, t.used_urec, t.start_time
+FROM v$session s, v$transaction t
+WHERE s.taddr = t.addr and s.status='ACTIVE'
+ORDER BY 7 , 5 desc, 6 desc, 1, 2, 3, 4
+) where rownum < 26;
 EOF
 esac
 logf
@@ -2056,7 +2063,7 @@ col undo for 99,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
 col pma for a75 heading "PROGRAM \ MODULE \ ACTION"
 col status for a10
-col last_call_et for a23
+col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
 round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2) undo, s.program||' \ '||s.module||' \ '||s.action pma, u.status,
 to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || ltrim(to_char(s.last_call_et/60, '9999990.0')) || ' min' last_call_et
@@ -2686,8 +2693,8 @@ col PRIMARY_TIME format a20
 col STANDBY_COMPLETION_TIME format a23
 SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.seq standby_seq,
          TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_completion_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
-  FROM   (  SELECT   thread#, MAX (sequence#) seq, MAX (completion_time) tm FROM   v\$archived_log GROUP BY   thread#) prim,
-         (  SELECT   thread#, MAX (sequence#) seq, MAX (completion_time) tm FROM   v\$archived_log WHERE   dest_id IN (SELECT   dest_id FROM   v\$archive_dest WHERE   target = 'STANDBY') AND applied = 'YES' GROUP BY   thread#) tgt
+  FROM   (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log GROUP BY thread#) prim,
+         (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log WHERE dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#) tgt
  WHERE   prim.thread# = tgt.thread#;
 
 ttitle left "GV\$MANAGED_STANDBY :"
