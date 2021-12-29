@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 27.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 29.12.2021 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 # exit
 sid=$1
@@ -147,14 +147,11 @@ set echo off
 set timing off
 set feedback off
 /*
-declare
- ora_version varchar2(100);
 begin
- select substr(version,1,instr(version,'.')-1) into ora_version from v\$instance;
  case 
-   when ora_version in  ('9','10') then null;
-   when ora_version = 11 then execute immediate 'alter session set "_optimizer_use_feedback"=false';
-   when ora_version = 12 then execute immediate 'alter session set optimizer_adaptive_plans=false';
+   when dbms_db_version.version in  ('9','10') then null;
+   when dbms_db_version.version = 11 then execute immediate 'alter session set "_optimizer_use_feedback"=false';
+   when dbms_db_version.version = 12 then execute immediate 'alter session set optimizer_adaptive_plans=false';
    else null ;
  end case;
  exception when others then raise_application_error(sqlcode, sqlerrm(sqlcode));
@@ -192,7 +189,7 @@ db_version()
 {
 VALUE=`$SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
-select substr(VERSION,1,instr(VERSION,'.')-1) from product_component_version where product like 'Oracle%';
+select substr(version,1,instr(version,'.')-1) from v$instance where rownum=1;
 END`
 echo $VALUE | tr -d '\r'
 # return $VALUE
