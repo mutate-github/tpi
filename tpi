@@ -1,10 +1,8 @@
 #!/bin/sh
-# version 13.01.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 19.01.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
-# exit
 sid=$1
 # echo $sid
-#  cd
 
 #grant select_catalog_role to tal;
 #grant select on sys.x$kglpn to tal;
@@ -53,7 +51,7 @@ init_msg()
   oratop__="oratop [ h ] - Different Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg [TBS] | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
+  size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
   arch__="arch - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -103,10 +101,10 @@ export ORACLE_SID
 #export NLS_LANG
 shift
 ID="$1"
-# ORD="$2"
 # ALL=$*
-ORD=`echo $2 | tr '~' '$'`
-ALL=`echo $* | tr '~' '$'`
+# ALL=`echo $* | tr '~' '$'`
+ALL=$(echo $*)
+# echo "tpi ALL: "$ALL
 
 #for tnsnames connection through .tpi_login file
 #format .tpi_login file: sid username/password@tns_alias
@@ -1219,7 +1217,7 @@ END
    12|18|19) SQL_TEXT12="prompt
       prompt DBA_REGISTRY_SQLPATCH:
       column DESCRIPTION for a120
-      select PATCH_ID, PATCH_UID, VERSION, STATUS, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by BUNDLE_SERIES;"
+      select action_time, PATCH_ID, PATCH_UID, VERSION, STATUS, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"
    ;;
   esac
 $SP <<EOF > $LOGF
@@ -1428,8 +1426,9 @@ EOF
 logf
 }
 
-segments()
+segment()
 {
+P1_=$1
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 60
@@ -1442,18 +1441,18 @@ column max_size for 999,999,999,999
 column tablespace_name for a20
 ttitle left "Segment name from DBA_SEGMENTS:"
 select tablespace_name, owner, segment_name, PARTITION_NAME, segment_type, SEGMENT_SUBTYPE, bytes/(1024*1024) size_Mb, blocks, max_size
-from dba_segments where upper(segment_name) like upper('$ORD') order by owner, segment_name, segment_type, PARTITION_NAME;
+from dba_segments where upper(segment_name) like upper('$P1_') order by owner, segment_name, segment_type, PARTITION_NAME;
 
 ttitle left "Table name from DBA_LOBS:"
 column table_name for a30
 column column_name for a30
 select tablespace_name, owner, segment_name, table_name, column_name, partitioned, compression
-from dba_lobs where upper(table_name) like upper('$ORD');
+from dba_lobs where upper(table_name) like upper('$P1_');
 
 ttitle left "Lob segment name from DBA_SEGMENTS, DBA_LOBS:"
 column index_name for a30
 select s.tablespace_name, s.owner, s.segment_name, s.PARTITION_NAME, l.INDEX_NAME, s.segment_type, s.SEGMENT_SUBTYPE, s.bytes/(1024*1024) size_Mb, s.blocks, s.max_size
-from dba_segments s, dba_lobs l where s.owner=l.owner and s.segment_name=l.segment_name and upper(l.table_name) like upper('$ORD') 
+from dba_segments s, dba_lobs l where s.owner=l.owner and s.segment_name=l.segment_name and upper(l.table_name) like upper('$P1_') 
 order by owner, segment_name, segment_type, PARTITION_NAME;
 EOF
 logf
@@ -1526,10 +1525,11 @@ logf
 
 object()
 {
-if [ $(is_number $ORD) -eq 0 ]; then 
-    SQL_="select OBJECT_ID, owner, object_name, object_type, CREATED, LAST_DDL_TIME, STATUS from dba_objects where object_name like upper('$ORD');"
+P1_="$1"
+if [ $(is_number $P1_) -eq 0 ]; then 
+    SQL_="select OBJECT_ID, owner, object_name, object_type, CREATED, LAST_DDL_TIME, STATUS from dba_objects where object_name like upper('$P1_');"
 else
-    SQL_="select OBJECT_ID, owner, object_name, object_type, CREATED, LAST_DDL_TIME, STATUS from dba_objects where object_id = '$ORD';"
+    SQL_="select OBJECT_ID, owner, object_name, object_type, CREATED, LAST_DDL_TIME, STATUS from dba_objects where object_id = '$P1_';"
 fi
 
 $SP <<EOF >$LOGF
@@ -1788,9 +1788,9 @@ column status for a10
 column partitioned for a4
 column degree for a2
 column VISIBILITY for a9
-prompt dba_indexes for index_name = $ORD
+prompt dba_indexes for index_name = $P2_
 select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, degree, VISIBILITY
-from dba_indexes where upper(index_name) = upper('$ORD') order by owner,index_name;
+from dba_indexes where upper(index_name) = upper('$P2_') order by owner,index_name;
 
 set longc 100000000
 column index_owner for a30
@@ -1799,8 +1799,8 @@ column table_owner for a30
 column table_name for a30
 column column_expression for a50
 column column_position for 99
-prompt dba_ind_expressions for index_name = $ORD
-select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where upper(index_name) = upper('$ORD') order by table_owner,table_name,index_name,column_position;
+prompt dba_ind_expressions for index_name = $P2_
+select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where upper(index_name) = upper('$P2_') order by table_owner,table_name,index_name,column_position;
 EOF
 ;;
 esac
@@ -1949,7 +1949,7 @@ logf
 
 lob()
 {
-echo "$ORD"
+P1_=$1
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 40
@@ -1962,11 +1962,11 @@ column segment_type for a20
 column tablespace_name for a15
 column compression for a15
 prompt
-prompt Segment from dba_lobs where segment_name = upper('$ORD');
-select owner,table_name,column_name,segment_name,tablespace_name,index_name,partitioned from dba_lobs where segment_name = upper('$ORD');
+prompt Segment from dba_lobs where segment_name = upper('$P1_');
+select owner,table_name,column_name,segment_name,tablespace_name,index_name,partitioned from dba_lobs where segment_name = upper('$P1_');
 prompt
-prompt Index from dba_lobs where index_name = upper('$ORD');
-select owner,table_name,column_name,segment_name,tablespace_name,index_name,partitioned from dba_lobs where index_name = upper('$ORD');
+prompt Index from dba_lobs where index_name = upper('$P1_');
+select owner,table_name,column_name,segment_name,tablespace_name,index_name,partitioned from dba_lobs where index_name = upper('$P1_');
 EOF
 logf
 }
@@ -2584,7 +2584,7 @@ logf
 
 maxseg()
 {
-ORD="$1"
+P1_=$(echo $* | awk '{print $2}')
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ;;
@@ -2602,15 +2602,15 @@ select * from (
 select tablespace_name, owner, segment_name, segment_type $SQL_TEXT1 , sum(bytes/(1024*1024)) Mbytes
  from  ( select s.tablespace_name, l.owner, l.table_name segment_name, segment_type $SQL_TEXT1 , bytes
     from  dba_lobs l, dba_segments s
-    where s.segment_type = 'LOBSEGMENT'  and s.segment_name = l.segment_name and l.owner=s.owner and s.tablespace_name = upper('$ORD')
+    where s.segment_type = 'LOBSEGMENT'  and s.segment_name = l.segment_name and l.owner=s.owner and s.tablespace_name = upper('$P1_')
   union all
    select  s.tablespace_name,t.owner, t.table_name segment_name, segment_type $SQL_TEXT1 , bytes
     from  dba_tables t, dba_segments s
-    where s.segment_name = t.table_name and t.owner=s.owner and s.tablespace_name = upper('$ORD')
+    where s.segment_name = t.table_name and t.owner=s.owner and s.tablespace_name = upper('$P1_')
   union all
    select  s.tablespace_name,i.owner, i.index_name segment_name, segment_type $SQL_TEXT1 , bytes
      from  dba_indexes i, dba_segments s
-     where s.segment_name = i.index_name and i.owner=s.owner and s.tablespace_name = upper('$ORD') )
+     where s.segment_name = i.index_name and i.owner=s.owner and s.tablespace_name = upper('$P1_') )
  group by tablespace_name,owner, segment_name, segment_type $SQL_TEXT1
  order by Mbytes desc
 ) where rownum <= 50
@@ -2709,14 +2709,11 @@ size()
 P1_=`echo $ALL | awk '{print $1}'`
 P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
 P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-#echo "P1_"$P1_
-#echo "P2_"$P2_
-#echo "P3_"$P3_
 case "$P2_" in
-  TBS)      shift; shift; ALL=$* ; tbs $ALL ;;
+  TBS)      shift; shift; ALL=$*; tbs $ALL ;;
   TEMP)     temp ;;
-  DF)       shift; shift; ALL=$* ; df $ALL ;;
-  MAXSEG)   maxseg $P3_ ;;
+  DF)       shift; shift; ALL=$*; df $ALL ;;
+  MAXSEG)   shift; ALL=$*; maxseg $ALL ;;
   FRA)      fra ;;
   GROWS)    grows $P3_ ;;
   *)        dbsize $P2_ ;;
@@ -2726,9 +2723,10 @@ esac
 
 user()
 {
+P1_=$1
 case "$(db_version)" in
-8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$ORD');" ;;
-*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$ORD');" ;;
+8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');" ;;
+*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$P1_');" ;;
 esac
 
 $SP <<EOF >$LOGF
@@ -2750,11 +2748,11 @@ prompt sys privs:
 column grantee for a20
 column GRANTED_ROLE for a30
 column privilege for a25
-select * from dba_sys_privs where grantee=upper('$ORD') order by privilege;
+select * from dba_sys_privs where grantee=upper('$P1_') order by privilege;
 
 prompt
 prompt role privs:
-select * from dba_role_privs where grantee=upper('$ORD') order by granted_role;
+select * from dba_role_privs where grantee=upper('$P1_') order by granted_role;
 
 prompt
 prompt tab privs:
@@ -2763,17 +2761,14 @@ column grantee for a20
 column grantor for a20
 column owner for a25
 column PRIVILEGE for a15
-select * from dba_tab_privs where grantee=upper('$ORD') order by grantor, table_name, PRIVILEGE;
-
+select * from dba_tab_privs where grantee=upper('$P1_') order by grantor, table_name, PRIVILEGE;
 
 prompt
 prompt usage tablespace:
 break on report
 COMPUTE SUM OF SUM_ on report
 column sum_ format 99999999.00 heading "SUM (Mb)"
-select owner,tablespace_name, sum(bytes/1024/1024) sum_ from dba_segments where owner=upper('$ORD') group by owner,tablespace_name order by 3 desc;
-
-
+select owner,tablespace_name, sum(bytes/1024/1024) sum_ from dba_segments where owner=upper('$P1_') group by owner,tablespace_name order by 3 desc;
 EOF
 logf
 }
@@ -2781,10 +2776,15 @@ logf
 invalid()
 {
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
 column owner for a25
-select owner, count(*) from dba_objects where status!='VALID' group by owner order by owner;
+column object_name for a30
+column OBJECT_TYPE for a25
+column status for a20
+BREAK ON REPORT
+COMPUTE SUM  LABEL 'SUM' OF count(*) on report
+select owner, count(*)  from dba_objects where status!='VALID' group by owner order by owner;
 column OBJECT_NAME for a30
 select owner, object_name, object_type,status from dba_objects where status!='VALID' order by 1,3;
 EOF
@@ -2795,7 +2795,7 @@ logf
 profile()
 {
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 60
 column PROFILE for a30
 column RESOURCE_NAME for a30
@@ -3217,6 +3217,7 @@ logf
 
 job()
 {
+P1_=$1
 $SP <<EOF >$LOGF
 set lines 250
 set echo off feed off veri off tab off pages 40
@@ -3227,7 +3228,7 @@ column next_date  for a10
 column interval for a15
 column FAILURES for 999999
 column WHAT for a100
-select JOB, LOG_USER, LAST_DATE,NEXT_DATE,BROKEN,INTERVAL,FAILURES, WHAT from dba_jobs  where LOG_USER like upper('$ORD%'); 
+select JOB, LOG_USER, LAST_DATE,NEXT_DATE,BROKEN,INTERVAL,FAILURES, WHAT from dba_jobs  where LOG_USER like upper('${P1_}%'); 
 
 PROMPT join views  dba_jobs_running, dba_jobs, v\$process, v\$session
 set lines 200
@@ -5147,19 +5148,19 @@ size) echo $size__ ${reset}; size $ALL ;;
 arch) echo $arch__ ${reset}; arch $ALL ;;
 tbs)  shift; ALL=$*; echo $size__ ${reset}; tbs $ALL ;;
 df) shift; ALL=$*; echo $size__ ${reset}; df $ALL ;;
-maxseg) echo $size__ ", (TABLESPACE NAME = '"$ORD"'):" ${reset}; maxseg $ORD ;;
+maxseg) shift; echo $size__ ", (TABLESPACE NAME = '"$ALL"'):" ${reset}; maxseg $ALL ;;
 fra) echo $size__ ${reset}; fra ;;
 redo) shift ; ALL=$* ; echo $redo__ ${reset}; redo $ALL ;;
 undo) shift ; ALL=$* ; echo $undo__ ${reset}; undo $ALL ;;
 sesstat)  shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
 topseg) echo $topseg__ ${reset}; topseg ;;
-o)   echo $o__ ", OBJECT_NAME = " $ORD ${reset}; object $ORD ;;
-s)   echo $s__ ", SEGMENT_NAME = " $ORD ${reset}; segments $ORD ;;
+o)   shift; ALL=$*; echo $o__ ", OBJECT_NAME = " $ALL ${reset}; object $ALL ;;
+s)   shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
 t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL ;;
 i)   shift ; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
-l)   echo $l__ ", LOB_NAME = " $ORD ${reset}; lob $ORD ;;
+l)   shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
-u)   echo $u__ ", USERNAME = " $ORD ${reset}; user $ORD ;;
+u)   shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
 invalid)   echo $invalid__  ${reset}; invalid ;;
 profile)   echo $profile__  ${reset}; profile ;;
 links)   echo $links__ ${reset} ; links ;;
@@ -5168,8 +5169,8 @@ bind) shift ; ALL=$* ;  echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
 pipe) echo $pipe__ ${reset}; pipe  ;;
 longops)  echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
-job)  echo $job__ ${reset}; job $ORD  ;;
-get_ddl) shift ; ALL=$* ; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
+job)  shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
+get_ddl) shift ; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace) shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
 alert) shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
 report) shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
