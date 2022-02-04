@@ -1,8 +1,9 @@
 #!/bin/sh
-# version 19.01.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 04.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
-# echo $sid
+# echo "tpi sid=" $sid
+
 
 #grant select_catalog_role to tal;
 #grant select on sys.x$kglpn to tal;
@@ -2029,7 +2030,8 @@ set lines 230
 set echo off feed off veri off tab off pages 50
 prompt
 prompt Recovering transactions v\$fast_start_transactions:
-col estimated for a18 heading "Estimated time"
+col usn for 9999
+col estimated for a19 heading "Estimated time"
 select usn, state, xid, pid, rcvservers,
 --undoblockstotal "TotalBlk", undoblocksdone "DoneBlk", undoblockstotal-undoblocksdone "ToDoBlk",
 round(undoblockstotal * TO_NUMBER(x.value)/(1024*1024),2) "Total Mb", round(undoblocksdone * TO_NUMBER(x.value)/(1024*1024),2) "Done Mb", round((undoblockstotal-undoblocksdone) * TO_NUMBER(x.value)/(1024*1024),2) "ToDo Mb",
@@ -2038,9 +2040,10 @@ from v\$fast_start_transactions, sys.v_\$parameter x where x.name  = 'db_block_s
 
 prompt
 prompt If v\$fast_start_transactions not work then x\$ktuxe:
+col sysdate for a22
 col ktuxesiz for 999999999 heading "Rollback Blk"
 col undo for 9,999,999.00 heading "Undo Mb"
-select ktuxeusn, to_char(sysdate,'DD-MON-YYYY HH24:MI:SS') "SYSDATE", ktuxesiz, round(ktuxesiz*8192/(1024*1024),2) undo, ktuxesta
+select ktuxeusn, to_char(sysdate,'DD/MM/YYYY HH24:MI:SS') "SYSDATE", ktuxesiz, round(ktuxesiz*8192/(1024*1024),2) undo, ktuxesta
 from x\$ktuxe where ktuxecfl = 'DEAD' and ktuxesiz>0;
 EOF
 ;;
@@ -2058,7 +2061,7 @@ col segment_name for a23
 col used_ublk for 9999999
 col undo for 99,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
-col pma for a75 heading "PROGRAM \ MODULE \ ACTION"
+col pma for a70 heading "PROGRAM \ MODULE \ ACTION"
 col status for a10
 col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
@@ -2592,11 +2595,12 @@ case $REL in
 esac
 
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 500
 column OWNER for a30
 column SEGMENT_NAME for a40
 column SEGMENT_TYPE for a20
+column compression for a15
 column Mbytes for 999999999999999
 select * from (
 select tablespace_name, owner, segment_name, segment_type $SQL_TEXT1 , sum(bytes/(1024*1024)) Mbytes
@@ -3197,7 +3201,8 @@ col LAST_START_DATE for a10
 col LAST_RUN_DURATION for a14
 select owner, job_name, (PROGRAM_OWNER || CASE when PROGRAM_OWNER is null then '' else '.' END || PROGRAM_NAME) PROGRAM, JOB_ACTION, ENABLED, REPEAT_INTERVAL,
 cast(LAST_START_DATE as date) LAST_START_DATE, LAST_RUN_DURATION
-from dba_scheduler_jobs order by owner, job_name;
+from dba_scheduler_jobs where ENABLED='TRUE'
+ order by owner, job_name;
 
 prompt "View: dba_scheduler_running_jobs"
 col elapsed_time for a16
@@ -3303,13 +3308,14 @@ $SP <<EOF >$LOGF
 set echo off feed off veri off tab off
 alter session set NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss';
 prompt "NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss'"
-set linesize 230 pages 0
+set linesize 2400 pages 0  --230
 set long 10000000 longc 10000000
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 declare
  c clob;
  PROCEDURE DISPLAY_CLOB (P_CLOB IN CLOB) IS
-  l_amt NUMBER DEFAULT 32000;
+--  l_amt NUMBER DEFAULT 32000;
+  l_amt NUMBER DEFAULT 2000;
   l_offset NUMBER DEFAULT 1;
   l_length NUMBER DEFAULT NVL (DBMS_LOB.getlength (p_clob), 0);
   x varchar2(32760);
