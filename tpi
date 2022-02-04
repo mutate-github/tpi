@@ -3315,7 +3315,7 @@ declare
  c clob;
  PROCEDURE DISPLAY_CLOB (P_CLOB IN CLOB) IS
 --  l_amt NUMBER DEFAULT 32000;
-  l_amt NUMBER DEFAULT 2000;
+  l_amt NUMBER DEFAULT 24000;
   l_offset NUMBER DEFAULT 1;
   l_length NUMBER DEFAULT NVL (DBMS_LOB.getlength (p_clob), 0);
   x varchar2(32760);
