@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 04.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 09.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 # echo "tpi sid=" $sid
@@ -65,7 +65,7 @@ init_msg()
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u USERNAME - dba_users information"
-  invalid__="invalid - invalid objects" 
+  invalid__="invalid [OWNER] - invalid objects" 
   profile__="profile - profiles information"
   links__="links - links information"
   latch__="latch - latch information"
@@ -2751,7 +2751,7 @@ prompt sys privs:
 
 column grantee for a20
 column GRANTED_ROLE for a30
-column privilege for a25
+column privilege for a30
 select * from dba_sys_privs where grantee=upper('$P1_') order by privilege;
 
 prompt
@@ -2779,6 +2779,7 @@ logf
 
 invalid()
 {
+P1_=$1
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -2788,9 +2789,9 @@ column OBJECT_TYPE for a25
 column status for a20
 BREAK ON REPORT
 COMPUTE SUM  LABEL 'SUM' OF count(*) on report
-select owner, count(*)  from dba_objects where status!='VALID' group by owner order by owner;
+select owner, count(*)  from dba_objects where status!='VALID' and upper(owner) like nvl(upper('$P1_'),'%') group by owner order by owner;
 column OBJECT_NAME for a30
-select owner, object_name, object_type,status from dba_objects where status!='VALID' order by 1,3;
+select owner, object_name, object_type,status from dba_objects where status!='VALID' and upper(owner) like nvl(upper('$P1_'),'%') order by owner, object_type, object_name;
 EOF
 logf
 }
@@ -5167,7 +5168,7 @@ i)   shift ; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
 l)   shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)   shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
-invalid)   echo $invalid__  ${reset}; invalid ;;
+invalid) shift; ALL=$* ; echo $invalid__  ${reset}; invalid $ALL ;;
 profile)   echo $profile__  ${reset}; profile ;;
 links)   echo $links__ ${reset} ; links ;;
 latch)   echo $latch__ ${reset} ; latch ;;
