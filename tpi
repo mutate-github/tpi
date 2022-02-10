@@ -4701,21 +4701,20 @@ begin_snap="$4"
 end_snap="$5"
 task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
 SQL_="
--- Tuning task created for specific a statement from the AWR.
-PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id begin_snap=$begin_snap end_snap=$end_snap task_name=$task_name
+PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id begin_snap=$begin_snap end_snap=$end_snap task_name=$task_name from the AWR
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 DECLARE
-  l_sql_tune_task_id  VARCHAR2(100);
+  task_name  VARCHAR2(100);
 BEGIN
-  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
-                          begin_snap  => $begin_snap,
-                          end_snap    => $end_snap,
-                          sql_id      => '$sql_id',
-                          scope       => DBMS_SQLTUNE.scope_comprehensive,
-                          time_limit  => 120,
-                          task_name   => '$task_name',
-                          description => 'tpi tuning task for statement $sql_id in AWR.');
-  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+  task_name := DBMS_SQLTUNE.create_tuning_task (
+                 begin_snap  => $begin_snap,
+                 end_snap    => $end_snap,
+                 sql_id      => '$sql_id',
+                 scope       => DBMS_SQLTUNE.scope_comprehensive,
+                 time_limit  => 120,
+                 task_name   => '$task_name',
+                 description => 'tpi tuning task for statement $sql_id in AWR.');
+  DBMS_OUTPUT.PUT_LINE('Task Name: ''' || task_name || ''' Tuning Task Created');
 END;
 /
 "
@@ -4724,7 +4723,7 @@ END;
 sql_id="$2"
 task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
  SQL_="
-PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id task_name=$task_name
+PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id task_name=$task_name from the cursor cache
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 DECLARE
   task_name VARCHAR2(30);
@@ -4737,8 +4736,6 @@ END;
 "
 ;;
 esac
-
-echo "task_naname="$task_name
 
 $SP <<EOF >$LOGF
 set lines 230
