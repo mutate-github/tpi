@@ -1,5 +1,5 @@
 #!/bin/sh
-# version 10.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 15.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 # echo "tpi sid=" $sid
@@ -2765,6 +2765,7 @@ column grantee for a20
 column grantor for a20
 column owner for a25
 column PRIVILEGE for a15
+column type for a15
 select * from dba_tab_privs where grantee=upper('$P1_') order by grantor, table_name, PRIVILEGE;
 
 prompt
@@ -4711,7 +4712,7 @@ BEGIN
                  end_snap    => $end_snap,
                  sql_id      => '$sql_id',
                  scope       => DBMS_SQLTUNE.scope_comprehensive,
-                 time_limit  => 120,
+                 time_limit  => 240,
                  task_name   => '$task_name',
                  description => 'tpi tuning task for statement $sql_id in AWR.');
   DBMS_OUTPUT.PUT_LINE('Task Name: ''' || task_name || ''' Tuning Task Created');
