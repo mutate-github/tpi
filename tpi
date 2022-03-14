@@ -1,5 +1,6 @@
 #!/bin/sh
-# version 18.02.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+set -f
+# version 14.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 # echo "tpi sid=" $sid
@@ -159,6 +160,8 @@ end;
 */
 alter session set statistics_level=basic;
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
+--alter session set optimizer_index_cost_adj = 3;
+--alter session set optimizer_index_caching  = 90;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
@@ -1064,8 +1067,9 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
  WHERE   ROWNUM < 6;
 ttitle off
 
-column SID4 for 99999 HEADING "SID"
 column PID4 for a8   HEADING "PPID"
+column SID4 for 99999 HEADING "SID"
+column SERIAL for 99999 HEADING "SERIAL"
 column USR4 for a16  HEADING "USERNAME"
 column PRG4 for a22  HEADING "PROGRAM"
 column MODL for a22  HEADING "MODULE"
@@ -1084,8 +1088,9 @@ ttitle left "Database active sessions:"
   SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */
 --           s.wait_time trm4,
 --           s.inst_id id4,
-           s.sid sid4,
            p.spid pid4,
+           s.sid sid4,
+           s.serial# serial,
            substr(DECODE (p.background, 1, 'B/G',DECODE (s.username, NULL, 'F/G', s.username)),1,16) usr4,
 --           substr(DECODE (p.pname, NULL, s.program, p.pname),1,22) prg4,
 --           substr(s.module,1,22) modl,
