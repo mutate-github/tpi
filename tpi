@@ -1,21 +1,10 @@
 #!/bin/sh
-
 set -f
 # version 18.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
-# echo "tpi sid=" $sid
 
-#grant select_catalog_role to tal;
-#grant select on sys.x$kglpn to tal;
-#grant select on sys.x$kglob to tal;
-#grant select on sys.user$ to tal;
-#grant select on sys.link$ to tal;
-#grant execute on sys.dbms_system to tal;
-#grant execute on sys.dbms_crypto to tal;
-#grant select on WRM$_SNAPSHOT_DETAILS to tal;
-
-case $1 in
+case "$sid" in
 kik*)      . ~/db12kik.env ;;
 bd*)       . ~/db12kik.env ;;
 prov*)     . ~/db12kik.env ;;
@@ -5228,5 +5217,6 @@ dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL  ;;
 spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL  ;;
 *)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
+
 
 
