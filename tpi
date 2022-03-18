@@ -34,7 +34,6 @@ goldwhs)   . ~/.bash_profile ;;
 esac > /dev/null 2>&1
 
 
-
 init_msg()
 {
   a__="a - all sessions  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
