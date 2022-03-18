@@ -1,6 +1,7 @@
 #!/bin/sh
+
 set -f
-# version 14.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 18.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 # echo "tpi sid=" $sid
@@ -15,12 +16,13 @@ sid=$1
 #grant select on WRM$_SNAPSHOT_DETAILS to tal;
 
 case $1 in
-kik*)      . /home/oracle/db12kik.env ;;
-bd*)       . /home/oracle/db12kik.env ;;
-EPS*)      . ~oracle/db12.env ;;
-creditc)   . /home/oracle/db12.env ;;
-KIKOPDR)   . /home/oracle/db11.env ;;
-jet|ja)       . /etc/profile.ora ;;
+kik*)      . ~/db12kik.env ;;
+bd*)       . ~/db12kik.env ;;
+prov*)     . ~/db12kik.env ;;
+EPS*)      . ~/db12.env ;;
+creditc)   . ~/db12.env ;;
+KIKOPDR)   . ~/db11.env ;;
+jet|ja)    . /etc/profile.ora ;;
 aisutf*)   . ~/.ora_env ;;
 unit*)     . ~/.ora_env ;;
 askona*)   . ~/.profile ;;
@@ -160,8 +162,8 @@ end;
 */
 alter session set statistics_level=basic;
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
-alter session set optimizer_index_cost_adj = 3;
-alter session set optimizer_index_caching  = 90;
+--alter session set optimizer_index_cost_adj = 3;
+--alter session set optimizer_index_caching  = 90;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
