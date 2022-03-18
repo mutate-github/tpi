@@ -5219,4 +5219,3 @@ spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL  ;;
 esac
 
 
-
