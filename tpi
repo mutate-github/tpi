@@ -5,15 +5,6 @@ set -f
 sid=$1
 # echo "tpi sid=" $sid
 
-#grant select_catalog_role to tal;
-#grant select on sys.x$kglpn to tal;
-#grant select on sys.x$kglob to tal;
-#grant select on sys.user$ to tal;
-#grant select on sys.link$ to tal;
-#grant execute on sys.dbms_system to tal;
-#grant execute on sys.dbms_crypto to tal;
-#grant select on WRM$_SNAPSHOT_DETAILS to tal;
-
 case $1 in
 kik*)      . /home/oracle/db12kik.env ;;
 bd*)       . /home/oracle/db12kik.env ;;
