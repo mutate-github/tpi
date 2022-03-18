@@ -160,8 +160,8 @@ end;
 */
 alter session set statistics_level=basic;
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
---alter session set optimizer_index_cost_adj = 3;
---alter session set optimizer_index_caching  = 90;
+alter session set optimizer_index_cost_adj = 3;
+alter session set optimizer_index_caching  = 90;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
