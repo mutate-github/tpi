@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 18.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 22.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -397,13 +397,13 @@ BEGIN
               where HASH_VALUE = s.sql_hash_value order by piece) loop
     dbms_output.put_line(chr(126)||chr(32)||c1.sql_text);
   end loop;
-
-
+*/
+/*
   dbms_output.put_line(chr(126)||'Explain plan V\$SQL_PLAN: s.sql_id='||s.sql_id||'  s.sql_hash_value='||s.sql_hash_value ||'  s.sql_adress=' ||s.sql_address|| '  s.sql_child_number='||s.sql_child_number);
   for c1 in ( SELECT distinct lpad(id,3,'0')||' '||lpad(' ',depth)||operation||' '||options||' '||object_name|| case options when 'FULL' then '<<< FULL' end ss from v\$sql_plan where address=s.sql_address and hash_value=s.sql_hash_value and child_number=s.sql_child_number order by 1) loop
     dbms_output.put_line(chr(126)||chr(32)||c1.ss);
   end loop;
-*/ 
+*/
 /*  if (s.sql_id is not null) then
     dbms_output.put_line(chr(126)||'Explain plan from dbms_xplan.display_cursor:');
     for c1 in (select plan_table_output from   table(dbms_xplan.display_cursor(s.sql_id,s.sql_child_number,'Typical +PEEKED_BINDS')) ) loop
@@ -3977,8 +3977,6 @@ esac
 fi
 
 logf
-echo ""
-echo $dhash__
 }
 
 
@@ -4360,8 +4358,6 @@ esac
 fi
 
 logf
-echo ""
-echo $ash__
 }
 
 
@@ -5212,9 +5208,9 @@ alert) shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
 report) shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
 corrupt) shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
 sql) shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
-ash) shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL  ;;
-dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL  ;;
-spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL  ;;
+ash) shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;
+dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL ; echo $dhash__ ;;
+spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
 *)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
 
