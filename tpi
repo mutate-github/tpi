@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 23.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 31.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -74,7 +74,7 @@ init_msg()
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
   dhash__="dhash [hours - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID | growseg [SEGMENT] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
-  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sql_tuning [SQL_ID | awr SQL_ID begin_snap end_snap]  | sql_tuning_report TASK_NAME | sql_tuning_accept TASK_NAME | sql_tuning_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sql_tuning_list [TASK_NAME] [cnt] | sql_tuning_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME ]"
+  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sql_tuning [SQL_ID | awr SQL_ID begin_snap end_snap]  | sql_tuning_report TASK_NAME | sql_tuning_accept TASK_NAME | sql_tuning_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sql_tuning_list [TASK_NAME] [cnt] | sql_tuning_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
 init_msg
@@ -151,8 +151,9 @@ end;
 */
 alter session set statistics_level=basic;
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
---alter session set optimizer_index_cost_adj = 3;
---alter session set optimizer_index_caching  = 90;
+alter session set optimizer_index_cost_adj = 3;
+alter session set optimizer_index_caching  = 90;
+--alter session set “_optimizer_ignore_hints”=true;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
@@ -3840,8 +3841,7 @@ PROMPT
 PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history by last 15 days for sql_id: $SQL_ID_ :"
 set lines 230 pages 50 feedback off
 col SQL_EXEC_START for a15
-select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-15)
-and sql_id='$SQL_ID_' and sql_exec_start>sysdate-15 group by to_char(SQL_EXEC_START,'dd/mm/yyyy'),sql_id,sql_plan_hash_value order by  min(snap_id);
+select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history where dbid=(select dbid from v\$database) and snap_id>(select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where begin_time>sysdate-25) and sql_id='$SQL_ID_' and sql_exec_start>sysdate-25 group by to_char(SQL_EXEC_START,'dd/mm/yyyy'),sql_id,sql_plan_hash_value order by  min(snap_id);
 
 PROMPT
 PROMPT "Plans from DBA_HIST_SQL_PLAN (dbms_xplan.display_awr) for sql_id: $SQL_ID_ "
@@ -3863,7 +3863,7 @@ set pages 0
 /* select plan_hash_value,id,operation,options,object_owner,object_name,object_type,cost,cardinality,bytes
 from DBA_HIST_SQL_PLAN where sql_id = '$SQL_ID_' order by plan_hash_value, id; */
 
-select * from table(dbms_xplan.display_awr('$SQL_ID_'));
+select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '-predicate +outline'));
 EOF
 ;;
 sqlstat)
@@ -4303,8 +4303,8 @@ column plan_hash_value for 9999999999
 column OBJECT_NAME for a30
 BREAK ON plan_hash_value SKIP 1 NODUPLICATES
 
--- select plan_table_output from table(dbms_xplan.display_cursor('$P1_',null,'Typical')) ;
-select plan_table_output from table(dbms_xplan.display_cursor('$P1_')) ;
+-- select plan_table_output from table(dbms_xplan.display_cursor('$P1_',null,'typical +outline last')) ;
+select plan_table_output from table(dbms_xplan.display_cursor('$P1_','','typical +outline last')) ;
 EOF
 ;;
 sqlstat)
@@ -4454,10 +4454,10 @@ blplan)
 sql_handle="$2"
 plan_name="$3"
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 400
-ttitle left "DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'Typical'):"
-select * from table(DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'Typical'));
+ttitle left "DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'):"
+select * from table(DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'));
 EOF
 ;;
 blexec)
@@ -4900,6 +4900,17 @@ set lines 200
 set echo off feed on veri off tab off pages 400
 PROMPT DBMS_SQLTUNE.DROP_SQL_PROFILE( name=$name )
 exec DBMS_SQLTUNE.DROP_SQL_PROFILE(name=>'$name');
+EOF
+;;
+report_sql_monitor)
+sql_id="$2"
+echo $name
+$SP <<EOF >$LOGF
+set lines 230 
+set echo off feed on veri off tab off pages 400
+set long 1000000000 longc 1000000000
+PROMPT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all')
+SELECT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all') from dual;
 EOF
 ;;
 *) :  ;;
