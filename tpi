@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 31.03.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 03.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -74,7 +74,7 @@ init_msg()
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
   dhash__="dhash [hours - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID | sqlstat SQL_ID | growseg [SEGMENT] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
-  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sql_tuning [SQL_ID | awr SQL_ID begin_snap end_snap]  | sql_tuning_report TASK_NAME | sql_tuning_accept TASK_NAME | sql_tuning_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sql_tuning_list [TASK_NAME] [cnt] | sql_tuning_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
+  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
 init_msg
@@ -142,7 +142,11 @@ begin
  case 
    when dbms_db_version.version in  ('9','10') then null;
    when dbms_db_version.version = 11 then execute immediate 'alter session set "_optimizer_use_feedback"=false';
-   when dbms_db_version.version = 12 then execute immediate 'alter session set optimizer_adaptive_plans=false';
+   when dbms_db_version.version = 12 then  
+      execute immediate 'alter session set optimizer_adaptive_features=false';
+      execute immediate 'alter session set optimizer_adaptive_plans=false';
+      execute immediate 'alter session set optimizer_adaptive_statistics=false';
+      execute immediate 'alter session set "_optimizer_use_feedback"=false';
    else null ;
  end case;
  exception when others then raise_application_error(sqlcode, sqlerrm(sqlcode));
@@ -151,8 +155,12 @@ end;
 */
 alter session set statistics_level=basic;
 alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
-alter session set optimizer_index_cost_adj = 3;
-alter session set optimizer_index_caching  = 90;
+--alter session set optimizer_features_enable = '10.2.0.4';
+--alter session set optimizer_index_cost_adj = 100;
+--alter session set optimizer_index_caching  = 10;
+--alter session set optimizer_mode  = 'FIRST_ROWS';
+--alter session set optimizer_max_permutations = 1000;
+--alter session set optimizer_dynamic_sampling = 0;
 --alter session set “_optimizer_ignore_hints”=true;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
@@ -1677,7 +1685,7 @@ column index_name for a33
 column COLUMN_NAME for a30
 select index_owner,index_name,column_name,column_position,column_length,descend
 from dba_ind_columns where upper(table_name) = '$P2_' and table_owner like nvl('$P3_','%') order by index_owner,index_name,column_position;
-
+/*
 prompt
 prompt constraints:
 column owner for a20
@@ -1690,7 +1698,7 @@ col DEFERRED for a15
 col VALIDATED for a15
 select OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE, R_OWNER,R_CONSTRAINT_NAME, STATUS,DEFERRABLE,DEFERRED,VALIDATED,LAST_CHANGE,INVALID
 from dba_constraints where upper(table_name) = '$P2_' and owner like nvl('$P3_','%') order by owner,CONSTRAINT_NAME;
-
+*/
 prompt
 prompt columns statistic information:
 col owner for a20
@@ -1818,7 +1826,7 @@ P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
 
 SET_COLUMNS="column owner for a17
 column table_name for a25
-column constraint_name for a30
+column constraint_name for a25
 column column_name for a20
 column position for 99 heading 'P'
 column constraint_type for a2
@@ -1830,7 +1838,7 @@ column status for a9
 column deferrable for a14
 column deferred for a10
 column validated for a10
-column last_change for a10"
+column last_change for a19"
 
 case "$P2_" in
 T)
@@ -4621,6 +4629,15 @@ SELECT SQL_ID,PLAN_HASH_VALUE, PARSING_SCHEMA_NAME AS "SCHEMA", SQL_TEXT, ELAPSE
 FROM TABLE( DBMS_SQLTUNE.SELECT_SQLSET( sqlset_name => '$sqlset_name',  sqlset_owner => '$sqlset_owner' ) );
 EOF
 ;;
+sqlset_plan)
+sqlset_name="$2"
+sqlset_sql_id="$3"
+sqlset_phv="$4"
+$SP <<EOF >$LOGF
+set lines 230 echo off feed off veri off tab off pages 200
+SELECT * FROM table(DBMS_XPLAN.DISPLAY_SQLSET(sqlset_name=>'$sqlset_name',sql_id=>'$sqlset_sql_id',plan_hash_value=>'$sqlset_phv',format => 'typical'));
+EOF
+;;
 sqlset_drop)
 sqlset_name="$2"
 $SP <<EOF >$LOGF
@@ -4687,7 +4704,7 @@ where SQL_ID in ('$sql_id') and (sql_plan_baseline is not null or sql_profile is
 order by SQL_ID,LAST_ACTIVE_TIME;
 EOF
 ;;
-sql_tuning)
+sqltune)
 case "$2" in
 awr|AWR) 
 sql_id="$3"
@@ -4761,14 +4778,13 @@ DECLARE
 BEGIN
     dat := DBMS_SQLTUNE.REPORT_TUNING_TASK ( task_name => '$task_name' , type => 'TEXT' , level => 'TYPICAL' , section => 'ALL' );
     DISPLAY_CLOB(dat);
-
     dat :=  DBMS_SQLTUNE.SCRIPT_TUNING_TASK('$task_name');
     DISPLAY_CLOB(dat);
 END;
 /
 EOF
 ;;
-sql_tuning_report)
+sqltune_report)
 task_name="$2"
 echo $task_name
 $SP <<EOF >$LOGF
@@ -4802,7 +4818,7 @@ END;
 /
 EOF
 ;;
-sql_tuning_accept)
+sqltune_accept)
 task_name="$2"
 echo $task_name
 $SP <<EOF >$LOGF
@@ -4813,7 +4829,7 @@ PROMPT Accepting sql_profile by  dbms_sqltune.accept_sql_profile
 exec dbms_sqltune.accept_sql_profile(task_name => '$task_name', task_owner => 'SYS', replace => TRUE, name => '$task_name');
 EOF
 ;;
-sql_tuning_create_plan_bl)
+sqltune_create_plan_bl)
 task_name="$2"
 owner="$3"
 plan_hash_value="$4"
@@ -4825,7 +4841,7 @@ PROMPT Accepting sql_profile by  dbms_sqltune.accept_sql_profile
 exec dbms_sqltune.create_sql_plan_baseline(task_name => '$task_name', owner_name => '$owner', plan_hash_value => $plan_hash_value);
 EOF
 ;;
-sql_tuning_list)
+sqltune_list)
 task_name="$2"
 cnt="$3"
 if [ -z "$cnt" ]; then
@@ -4847,7 +4863,7 @@ ttitle left "List last $cnt tasks from DBA_ADVISOR_TASKS where TASK_NAME like %$
 select * from ( SELECT owner, task_id,task_name, created,last_modified,execution_start,execution_end,status FROM DBA_ADVISOR_TASKS WHERE task_name like  '%${task_name}%' order by created ) where rownum <= $cnt;
 EOF
 ;;
-sql_tuning_drop)
+sqltune_drop)
 task_name="$2"
 echo $task_name
 $SP <<EOF >$LOGF
@@ -4909,7 +4925,7 @@ $SP <<EOF >$LOGF
 set lines 230 
 set echo off feed on veri off tab off pages 400
 set long 1000000000 longc 1000000000
-PROMPT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all')
+--PROMPT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all')
 SELECT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all') from dual;
 EOF
 ;;
