@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 07.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 11.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -210,7 +210,7 @@ case "$P1_" in
 esac
 
 case "$(db_version)" in
- 9) SQL_ID_=""
+ 9|10) SQL_ID_=""
     SQLACTION_="s.action pma,"
     SQLCMD1_=""
     SQLCMD2_=""
