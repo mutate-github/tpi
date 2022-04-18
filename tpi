@@ -2353,8 +2353,43 @@ P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
 case "$P1_" in
 FREE)
 $SP <<EOF >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
+select a.tablespace_name as "Tablespace Name",
+       round(maxbytes/1024 / 1024) "Max. Bytes (MB)",
+       round(a.bytes_alloc / 1024 / 1024) "Allocated (MB)",
+       round(nvl(b.bytes_free, 0) / 1024 / 1024) "Free (MB)",
+       round((a.bytes_alloc - nvl(b.bytes_free, 0)) / 1024 / 1024) "Used (MB)",
+       round(((a.maxbytes-a.bytes_alloc + nvl(b.bytes_free, 0)) / a.maxbytes) * 100) "% Free",
+       100 - round(((a.maxbytes-a.bytes_alloc + nvl(b.bytes_free, 0)) / a.maxbytes) * 100) "% Used"
+from  ( select  f.tablespace_name,
+               sum(f.bytes) bytes_alloc,
+               sum(decode(f.autoextensible, 'YES', f.maxbytes, 'NO', f.bytes)) maxbytes
+            from dba_data_files f
+            group by tablespace_name) a,
+      ( select  f.tablespace_name,
+               sum(f.bytes)  bytes_free
+            from dba_free_space f
+            group by tablespace_name) b
+where a.tablespace_name = b.tablespace_name (+)
+union all
+select f.tablespace_name,
+round(sum(f.total_bytes/(1024*1024))) total,
+sum(s.used_blocks*f.block_size/(1024*1024)),
+round(sum(f.total_bytes/(1024*1024))-sum(s.used_blocks*f.block_size/(1024*1024))) free,
+sum(s.used_blocks*f.block_size/(1024*1024)),
+round(((sum(f.total_bytes)-sum(s.used_blocks*f.block_size))/sum(f.total_bytes))*100) free_per,
+100-round(((sum(f.total_bytes)-sum(s.used_blocks*f.block_size))/sum(f.total_bytes))*100) used_per from
+( select tablespace_name, block_size, sum(total_bytes) total_bytes from (
+ select f.tablespace_name, case when autoextensible='YES' then f.maxbytes else f.user_bytes end total_bytes, t.block_size from dba_temp_files f, dba_tablespaces t
+ where t.contents='TEMPORARY' and f.tablespace_name=t.tablespace_name )
+group by tablespace_name, block_size ) f,
+ v\$sort_segment s
+where f.tablespace_name=s.tablespace_name
+group by f.tablespace_name
+ORDER BY "% Used" desc;
+
+exit
 column tablespace_name for a30
 column free for 999999999.99
 column total for 999999999.99
