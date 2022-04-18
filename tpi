@@ -2717,8 +2717,14 @@ ttitle left "V\$ARCHIVED_LOG lag archivelog standby:"
 --diff from dual;
 
 set linesize 230 pages 70
+col THREAD format 999
+col PRIMARY_SEQ format 9999999999
+col STANDBY_THREAD format 999
+col STANDBY_SEQ format 9999999999
 col PRIMARY_TIME format a20
 col STANDBY_COMPLETION_TIME format a23
+col SEQ_GAP format 9999999
+col LAG_MINUTES format 9999999.99
 SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.seq standby_seq,
          TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_completion_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
   FROM   (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#) prim,
