@@ -2721,8 +2721,9 @@ col PRIMARY_TIME format a20
 col STANDBY_COMPLETION_TIME format a23
 SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.seq standby_seq,
          TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_completion_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
-  FROM   (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log GROUP BY thread#) prim,
-         (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log WHERE dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#) tgt
+  FROM   (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#) prim,
+         (SELECT thread#, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database)
+                                                             and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#) tgt
  WHERE   prim.thread# = tgt.thread#;
 
 ttitle left "GV\$MANAGED_STANDBY :"
