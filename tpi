@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 11.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 18.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -116,10 +116,55 @@ opndb)    SP="eval sqlplus -S $login_str" ;;
 *)        SP="eval sqlplus -S '/ as sysdba'" ;;
 esac
 
+cd /tmp
+
+logf()
+{
+cat $LOGF  | tr -d \~
+rm -f $LOGF
+#rm -f $LOGINSQL >/dev/null 2>&1
+}
+
+is_number()
+{
+if [ -z "$1" ]; then
+ echo 0
+ return
+fi
+case "$1"  in
+  *[!0-9]*)  echo 0 ;;
+  *)         echo 1 ;;
+esac
+}
+
+db_version()
+{
+VALUE=`$SP <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select substr(version,1,instr(version,'.')-1) from v$instance where rownum=1;
+END`
+echo $VALUE | tr -d '\r'
+# return $VALUE
+}
+
+db_is_open()
+{
+VALUE=`$SP <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select status from v$instance where rownum=1;
+END`
+echo $VALUE | tr -d '\r'
+}
+
+case $(db_is_open) in
+OPEN)
 NLS_VALUE=`$SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
 END`
+;;
+*) : ;;
+esac
 
 NLS_VALUE=`echo $NLS_VALUE | tr -d '\r'`
 NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
@@ -162,41 +207,11 @@ alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
 --alter session set optimizer_mode  = 'FIRST_ROWS';
 --alter session set optimizer_max_permutations = 1000;
 --alter session set optimizer_dynamic_sampling = 0;
---alter session set “_optimizer_ignore_hints”=true;
+--alter session set "_optimizer_ignore_hints"=true;
 exec dbms_application_info.set_module('tpi script','oracle');
 set timing on
 CREATELOGINSQL
 
-cd /tmp
-
-logf()
-{
-cat $LOGF  | tr -d \~
-rm -f $LOGF
-#rm -f $LOGINSQL >/dev/null 2>&1
-}
-
-is_number()
-{
-if [ -z "$1" ]; then
- echo 0
- return
-fi
-case "$1"  in
-  *[!0-9]*)  echo 0 ;;
-  *)         echo 1 ;;
-esac
-}
-
-db_version()
-{
-VALUE=`$SP <<'END'
-set pagesize 0 feedback off verify off heading off echo off timing off
-select substr(version,1,instr(version,'.')-1) from v$instance where rownum=1;
-END`
-echo $VALUE | tr -d '\r'
-# return $VALUE
-}
 
 
 active_sessions()
@@ -2569,22 +2584,27 @@ where a.file_id = b.file_id(+)
 EOF
 ;;
 *)
-$SP <<'EOF' >$LOGF
+case $(db_is_open) in
+ OPEN) SQL_="select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
+select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;"
+ ;;
+ *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by dfh.tablespace_name,dfh.name;"
+ ;;
+esac
+$SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
 set numwidth 15
 column file_id for 999
+column file# for 999
 column block_size for 99999
 column tablespace_name format a25
 column file_name format a60
+column name format a60
 column status format a10
 column enabled format a15
 ttitle left "DataFiles information:"
-select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible
-from v$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
-
-select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible
-from v$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
+$SQL_
 EOF
 ;;
 esac
