@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 30.04.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 11.05.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -60,7 +60,7 @@ init_msg()
   profile__="profile - profiles information"
   links__="links - links information"
   latch__="latch - latch information"
-  lock__="lock [lib] - locks information, library lock information"
+  lock__="lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe - pipes information" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
@@ -458,74 +458,33 @@ logf
 }
 
 
+
 lock()
 {
 P2_=`echo $ALL | awk '{print $2}'`
-if [ -z "$P2_" ]; then
-$SP <<END > $LOGF
-set serveroutput on size 500000
-set echo off feed off veri off tab off
-set lines 230
-declare
- c integer := 0;
-BEGIN
-  dbms_output.put_line(chr(126)||'Blocking locks:');
-
-  for c1 in (select /*+ rule*/ substr(s1.username,1,10) WAITER, substr(s1.osuser,1,10) OS_userW, substr(to_char(w.session_id),1,5) SIDW,
-        P1.spid SPIDW, substr(s2.username,1,10) HOLDER, substr(s2.osuser,1,10) OS_userH, substr(to_char(h.session_id),1,5) SIDH,
-        P2.spid SPIDH, s2.status, w.lock_type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
-    from sys.v_\$process P1, sys.v_\$process P2, sys.v_\$session S1, sys.v_\$session S2, sys.dba_lock w, sys.dba_lock h, sys.obj\$ o
-    where h.mode_held='Exclusive' and w.mode_requested!='None' and w.lock_type (+) =h.lock_type and w.lock_id1 (+) = h.lock_id1
-    and w.lock_id2 (+) = h.lock_id2 and w.session_id = S1.sid (+) and h.session_id = S2.sid (+) and S1.paddr = P1.addr (+)
-    and S2.paddr = P2.addr (+) and o.obj#=s1.row_wait_obj# ) loop
-    if c = 0 then
-      dbms_output.put_line(chr(126)||chr(32)||'     HOLD-User:    OS_user   SID       SPID        STATUS      WAIT-User:    OS_user   SID       SPID         TYPE  ET(min)          OBJECT');
-    end if;
-    c := 1;
-    dbms_output.put_line(chr(126)||chr(32)||
-                lpad(c1.HOLDER,15)||' '||
-                lpad(nvl(c1.OS_userH,'-'),10)||' '||
-                lpad(c1.sidh,5)||' '||
-                lpad(c1.spidh,10)||' '||'     '||
-                lpad(c1.status,8)||' '||
-                lpad(c1.WAITER,15)||' '||
-                lpad(nvl(c1.OS_userW,'-'),10)||' '||
-                lpad(c1.sidw,5)||' '||
-                lpad(c1.spidw,10)||' '||
-                lpad(c1.lock_type,12)||' '||
-                lpad(c1.last_call_et,8)||' '||
-                lpad(c1.name,15)  );
-   null;
-  end loop;
-  c := 0;
-  for c1 in ( SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ w.lmode, w.request, w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
-                FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
-                 WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK WHERE request>0)
-                 and o.obj# (+) = s1.row_wait_obj#
-                 and w.sid = S1.sid (+)
-                 and S1.paddr = P1.addr (+)
-                 ORDER BY id1, request) loop
-     if c = 0 then
-       dbms_output.put_line(chr(10)||chr(126)||chr(32)||'Action    SID        PID     STATUS                  USERNAME      LMODE    REQUEST     TYPE  ET(min)               OBJECT_NAME');
-     end if;
-     c := 1;
-     dbms_output.put_line(chr(126)||chr(32)||
-                lpad(c1.Action,7)||' '||
-                lpad(c1.sid,5)||' '||
-                lpad(c1.pid,10)||' '||
-                lpad(c1.status,10)||' '||
-                lpad(c1.username,25)||' '||
-                lpad(c1.lmode,10)||' '||
-                lpad(c1.REQUEST,10)||' '||
-                lpad(c1.type,8)||' '||
-                lpad(c1.last_call_et,8)||' '||
-                lpad(c1.name,25) );
-   end loop;
-end;
-/
-END
-elif [ "$P2_" = "lib" ]; then
-$SP <<'END' > $LOGF
+P3_=`echo $ALL | awk '{print $3}'`
+SETP_="
+set echo off feed off veri off tab off 
+set lines 230 pages 100
+column Action format a10
+column SID format 99999
+column PID format a10
+column username format a30
+column name format a30
+column object_name format a30
+column lmode format a15
+column request format a15
+column TYPE format a4
+column last_call_et heading 'ET(min)' format a10
+PROMPT 0: None
+PROMPT 1: Null (NULL)
+PROMPT 2: Row-S (SS) Row Share
+PROMPT 3: Row-X (SX) Row Exclusive
+PROMPT 4: Share (S) Share
+PROMPT 5: S/Row-X (SSX) Share/Row Exclusive
+PROMPT 6: Exclusive (X) "
+case "$P2_" in
+lib) $SP <<'END' > $LOGF
 set lines 170
 set echo off feed off veri off tab off pages 40
 column sid for 9999
@@ -543,19 +502,43 @@ column s_w for 9999
 column spid for a16
 column logon_time for a10 wrap
 prompt "-- kglpnmod M  (0: no lock; 1: null; 2: shared; 3: exclusive)"
-SELECT /* +rule */ 'kill -9 '||pr.spid spid, s.sid, s.serial#, sw.event, sw.seconds_in_wait s_w, 
-ob.kglnaown||'.'||ob.kglnaobj "Object", 
-p.kglpnmod "M", p.kglpnreq "R", 
+SELECT /* +rule */ 'kill -9 '||pr.spid spid, s.sid, s.serial#, sw.event, sw.seconds_in_wait s_w,
+ob.kglnaown||'.'||ob.kglnaobj "Object", p.kglpnmod "M", p.kglpnreq "R",
 s.username,substr(s.status,1,1) status,s.osuser,s.machine,s.program,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time
 FROM sys.x$kglpn p, sys.v_$session s, sys.v_$process pr, sys.x$kglob ob, sys.v_$session_wait sw
 WHERE p.kglpnuse=s.saddr and pr.addr = s.paddr and ob.kglhdadr=p.kglpnhdl
 and sw.event like 'lib%'
 and sw.p1raw = ob.kglhdadr;
 END
-fi
+;;
+obj) $SP <<END > $LOGF
+$SETP_
+SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ -- w.lmode, w.request,
+DECODE(w.lmode, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') lmode,
+DECODE(w.request, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') request,
+w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
+FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
+WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK /* WHERE request>0*/)
+and upper(o.name) = upper('$P3_') and w.lmode not in (0,1)
+and o.obj# (+) = s1.row_wait_obj# and w.sid = S1.sid (+) and S1.paddr = P1.addr (+)
+ORDER BY w.id1, w. request, last_call_et desc;
+END
+;;
+*) $SP <<END > $LOGF
+$SETP_
+SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ -- w.lmode, w.request,
+DECODE(w.lmode, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') lmode,
+DECODE(w.request, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') request,
+w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
+FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
+WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK WHERE request>0)
+and o.obj# (+) = s1.row_wait_obj# and w.sid = S1.sid (+) and S1.paddr = P1.addr (+)
+ORDER BY w.id1, w.request, last_call_et desc;
+END
+;;
+esac
 logf
 }
-
 
 
 health()

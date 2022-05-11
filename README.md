@@ -23,7 +23,7 @@ invalid [OWNER] - invalid objects
 profile - profiles information
 links - links information
 latch - latch information
-lock [lib] - locks information, library lock information
+lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information
 bind [SQL] - sql not using bind variable information
 pipe - pipes information
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time
