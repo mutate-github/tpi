@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 11.05.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 16.05.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -2750,11 +2750,23 @@ SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYY
                                                              and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#) tgt
  WHERE   prim.thread# = tgt.thread#;
 
+column deleted format a7
+column reclaimable format a11
+ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf :"
+select applied,deleted,backup_count
+ ,decode(rectype,11,'YES','NO') reclaimable,count(*)
+ ,to_char(min(completion_time),'dd/mm/yy hh24:mi') first_time
+ ,to_char(max(completion_time),'dd/mm/yy hh24:mi') last_time
+ ,min(sequence#) first_seq,max(sequence#) last_seq
+from v\$archived_log left outer join sys.x\$kccagf using(recid)
+where is_recovery_dest_file='YES' and deleted<>'YES'
+group by applied,deleted,backup_count,decode(rectype,11,'YES','NO') order by min(sequence#);
+
 ttitle left "GV\$MANAGED_STANDBY :"
 select thread#,sequence#,process,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
 
-ttitle left "V\$STANDBY_LOG :"
-select group#,thread#,sequence#,bytes,used,archived,status from v\$standby_log;
+--ttitle left "V\$STANDBY_LOG :"
+--select group#,thread#,sequence#,bytes,used,archived,status from v\$standby_log;
 EOF
 logf
 }
