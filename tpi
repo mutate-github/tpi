@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 16.05.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 03.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -692,7 +692,7 @@ col ASIO for 9999
 col ASWA for 9999
 col ASPQ for 99999
 col TPGA for 99999
-col IOPS for 99999
+col IOPS for 999999
 col PHYR for 999999
 col PHYW for 99999
 col TEMP for 99999
@@ -2111,7 +2111,7 @@ col username for a20
 col osuser for a20
 col module for a32
 col action for a30
-col name for a35
+col name for a55
 col value for 999999999999999
 select * from (
 select b.sid, s.serial#, s.username, s.osuser, s.module, s.action, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
@@ -2752,9 +2752,14 @@ SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYY
 
 column deleted format a7
 column reclaimable format a11
+col APPLIED for a8
+col backup_count for 99999
+col count(*) for 99999
+col first_time for a15
+col last_time for a15
 ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf :"
 select applied,deleted,backup_count
- ,decode(rectype,11,'YES','NO') reclaimable,count(*)
+ ,decode(rectype,11,'YES','NO') reclaimable,count(*) 
  ,to_char(min(completion_time),'dd/mm/yy hh24:mi') first_time
  ,to_char(max(completion_time),'dd/mm/yy hh24:mi') last_time
  ,min(sequence#) first_seq,max(sequence#) last_seq
@@ -3374,7 +3379,7 @@ $SP <<EOF >$LOGF
 set echo off feed off veri off tab off
 alter session set NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss';
 prompt "NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss'"
-set linesize 2400 pages 0  --230
+set linesize 2400 pages 0
 set long 10000000 longc 10000000
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 declare
