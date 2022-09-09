@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 03.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 09.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -2342,18 +2342,20 @@ select a.tablespace_name as "Tablespace Name",
        round(maxbytes/1024 / 1024) "Max. Bytes (MB)",
        round(a.bytes_alloc / 1024 / 1024) "Allocated (MB)",
        round(nvl(b.bytes_free, 0) / 1024 / 1024) "Free (MB)",
-       round((a.bytes_alloc - nvl(b.bytes_free, 0)) / 1024 / 1024) "Used (MB)",
-       round(((a.maxbytes-a.bytes_alloc + nvl(b.bytes_free, 0)) / a.maxbytes) * 100) "% Free",
-       100 - round(((a.maxbytes-a.bytes_alloc + nvl(b.bytes_free, 0)) / a.maxbytes) * 100) "% Used"
+       round((a.maxbytes - nvl(b.bytes_free, 0)) / 1024 / 1024) "Used (MB)",
+       round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "% Free",
+       100 - round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "% Used"
 from  ( select  f.tablespace_name,
                sum(f.bytes) bytes_alloc,
                sum(decode(f.autoextensible, 'YES', f.maxbytes, 'NO', f.bytes)) maxbytes
             from dba_data_files f
             group by tablespace_name) a,
-      ( select  f.tablespace_name,
-               sum(f.bytes)  bytes_free
-            from dba_free_space f
-            group by tablespace_name) b
+      ( select tablespace_name, sum(free) bytes_free from
+          ( select d.tablespace_name, d.file_name, case when autoextensible='YES' then (d.maxbytes-d.bytes)+nvl(f.bytes,0) else nvl(f.bytes,0) end free
+               from (select tablespace_name, file_id, sum(bytes) bytes from dba_free_space
+           group by tablespace_name,file_id) f, dba_data_files d where f.file_id(+)=d.file_id )
+          group by tablespace_name
+      ) b
 where a.tablespace_name = b.tablespace_name (+)
 union all
 select f.tablespace_name,
@@ -5125,16 +5127,29 @@ if [ -z "$NUM_" ]; then
  NUM_=100
 fi
 
+VALUEP=`$SP <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select substr(platform_name,1,instr(platform_name,' ',1,1)) from v$database;
+END`
+VALUEP=`echo $VALUEP | tr -d '\r'`
 DB_VER_=$(db_version)
-
-case $DB_VER_ in
-  8|9|10)  CMD1_="select value from v\$parameter where name='background_dump_dest';" ;;
-  *)       CMD1_="select value from V\$DIAG_INFO where name='Diag Trace';" ;;
+case $VALUEP in
+  Microsoft*) slash='\'
+      case $DB_VER_ in
+        8|9|10)  CMD1_="select value from v\$parameter where name='background_dump_dest';" ;;
+        *)       CMD1_="select value from V\$DIAG_INFO where name='Diag Trace';" ;;
+      esac ;;
+  *)          slash='/'
+      case $DB_VER_ in
+         8|9|10)  CMD1_="select value||'$slash'||'alert_'||(select value from v\$parameter where name='db_name')||'.log' from v\$parameter where name='background_dump_dest';" ;;
+         *)       CMD1_="select value||'$slash'||'alert_'||(select value from v\$parameter where name='db_name')||'.log' from V\$DIAG_INFO where name='Diag Trace';" ;;
+      esac ;;
 esac
 
-
+case $VALUEP in
+  Microsoft*) 
 $SP <<EOF >$LOGF
-set lines 220
+set lines 220 timing off
 set echo off feed off veri off tab off termout off pages 0
 col value new_value value
 col db_name new_value db_name
@@ -5142,7 +5157,6 @@ $CMD1_
 select INSTANCE_NAME db_name from v\$instance;
 
 create or replace directory alert_log_dir as '&&value';
-
 drop TABLE alert_log_table ;
 CREATE TABLE alert_log_table (TEXT VARCHAR2(400))
 ORGANIZATION EXTERNAL (
@@ -5160,6 +5174,17 @@ WITH alert_log AS ( SELECT rownum as lineno, text FROM alert_log_table)
 SELECT text FROM alert_log WHERE lineno > (SELECT count(*)-$NUM_ FROM alert_log_table)
 ORDER BY lineno;
 EOF
+     ;;
+  *) 
+VALUE=`$SP <<END
+set pagesize 0 feedback off verify off heading off echo off timing off
+$CMD1_
+END`
+VALUE=`echo $VALUE | tr -d '\r'`
+echo $VALUE
+tail -$NUM_ $VALUE
+  ;;
+esac
 touch $LOGF
 logf
 }
