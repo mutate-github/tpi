@@ -1215,7 +1215,7 @@ select * from v$option;
 END
 ;;
 *)
- SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode,current_scn, resetlogs_time,open_mode,protection_level,database_role,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON from v\$database;"
+ SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode,current_scn, resetlogs_time,open_mode,protection_level,database_role,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
  REL=$(db_version)
  case $REL in
    9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,protection_mode,protection_level,database_role,switchover_status,force_logging,supplemental_log_data_min from v\$database;"
@@ -1243,17 +1243,19 @@ select INSTANCE_NAME, HOST_NAME, VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS,
 prompt
 prompt v\$database:
 column current_scn for 99999999999999
-column dbid for 99999999999999
+column resetlogs_time for a10 heading "RESETLOGS|TIME"
+column dbid for 99999999999
 column name for a8
 column created for a10
 column LOG_MODE for a13
 column open_mode for a10
-column database_role for a13
-column protection_level for a19
-column switchover_status for a17
-column force_logging for a13
-column supplemental_log_data_min for a3
-column FLASHBACK_ON for a12
+column database_role for a9 heading "DATABASE|ROLE"
+column protection_level for a12 heading "PROTECTION|LEVEL"
+column switchover_status for a11 heading "SWITCHOVER|STATUS"
+column force_logging for a7 heading "FORCE|LOGGING"
+column supplemental_log_data_min for a12 heading "SUPPLEMENTAL|LOG_DATA"
+column FLASHBACK_ON for a9 heading "FLASHBACK|ON"
+column platform_name for a28
 $SQL_TEXT
 EOF
 
