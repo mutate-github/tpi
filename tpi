@@ -5144,8 +5144,8 @@ case $VALUEP in
       esac ;;
   *)          slash='/'
       case $DB_VER_ in
-         8|9|10)  CMD1_="select value||'$slash'||'alert_'||(select value from v\$parameter where name='db_name')||'.log' from v\$parameter where name='background_dump_dest';" ;;
-         *)       CMD1_="select value||'$slash'||'alert_'||(select value from v\$parameter where name='db_name')||'.log' from V\$DIAG_INFO where name='Diag Trace';" ;;
+         8|9|10)  CMD1_="select value||'$slash'||'alert_$ORACLE_SID.log' from v\$parameter where name='background_dump_dest';" ;;
+         *)       CMD1_="select value||'$slash'||'alert_$ORACLE_SID.log' from V\$DIAG_INFO where name='Diag Trace';" ;;
       esac ;;
 esac
 
