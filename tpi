@@ -2716,24 +2716,29 @@ set pages 60
 
 ttitle left "V\$LOG :"
 col bytes for 999999999999
+column status for a8
 select group#,thread#,sequence#,bytes,archived,status from v\$log;
 
 column "Archive_dest" for a50
 ttitle left "V\$ARCHIVE_DEST :"
 column DEST_ID for 99
-column status for a10
+column LOG_SEQUENCE for 999999999
+column status for a8
 column binding for a10
-column compression for a10
-column DESTINATION for a70
-column ERROR for a90
-SELECT DEST_ID, log_sequence,  STATUS, binding, compression, DESTINATION, ERROR FROM V\$ARCHIVE_DEST WHERE DEST_ID <= 10 and status <> 'INACTIVE';
+column target for a7
+column compression for a7
+column valid_type for a15
+column valid_role for a12
+column DESTINATION for a55
+column ERROR for a75
+SELECT DEST_ID, log_sequence,  STATUS, binding, target, compression, valid_type, valid_role, DESTINATION, ERROR FROM V\$ARCHIVE_DEST WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
 ttitle left "V\$ARCHIVE_DEST_STATUS :"
 column recovery_mode for a25
 column database_mode for a15
 SELECT DEST_ID, RECOVERY_MODE, status, database_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
-ttitle left "V\$ARCHIVED_LOG lag archivelog standby:"
+ttitle left "V\$ARCHIVED_LOG apply lag archivelog standby:"
 --select
 --(select max(sequence#) from v\$archived_log where standby_dest='NO' and archived='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))-
 --(select max(sequence#) from v\$archived_log where standby_dest='YES' and archived='YES' and applied='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))
@@ -2762,6 +2767,8 @@ col backup_count for 99999
 col count(*) for 99999
 col first_time for a15
 col last_time for a15
+col first_seq for 999999999
+col last_seq for 999999999
 ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf :"
 select applied,deleted,backup_count
  ,decode(rectype,11,'YES','NO') reclaimable,count(*) 
@@ -2773,7 +2780,11 @@ where is_recovery_dest_file='YES' and deleted<>'YES'
 group by applied,deleted,backup_count,decode(rectype,11,'YES','NO') order by min(sequence#);
 
 ttitle left "GV\$MANAGED_STANDBY :"
-select thread#,sequence#,process,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
+col thread# for 99
+col SEQUENCE# for 999999999
+col PROCESS for a7
+col PID for 999999999
+select thread#,sequence#,process, pid,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
 
 --ttitle left "V\$STANDBY_LOG :"
 --select group#,thread#,sequence#,bytes,used,archived,status from v\$standby_log;
