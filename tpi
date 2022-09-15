@@ -2738,7 +2738,7 @@ column recovery_mode for a25
 column database_mode for a15
 SELECT DEST_ID, RECOVERY_MODE, status, database_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
-ttitle left "V\$ARCHIVED_LOG apply lag archivelog standby:"
+ttitle left "V\$ARCHIVED_LOG transport lag archivelog standby:"
 --select
 --(select max(sequence#) from v\$archived_log where standby_dest='NO' and archived='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))-
 --(select max(sequence#) from v\$archived_log where standby_dest='YES' and archived='YES' and applied='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))
