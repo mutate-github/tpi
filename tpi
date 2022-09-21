@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 15.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 21.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -2716,14 +2716,13 @@ set pages 60
 
 ttitle left "V\$LOG :"
 col bytes for 999999999999
-column status for a8
+column status for a12
 select group#,thread#,sequence#,bytes,archived,status from v\$log;
 
 column "Archive_dest" for a50
 ttitle left "V\$ARCHIVE_DEST :"
 column DEST_ID for 99
 column LOG_SEQUENCE for 999999999
-column status for a8
 column binding for a10
 column target for a7
 column compression for a7
@@ -2751,6 +2750,7 @@ col STANDBY_THREAD format 999
 col STANDBY_SEQ format 9999999999
 col PRIMARY_TIME format a20
 col STANDBY_COMPLETION_TIME format a23
+col STANDBY_NEXT_TIME format a23
 col SEQ_GAP format 9999999
 col LAG_MINUTES format 9999999.99
 SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
@@ -2758,18 +2758,25 @@ SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.
   FROM   (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
          (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database)
                                                              and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#, dest_id) tgt
- WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id;
+ WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id order by prim.thread#, prim.dest_id;
+
+SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
+         TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_next_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
+  FROM   (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
+         (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database)
+                                                             and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#, dest_id) tgt
+ WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id order by prim.thread#, prim.dest_id;
 
 column deleted format a7
 column reclaimable format a11
-col APPLIED for a8
+col APPLIED for a9
 col backup_count for 99999
 col count(*) for 99999
 col first_time for a15
 col last_time for a15
 col first_seq for 999999999
 col last_seq for 999999999
-ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf :"
+ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf   exec dbms_backup_restore.refreshagedfiles; :"
 select applied,deleted,backup_count
  ,decode(rectype,11,'YES','NO') reclaimable,count(*) 
  ,to_char(min(completion_time),'dd/mm/yy hh24:mi') first_time
