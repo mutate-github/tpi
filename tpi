@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 21.09.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 03.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -25,14 +25,17 @@ goldwhs)   . ~/.bash_profile ;;
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
 #           if [ -f ~/.profile ]; then . ~/.profile ; fi 
    case `uname | awk -F_ '{print $1}'` in
-      Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi ;;
+      Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi 
+              rc=`find . -maxdepth 1 -name "${sid}_setenv.sh" -print -quit`
+              if [ -n "$rc" ]; then . ~/${sid}_setenv.sh ; fi
+	      ;;
       AIX)    if [ -f ~/.profile ]; then . ~/.profile ; fi
               if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi 
               ;;
-      *) ;;
+      *) : ;;
    esac
 ;;
-esac > /dev/null 2>&1
+esac  > /dev/null 2>&1
 
 
 init_msg()
@@ -79,6 +82,8 @@ init_msg()
 }
 
 init_msg
+
+echo "sid="$sid
 
 if [ -z "$sid" ]; then
   env | grep ORA
