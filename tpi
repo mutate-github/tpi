@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 03.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 10.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -82,8 +82,6 @@ init_msg()
 }
 
 init_msg
-
-echo "sid="$sid
 
 if [ -z "$sid" ]; then
   env | grep ORA
@@ -730,8 +728,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(phyw) phyw,               --   PHYW      [s,N]: physical writes per sec
       round(temp/1024/1024,0) temp,   --   TEMP      [s,N]: temp space used (Mb)
       trunc(dbtm) dbtm                --'Database Time Per Sec'
-  FROM   (  SELECT     /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
-                     begin_time, 
+  FROM   (  SELECT   begin_time, 
                      SUM(DECODE (metric_name, 'CPU Usage Per Sec', VALUE, 0)) dcpu,
                      SUM(DECODE (metric_name, 'Host CPU Utilization (%)', VALUE, 0)) hcpu,
                      SUM(DECODE (metric_name, 'I/O Megabytes per Second', VALUE, 0)) mbps,
@@ -779,21 +776,20 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
           (SELECT inst_id id3, TO_NUMBER (VALUE) ncpu  FROM   gv$osstat  WHERE   stat_name = 'NUM_CPUS')
  , (select sample_time, count(*) ast, nvl(round((count(*)/sum(asct))*sum(cpas)),0) ascpu, nvl(round((count(*)/sum(asct))*sum(ioas)),0) asio, nvl(round((count(*)/sum(asct))*sum(waas)),0) aswa
 from(
-SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
-to_char(sample_time,'dd/mm/yyyy hh24:mi') sample_time, session_id, "SESSION_SERIAL#",
+SELECT cast(sample_time as date) sample_time, session_id, "SESSION_SERIAL#",
  COUNT ( * ) asct,
  SUM(DECODE(wait_time, 0, 0, 1)) cpas,
  SUM(DECODE(wait_class, 'User I/O', 1, 0)) ioas,
  SUM(DECODE(wait_time, 0, DECODE (wait_class,'User I/O', 0, 1))) waas
 FROM V$ACTIVE_SESSION_HISTORY
 WHERE SESSION_TYPE <> 'BACKGROUND' AND user_id > 0
-group by to_char(sample_time,'dd/mm/yyyy hh24:mi'),session_id, "SESSION_SERIAL#"
-order by to_date(to_char(sample_time,'dd/mm/yyyy hh24:mi'),'dd/mm/yyyy hh24:mi')
+group by cast(sample_time as date), session_id, "SESSION_SERIAL#"
+order by sample_time
 )
 group by sample_time
 order by sample_time
 ) act_sess
-where act_sess.sample_time=to_char(begin_time,'dd/mm/yyyy hh24:mi')
+where act_sess.sample_time=begin_time
 ORDER BY begin_time;
 EOF
 ;;
@@ -2743,11 +2739,6 @@ column database_mode for a15
 SELECT DEST_ID, RECOVERY_MODE, status, database_mode, archived_thread#, archived_seq#, applied_seq# FROM V\$ARCHIVE_DEST_STATUS WHERE DEST_ID <= 10 and status <> 'INACTIVE';
 
 ttitle left "V\$ARCHIVED_LOG transport lag archivelog standby:"
---select
---(select max(sequence#) from v\$archived_log where standby_dest='NO' and archived='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))-
---(select max(sequence#) from v\$archived_log where standby_dest='YES' and archived='YES' and applied='YES' and activation#=(select activation# from v\$archived_log where completion_time=(select max(completion_time) from v\$archived_log) and rownum=1))
---diff from dual;
-
 set linesize 230 pages 70
 col THREAD format 999
 col PRIMARY_SEQ format 9999999999
@@ -2758,13 +2749,6 @@ col STANDBY_COMPLETION_TIME format a23
 col STANDBY_NEXT_TIME format a23
 col SEQ_GAP format 9999999
 col LAG_MINUTES format 9999999.99
---SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
---         TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_completion_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
---  FROM   (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
---         (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(completion_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database)
---                                                             and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#, dest_id) tgt
--- WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id order by prim.thread#, prim.dest_id;
-
 SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
          TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_next_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
   FROM   (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
