@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 10.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 11.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -76,8 +76,8 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html day_before HH24_begin HH24_end], [awrsql text|html day_before HH24_begin HH24_end sql_id], [addm text day_before HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
-  dhash__="dhash [hours - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | growseg [SEGMENT] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
+  dhash__="dhash [hours - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] | growseg [SEGMENT] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -3558,6 +3558,37 @@ logf
 }
 
 
+awr_tempusage()
+{
+view_=$1
+allocated_=$2
+limit_=1024
+if [ -z "$allocated_" ]; then
+  allocated_=$limit_
+fi
+echo "AWR_tempusage from $view_ for limit >= $allocated_ Mb and last hours $HH_"
+$SP <<EOF >$LOGF
+set lines 230
+col SAMPLE_TIME for a15
+col SQL_ID  for a15
+col TEMP_DIFF for 9999999999
+select session_id,session_serial#, t.sample_time, t.sql_id, /*t.temp_mb,*/ t.temp_diff
+  from ( select session_id,session_serial#,
+               to_char(sample_time, 'DD/MM/YYYY HH24') sample_time,sql_id, /*sum(temp_mb) temp_mb,*/ sum(temp_diff) temp_diff
+               , row_number() over (partition by to_char(sample_time, 'DD/MM/YYYY HH24') order by sum(temp_mb) desc nulls last) as rn
+          from ( select sample_time,session_id,session_serial#,sql_id,temp_space_allocated/(1024*1024) temp_mb,
+                       temp_space_allocated/1024/1024-lag(temp_space_allocated/1024/1024,1,0) over (partition by session_id,"SESSION_SERIAL#",sql_id order by sample_time) as temp_diff
+                 from $view_
+                where  temp_space_allocated > 0
+                       and sample_time >=  sysdate - (1*(nvl('$HH_',24)/24)))
+         group by session_id,session_serial#, to_char(sample_time, 'DD/MM/YYYY HH24'), sql_id
+         having sum(temp_diff) >= nvl('$allocated_', $limit_)
+       ) t
+ order by sample_time, temp_diff desc;
+EOF
+}
+
+
 dhash()
 {
 case "$(db_version)" in
@@ -4077,13 +4108,16 @@ order by owner, segment_name, to_date(end_interval_time, 'DD/MM/YYYY HH24');
 EOF
 fi
 ;;
+temp)
+       P1_=`echo $* | awk '{print $2}'`
+       awr_tempusage dba_hist_active_sess_history $P1_
+;;
 *) echo "Nothing..." ;;
 esac
 fi
 
 logf
 }
-
 
 
 
@@ -4479,6 +4513,8 @@ decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/EXECUTI
 sharable_mem
 FROM V\$SQLSTATS WHERE sql_id = '$P1_';
 EOF
+;;
+temp) awr_tempusage v\$active_session_history $P1_
 ;;
 *) echo "Nothing..." ;;
 esac
