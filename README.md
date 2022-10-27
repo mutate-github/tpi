@@ -25,7 +25,7 @@ links - links information
 latch - latch information
 lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information
 bind [SQL] - sql not using bind variable information
-pipe - pipes information
+pipe [PIPE_NAME] - pipes information, read PIPE_NAME
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time
 scheduler [log|run JOB_NAME [hours]] - dba_scheduler_jobs information, log|run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]
 job [OWNER] - dba_jobs information

@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 11.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 27.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -66,7 +66,7 @@ init_msg()
   latch__="latch - latch information"
   lock__="lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
-  pipe__="pipe - pipes information" 
+  pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [log|run JOB_NAME [hours]] - dba_scheduler_jobs information, log|run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
@@ -3105,14 +3105,38 @@ logf
 
 pipe()
 {
+if [ -n "$ALL" ]; then
+$SP <<EOF >$LOGF
+set lines 230
+set serveroutput on
+set echo off feed off veri off tab off pages 0
+declare
+v_pipe varchar2(32) := '$ALL';
+v_p pls_integer;
+v_data VARCHAR2(4000);
+v_out clob;
+begin
+ v_out :='';
+ v_p := DBMS_PIPE.RECEIVE_MESSAGE(v_pipe, 0);
+        WHILE v_p = 0 LOOP
+                DBMS_PIPE.UNPACK_MESSAGE(v_data);
+                v_out := v_out || v_data ||chr(13)||chr(10);
+                v_p := DBMS_PIPE.RECEIVE_MESSAGE(v_pipe, 0);
+        END LOOP;
+  dbms_output.put_line(v_out);
+ end;
+/
+EOF
+else
 $SP <<'EOF' >$LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
 column name for a40
 select name,pipe_size from sys.V_$DB_PIPES
 where name not like '%LOCK%'
 order by pipe_size desc;
 EOF
+fi
 logf
 }
 
@@ -5415,8 +5439,8 @@ invalid) shift; ALL=$* ; echo $invalid__  ${reset}; invalid $ALL ;;
 profile)   echo $profile__  ${reset}; profile ;;
 links)   echo $links__ ${reset} ; links ;;
 latch)   echo $latch__ ${reset} ; latch ;;
-bind) shift ; ALL=$* ;  echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
-pipe) echo $pipe__ ${reset}; pipe  ;;
+bind) shift ; ALL=$* ; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
+pipe) shift ; ALL=$* ; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
 longops)  echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)  shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
