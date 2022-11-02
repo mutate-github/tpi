@@ -2301,7 +2301,7 @@ Declare
           select a.snap_id, SNAP_TIME, sum(TOTAL_SPACE_ALLOCATED_DELTA) over ( order by a.SNAP_ID) ProgSum
       from
         (select ccast, max(snap_id) snap_id, sum(TOTAL_SPACE_ALLOCATED_DELTA) TOTAL_SPACE_ALLOCATED_DELTA from (
-            select SNAP_ID, trunc(row_number() over (order by snap_id ) / (24*$CNT) ) ccast,
+            select SNAP_ID, trunc(row_number() over (order by snap_id ) ) ccast,
             sum(SPACE_ALLOCATED_DELTA) TOTAL_SPACE_ALLOCATED_DELTA
             from DBA_HIST_SEG_STAT
             group by SNAP_ID
@@ -2311,7 +2311,7 @@ Declare
         group by ccast
         order by ccast
          ) a,
-          (select distinct SNAP_ID, to_char(END_INTERVAL_TIME,'DD-Mon-YYYY HH24:Mi') SNAP_TIME from DBA_HIST_SNAPSHOT) b
+          (select distinct SNAP_ID, to_char(END_INTERVAL_TIME,'DD-Mon-YYYY HH24:Mi') SNAP_TIME from DBA_HIST_SNAPSHOT where end_interval_time > sysdate-$CNT ) b
       where a.snap_id=b.snap_id;
 Begin
     select sum(SPACE_ALLOCATED_DELTA) into v_TotalGrowth from DBA_HIST_SEG_STAT;
@@ -3065,7 +3065,7 @@ EOF
 logf
 }
 
-# rtpi 192.168.1.131 askona1 bind | egrep -v "SQL|------" | sed '/^$/d' | awk '{print "/home/oracle/oracle12client/run_tpi.sh 192.168.1.131 askona1 bind  "sq substr($0,1,60) sq}' sq="~" | awk -F"'" '{print $1 }'| sed -e 's|"|\\"|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e "s|~|\'|g"
+# rtpi 192.168.1.131 askona1 bind | egrep -v "SQL|------" | sed '/^$/d' | awk '{print "/home/oracle/tal/run_tpi.sh 192.168.1.131 askona1 bind  "sq substr($0,1,60) sq}' sq="~" | awk -F"'" '{print $1 }'| sed -e 's|"|\\"|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e "s|~|\'|g"
 bind()
 {
 if [ -n "$ALL" ]; then
@@ -3124,7 +3124,7 @@ begin
                 v_p := DBMS_PIPE.RECEIVE_MESSAGE(v_pipe, 0);
         END LOOP;
   dbms_output.put_line(v_out);
- end;
+end;
 /
 EOF
 else
