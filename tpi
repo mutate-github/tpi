@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 27.10.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 14.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com
 # echo $*
 sid=$1
 
@@ -3408,6 +3408,13 @@ JOB)
 $SP <<EOF >>$LOGF
 SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
 SELECT dbms_metadata.get_ddl('PROCOBJ','$object_', '$owner_') from dual;
+EOF
+;;
+TABLESPACE)
+$SP <<EOF >>$LOGF
+SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+exec DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
+select dbms_metadata.get_ddl('$type_','$object_') from dual;
 EOF
 ;;
 *)
