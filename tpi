@@ -35,7 +35,7 @@ esac  > /dev/null 2>&1
 init_msg()
 {
   a__="a - all sessions  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
-  p__="p | ph [PARAMETER] [FALSE] - instance parameters or hidden parameters, [FALSE] - only changed parameters" 
+  p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health - Different Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Latch contention, Hot buffers)"
   oratop__="oratop [ h ] - Different Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY"
@@ -1140,6 +1140,32 @@ P1_=`echo $ALL | awk '{print $1}'`
 P2_=`echo $ALL | awk '{print $2}' | tr '[:upper:]' '[:lower:]'`
 P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 case "$P1_" in
+services)
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 50
+set lines 230
+col host_name    format a25
+col service_name format a25
+col network_name format a25
+prompt v\$services:
+select (select host_name from v\$instance) host_name, name service_name,  network_name from v\$services;
+col name format a25
+prompt gv\$active_services:
+select service_id,name,  network_name, creation_date from  gv\$active_services order by service_id;
+EOF
+;;
+dir)
+$SP <<EOF >$LOGF
+set echo off feed off veri off tab off pages 50
+set lines 230
+col OWNER for a20
+col DIRECTORY_NAME for a30
+col DIRECTORY_PATH for a80
+prompt dba_directories:
+SELECT * FROM dba_directories order by owner,directory_name;
+EOF
+;;
 ph)
 $SP <<EOF >$LOGF
 set lines 230
@@ -4687,6 +4713,7 @@ case $type_ in
 blplan)
 sql_handle="$2"
 plan_name="$3"
+if [ "$sql_handle" = null ]; then sql_handle=""; fi
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 400
@@ -4920,21 +4947,14 @@ EOF
 usage)
 sql_id="$2"
 $SP <<EOF >$LOGF
-set lines 200
+set lines 230
 set echo off feed off veri off tab off pages 400
 ttitle left "Usage baselines in view gv\$sql sql_id = $sql_id:"
 column SQL_PROFILE for a30
 column SQL_PATCH for a20
 column SQL_PLAN_BASELINE for a30
-select INST_ID,
-       SQL_ID,
-       CHILD_NUMBER,
-       PLAN_HASH_VALUE,
-       SQL_PROFILE,
-       SQL_PATCH,
-       SQL_PLAN_BASELINE,
-       LAST_LOAD_TIME,
-       LAST_ACTIVE_TIME
+column LAST_LOAD_TIME for a22
+select INST_ID, SQL_ID, CHILD_NUMBER, PLAN_HASH_VALUE, SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME
 from GV\$SQL
 where SQL_ID in ('$sql_id') and (sql_plan_baseline is not null or sql_profile is not null)
 order by SQL_ID,LAST_ACTIVE_TIME;
@@ -5469,7 +5489,7 @@ esac
 case "$ID" in
 ""|a|access)  echo $a__ ${reset}; active_sessions $ALL ;;
 lock)   echo $lock__ ${reset}; lock $ALL ;;
-p|ph)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
+p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)  echo $db__ ${reset}; db ;;
 health)  echo $health__ ${reset}; health ;;
 oratop)  shift ; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
