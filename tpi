@@ -5,22 +5,16 @@ set -f
 sid=$1
 
 case "$sid" in
-kik*)      . ~/db12kik.env ;;
-bd*)       . ~/db12kik.env ;;
-prov*)     . ~/db12kik.env ;;
-EPS*)      . ~/db12.env ;;
-creditc)   . ~/db12.env ;;
-KIKOPDR)   . ~/db11.env ;;
-jet|ja)    . /etc/profile.ora ;;
-aisutf*)   . ~/.ora_env ;;
-unit*)     . ~/.ora_env ;;
-askona*)   . ~/.profile ;;
-aixtdb*)   . ~/.profile ;;
-sbaskona)  . ~/.profile ;;
-egais*)    . ~/.bashrc ;;
-GOLD506*)  . ~/.bashrc ;;
-unc*)      . ~/unc_setenv.sh ;;
-goldwhs)   . ~/.bash_profile ;;
+cft*|kik*|bd*|prov*)  . ~/db12kik.env ;;
+EPS*|creditc)         . ~/db12.env ;;
+KIKOPDR)              . ~/db11.env ;;
+jet|ja)               . /etc/profile.ora ;;
+aisutf*|unit*)        . ~/.ora_env ;;
+askona*|aixtdb*)      . ~/.profile ;;
+sbaskona)             . ~/.profile ;;
+egais*|GOLD506*)      . ~/.bashrc ;;
+unc*)                 . ~/unc_setenv.sh ;;
+goldwhs)              . ~/.bash_profile ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
 #           if [ -f ~/.profile ]; then . ~/.profile ; fi 
@@ -76,8 +70,8 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html day_before HH24_begin HH24_end], [awrsql text|html day_before HH24_begin HH24_end sql_id], [addm text day_before HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
-  dhash__="dhash [hours 5+1 - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | prg (PROGRAM) | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJTYPE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
+  dhash__="dhash [hours 5+1 - def3] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJTYPE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -86,7 +80,7 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i. | l. | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
+  echo "Usage: $0 <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i . | l . | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
   echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
@@ -1230,7 +1224,7 @@ END
    ;;
   esac
 $SP <<EOF > $LOGF
-set lines 230
+set lines 230 timing off
 set echo off feed off veri off tab off pages 50
 prompt v\$instance:
 column instance_name for a15
@@ -1242,6 +1236,11 @@ column LOGINS for a10
 column DATABASE_STATUS for a15
 column instance_role for a20
 select INSTANCE_NAME, HOST_NAME, VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from v\$instance;
+prompt
+prompt gv\$active_services:
+col NAME for a40
+col NETWORK_NAME for a40
+select service_id,name,  network_name, creation_date from  gv\$active_services order by service_id;
 
 prompt
 prompt v\$database:
@@ -1263,8 +1262,8 @@ $SQL_TEXT
 EOF
 
 $SP <<END >> $LOGF
-set lines 230
-set echo off feed off veri off tab off pages 40
+set lines 230 timing off
+set echo off feed off veri off tab off pages 40 
 column COMP_ID for a10
 ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD/MM/YYYY HH24:MI:SS';
 column COMP_NAME for a40
@@ -3927,10 +3926,13 @@ order by "TOTAL" desc
 EOF
 fi
 ;;
-prg)
-PRG_=`echo $* | awk '{print $2}'`
+where)
+FIELD_=`echo $* | awk '{print $2}'`
+if [ -z "$FIELD_" ]; then FIELD_="program"; fi
+PRG_=`echo $* | awk '{print $3}'`
+COND_="and $FIELD_ like '%$PRG_%'"
 $SP <<EOF >$LOGF
-PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HH_  $xrange for PROGRAM: $PRG_"
+PROMPT "Stat from DBA_HIST_ACTIVE_SESS_HISTORY for last hours: $HH_  $xrange for condition: $COND_"
 $SET_COL
 select * from (
 select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/ /*program,module,action,machine*/  program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -3942,7 +3944,8 @@ select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,nvl(event,'O
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id
 and dbid=(select dbid from v\$database) and sample_time >= sysdate - (1*('$HHB_'/24)) and sample_time <= sysdate - (1*(('$HHB_'-nvl('$HHE_','$HHB_'))/24))
 and  sql_id is not null 
-and program like '%$PRG_%'
+$COND_
+--and program like '%$PRG_%'
 --and module like '%$PRG_%'
 --and action like '%$PRG_%'
 group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,event,session_state,program,module,action,machine
@@ -4430,23 +4433,31 @@ order by sum(decode(h.session_state,'ON CPU',1,1)) desc
 EOF
 fi
 ;;
-prg)
-PRG_=`echo $* | awk '{print $2}'`
+where)
+FIELD_=`echo $* | awk '{print $2}'`
+if [ -z "$FIELD_" ]; then FIELD_="program"; fi
+PRG_=`echo $* | awk '{print $3}'`
+COND_="and $FIELD_ like '%$PRG_%'"
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Top 30 ON CPU Session from V\$ACTIVE_SESSION_HISTORY  program = $PRG_"
+PROMPT "Stat top 30 ON CPU Session from V\$ACTIVE_SESSION_HISTORY for condition: $COND_"
 PROMPT
 $SET_COL
 select * from (
-select /*session_id sid,"SESSION_SERIAL#" serial,*/username,sql_id,nvl(event,'ON CPU') event, program, --session_state, /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+select /*session_id sid,"SESSION_SERIAL#" serial,*/username,sql_id,nvl(event,'ON CPU') event, /* program, session_state, */ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
  sum(decode(h.session_state,'ON CPU',1,0))     "CPU",
      sum(decode(h.session_state,'WAITING',1,0))    -
      sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0))    "WAIT" ,
      sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0))    "IO" ,
      sum(decode(h.session_state,'ON CPU',1,1))     "TOTAL"
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
-and sql_id is not null and program like '%$PRG_%'
-group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,event,program --,session_state,program,module,action,machine
+and sql_id is not null 
+$COND_
+--and program like '%$PRG_%'
+--and module like '%$PRG_%'
+--and action like '%$PRG_%'
+--group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,event,program --,session_state,program,module,action,machine
+group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,event,program,module,action,machine
 order by sum(decode(h.session_state,'ON CPU',1,1)) desc
 --order by sum(decode(h.session_state,'WAITING',1,0)) - sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0)) desc
 ) where rownum < 31;
