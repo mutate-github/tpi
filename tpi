@@ -1,20 +1,19 @@
 #!/bin/sh
 set -f
-# version 18.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com
+# version 25.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo $*
 sid=$1
 
 case "$sid" in
-cft*|kik*|bd*|prov*)  . ~/db12kik.env ;;
-EPS*|creditc)         . ~/db12.env ;;
-KIKOPDR)              . ~/db11.env ;;
-jet|ja)               . /etc/profile.ora ;;
-aisutf*|unit*)        . ~/.ora_env ;;
-askona*|aixtdb*)      . ~/.profile ;;
-sbaskona)             . ~/.profile ;;
-egais*|GOLD506*)      . ~/.bashrc ;;
-unc*)                 . ~/unc_setenv.sh ;;
-goldwhs)              . ~/.bash_profile ;;
+cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
+EPS*|creditc)               . ~/db12.env ;;
+KIKOPDR|sdfo)               . ~/db11.env ;;
+jet|ja)                     . /etc/profile.ora ;;
+aisutf*|unit*)              . ~/.ora_env ;;
+askona*|aixtdb*|sbaskona)   . ~/.profile ;;
+egais*|GOLD506*)            . ~/.bashrc ;;
+unc*)                       . ~/unc_setenv.sh ;;
+goldwhs)                    . ~/.bash_profile ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
 #           if [ -f ~/.profile ]; then . ~/.profile ; fi 
@@ -466,6 +465,7 @@ set echo off feed off veri off tab off
 set lines 230 pages 100
 column Action format a10
 column SID format 99999
+column serail# format 9999999
 column PID format a10
 column username format a30
 column name format a30
@@ -524,7 +524,7 @@ END
 ;;
 *) $SP <<END > $LOGF
 $SETP_
-SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ -- w.lmode, w.request,
+SELECT /*+ rule */ DECODE(w.request,0,'HOLDER: ','Waiter: ') Action, w.sid, s1.serial#, P1.spid "PID", s1.status, s1.username, /*w.id1, w.id2,*/ -- w.lmode, w.request,
 DECODE(w.lmode, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') lmode,
 DECODE(w.request, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Share', 5, 'S/Row-X (SSX)', 6, 'Exclusive') request,
 w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
@@ -689,7 +689,7 @@ col ASCPU for 9999
 col ASIO for 9999
 col ASWA for 9999
 col ASPQ for 99999
-col TPGA for 99999
+col TPGA for 999999
 col IOPS for 999999
 col PHYR for 999999
 col PHYW for 99999
@@ -1320,8 +1320,12 @@ logf
 sga()
 {
 $SP <<'EOF' >$LOGF
-set lines 170
+set lines 230 numw 15
 set echo off feed off veri off tab off pages 40
+column component for a40
+prompt Size of v$sga_dynamic_components :
+select COMPONENT,CURRENT_SIZE,MIN_SIZE,MAX_SIZE from v$sga_dynamic_components;
+
 prompt Size of db_cache_size:
 column name for a20
 select name,block_size,resize_state,current_size,buffers,target_size,target_buffers,prev_size,prev_buffers from V$BUFFER_POOL;
@@ -4190,11 +4194,10 @@ SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
            AND dhss.obj# = dhso.obj#
            AND dhss.dataobj# = dhso.dataobj#
            AND begin_interval_time >= sysdate - (1*('$HHB_'/24)) and end_interval_time <= sysdate - (1*(('$HHB_'-nvl('$HHE_','$HHB_'))/24))
-	   and object_type like nvl('$OBJTYPE_','%')
+	   and object_type like nvl(trim('$OBJTYPE_'),'%')
 GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.object_name,dhso.object_type
   HAVING   SUM (db_block_changes_delta) > 0
 ORDER BY   snap_time;
---ORDER BY   SUM (db_block_changes_delta) DESC;
 EOF
 ;;
 temp)
@@ -4580,6 +4583,7 @@ col version_count for 999999
 col PARSE_CALLS for 999,999,999
 col invalidations for 999,999
 select 'exec dbms_shared_pool.purge ('''||address||','||hash_value||''',''C'');' cmd, sql_id,address, hash_value, executions, loads, version_count, invalidations, parse_calls from v\$sqlarea where sql_id  = '$P1_';
+select sql_id,users_opening,users_executing,open_versions from v\$sql where sql_id = '$P1_';
 
 PROMPT
 PROMPT "SQLStats from V\$SQLSTATS  for sql_id: $P1_"
