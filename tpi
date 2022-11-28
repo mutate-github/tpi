@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 25.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 28.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo $*
 sid=$1
 
@@ -664,7 +664,7 @@ set lines 230 pages 100 tab off
 prompt NCPU   - Number of CPU                                   AAS    - Average Active Sessions. (red if > #cpu)       SSRT   - Sql service response time (T/call)
 prompt HCPUB  - Host cpu busy %(busy/busy+idle). (red if>90%)   AST    - Active user Sessions Total (ASCPU+ASIO+ASWA)   MBPS   - I/O megabytes per second (throughput)
 prompt CPUUPS - CPU Usage Per Sec                               ASCPU  - Active Sessions on CPU                         IOPS   - I/O requests per second
-prompt LOAD   - Current os load. (red if>2*#CPU and high cpu)   ASIO   - Active Sessions waiting on user I/O            IORL   - I/O avg synch s/b/read latency in usec (red>20ms)
+prompt LOAD   - Current os load. (red if>2*#CPU and high cpu)   ASIO   - Active Sessions waiting on user I/O            IORL   - I/O avg synch s/b/read latency in msec (red>20ms)
 prompt DCTR   - DB CPU time ratio  % Cpu/DB_Time                ASWA   - Active Sessions Waiting, (red if>ASCPU+ASIO)   LOGR   - Logical reads per sec
 prompt DWTR   - DB WAIT time ratio (red if>50 and high ASWA)    ASPQ   - Active Parallel Sessions                       PHYR   - Physical reads per sec
 prompt SPFR   - Shared pool free %                              UTPS   - User transactions per sec                      PHYW   - Physical writes per sec
@@ -716,7 +716,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(ssrt*10000) ssrt,         --   SSRT    [c,m,T]: sql service response time (T/call)
       trunc(mbps) mbps,               --   MBPS      [m,N]: i/o megabytes per second (throughput)
       trunc(iops) iops,               --   IOPS      [m,N]: i/o requests per second
-      trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency in usec (red > 20ms)
+      trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency in msec (red > 20ms)
       trunc(logr) logr,               --   LOGR      [s,N]: logical reads per sec
       trunc(phyr) phyr,               --   PHYR      [s,N]: physical reads per sec
       trunc(phyw) phyw,               --   PHYW      [s,N]: physical writes per sec
@@ -859,7 +859,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(saas) saas,               --   AAS       [s,N]: Average Active Sessions. (red if > #cpu)
       trunc(mbps) mbps,               --   MBPS      [m,N]: i/o megabytes per second (throughput)
       trunc(ssrt*10000) ssrt,         --   SSRT    [c,m,T]: sql service response time (T/call)
-      trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency in usec (red > 20ms)
+      trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency in msec (red > 20ms)
       trunc(load) load,               --   LOAD      [m,N]: current os load. (red if > 2*#cpu and high cpu)
       round(upga/1024/1024,0) upga,   --   PGA       [s,N]: total pga allocated
       aspq,                           --'Active Parallel Sessions'
@@ -969,7 +969,7 @@ dbms_output.put_line(rpad(rpad(i.ncpu,10,' ') || '- Number of CPU',50,' ')||rpad
 dbms_output.put_line(rpad(rpad(i.dcpu,10,' ') || '- CPU Usage per Sec (usec per Sec)',50,' ')||rpad(rpad(i.saas,8,' ') || '- Average Active Sessions. (red > #cpu)',50,' '));
 dbms_output.put_line(rpad(rpad(i.cpas,10,' ') || '- Active Sessions on CPU (ASC)',50,' ')||rpad(rpad(i.ioas,8,' ') || '- Active Sess waiting on I/O (ASI)',50,' ')||rpad(rpad(i.waas,6,' ') || '- Active Sess Waiting, non-ASI (ASW) (red>ASC+ASI)',60,' ') );
 dbms_output.put_line(rpad(rpad(i.asct,10,' ') || '- Active UserSess Total (ASC+ASI+ASW)',50,' ')||rpad(rpad(i.aspq,8,' ') || '- Active Parallel Sessions',50,' ')||rpad(rpad(i.isct,6,' ') || '- User Sessions Total (ACT/INA)',50,' '));
-dbms_output.put_line(rpad(rpad(i.mbps,10,' ') || '- I/O Mbytes per sec (throughput)',50,' ')||rpad(rpad(i.iops,8,' ') || '- I/O requests per sec IOPS',50,' ')||rpad(rpad(i.iorl,6,' ') || '- I/O avg synch s/b/read latency in usec (red>20us)',65,' ') );
+dbms_output.put_line(rpad(rpad(i.mbps,10,' ') || '- I/O Mbytes per sec (throughput)',50,' ')||rpad(rpad(i.iops,8,' ') || '- I/O requests per sec IOPS',50,' ')||rpad(rpad(i.iorl,6,' ') || '- I/O avg synch s/b/read latency in msec (red>20us)',65,' ') );
 dbms_output.put_line(rpad(rpad(i.logr,10,' ') || '- logical reads per sec',50,' ')||rpad(rpad(i.phyr,8,' ') || '- physical reads per sec',50,' ')||rpad(rpad(i.phyw,6,' ') || '- physical writes per sec',50,' '));
 dbms_output.put_line(rpad(rpad(i.sgfr,10,' ') || '- shared pool free %',50,' ')||rpad(rpad(i.temp,8,' ') || '- temp space used (Mb)',50,' '));
 dbms_output.put_line(rpad(rpad(i.utps,10,' ') || '- user transactions per sec',50,' ')||rpad(rpad(i.ucps,8,' ') || '- user calls per sec',50,' ')||rpad(rpad(i.ssrt,6,' ') || '- sql service response time (T/call) usec',50,' '));
