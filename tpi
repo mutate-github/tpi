@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 28.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 29.11.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo $*
 sid=$1
 
@@ -12,7 +12,7 @@ jet|ja)                     . /etc/profile.ora ;;
 aisutf*|unit*)              . ~/.ora_env ;;
 askona*|aixtdb*|sbaskona)   . ~/.profile ;;
 egais*|GOLD506*)            . ~/.bashrc ;;
-unc*)                       . ~/unc_setenv.sh ;;
+unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
