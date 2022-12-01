@@ -32,7 +32,7 @@ job [OWNER] - dba_jobs information
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off
 alert [num] - tail -num alert_[sid].log, default num = 100
-report [ash text|html -60] -for last hour, [awr text|html day_before HH24_begin HH24_end], [awrsql text|html day_before HH24_begin HH24_end sql_id], [addm text day_before HH24_begin HH24_end] - oracle reports
+report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports
 corrupt [DBA (number)] - Find DB Object by DBA number, [FB (file) (block)] - Find DB Object in dba_extents by file/block, v$database_block_corruption v$nonlogged_block information
 sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V$SQLSTAT by sql_id
 ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V$ACTIVE_SESSION_HISTORY in last time
