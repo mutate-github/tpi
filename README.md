@@ -2,8 +2,8 @@ Usage: ./tpi <DBSID> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  
 -e a - all sessions | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V$SES_OPTIMIZER_ENV by [parameter_name]
 p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v$services, dba_directories
 db [ nls|option|properties ] - v$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information
-health - Different Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Latch contention, Hot buffers)
-oratop [ h ] - Different Database and Instance parameters, h - history V$SYSMETRIC_HISTORY V$ACTIVE_SESSION_HISTORY
+health - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Latch contention, Hot buffers)
+oratop [ h ] - Database and Instance parameters, h - history V$SYSMETRIC_HISTORY V$ACTIVE_SESSION_HISTORY
 sga - SGA information
 pga - PGA sessions information
 size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage
