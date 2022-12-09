@@ -28,7 +28,11 @@ case "$P1_" in
    cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
  [z]14-*|p260unc*|10.35.17.5)
-   cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/sh -s $args"
+#	 echo "args:"$args
+	 args2=$(echo "$args" | sed  's|\$|\\\\$|g')
+#	 echo "args2:"$args2
+#   cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/sh -s $args"
+   cat $wtpi | eval ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
    ;;
  *) 
    cat $wtpi | eval $P1_ '/bin/sh -s $args'

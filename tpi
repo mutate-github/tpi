@@ -1,7 +1,7 @@
 #!/bin/sh
 set -f
 # version 09.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
-# echo $*
+# echo "tpi:"$*
 sid=$1
 
 case "$sid" in
@@ -1578,7 +1578,7 @@ logf
 
 table()
 {
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+P2_=`echo $ALL | awk '{print $2}'`
 P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
 REL=$(db_version)
@@ -1588,7 +1588,7 @@ case $REL in
 esac
 
 case "$P2_" in
-PART)
+part)
 $SP <<EOF >$LOGF
 set lines 230 numw 6 pages 60
 col OWNER for a20
@@ -5533,7 +5533,7 @@ sesstat)  shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat
 topseg) echo $topseg__ ${reset}; topseg ;;
 o)   shift; ALL=$*; echo $o__ ", OBJECT_NAME = " $ALL ${reset}; object $ALL ;;
 s)   shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
-t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL ;;
+t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
 i)   shift ; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
 l)   shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
