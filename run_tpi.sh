@@ -27,7 +27,7 @@ case "$P1_" in
  [0-9]*) 
    cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
- [z]14-*|p260unc*)
+ [z]14-*|p260unc*|10.35.17.5)
    cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/sh -s $args"
    ;;
  *) 

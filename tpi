@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 02.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 09.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo $*
 sid=$1
 
@@ -100,7 +100,7 @@ ALL=$(echo $*)
 #format .tpi_login file: sid username/password@tns_alias
 path_to_tpi=`dirname $0`
 #echo "path_to_tpi: "$path_to_tpi
-login_str=`awk '/^'$sid' /{print $2}' $path_to_tpi/.tpi_login 2>/dev/null`
+login_str=`awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null`
 #echo "login_str: "$login_str
 
 if [ -n "$login_str" ]; then
@@ -1687,7 +1687,7 @@ column iot_type for a8
 select t.tablespace_name, owner, table_name, t.logging, num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
 last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
-from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name = '$P2_' and owner like nvl('$P3_','%') order by owner;
+from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like '$P2_' and owner like nvl('$P3_','%') order by owner;
 
 prompt
 prompt indexes:
@@ -1700,7 +1700,7 @@ column distinct_keys for 99999999999
 column status for a10
 column VISIBILITY for a9
 select tablespace_name, owner, index_name, index_type, uniqueness, blevel, distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
-from dba_indexes where upper(table_name) = '$P2_' and owner like nvl('$P3_','%') order by owner,index_name;
+from dba_indexes where table_name like '$P2_' and owner like nvl('$P3_','%') order by owner,index_name;
 
 prompt
 prompt index_columns:
@@ -1708,7 +1708,7 @@ column index_owner for a20
 column index_name for a33
 column COLUMN_NAME for a30
 select index_owner,index_name,column_name,column_position,column_length,descend
-from dba_ind_columns where upper(table_name) = '$P2_' and table_owner like nvl('$P3_','%') order by index_owner,index_name,column_position;
+from dba_ind_columns where table_name like '$P2_' and table_owner like nvl('$P3_','%') order by index_owner,index_name,column_position;
 /*
 prompt
 prompt constraints:
@@ -1736,7 +1736,7 @@ col low_value for a15
 col high_value for a15
 col HISTOGRAM for a30
 select OWNER,COLUMN_NAME,NUM_DISTINCT,DENSITY,NUM_NULLS,NUM_BUCKETS,LAST_ANALYZED,SAMPLE_SIZE,GLOBAL_STATS,USER_STATS,AVG_COL_LEN $SQL_TEXT2
-from dba_tab_col_statistics where table_name = '$P2_' and owner like nvl('$P3_','%') order by owner,table_name,COLUMN_NAME;
+from dba_tab_col_statistics where table_name like '$P2_' and owner like nvl('$P3_','%') order by owner,table_name,COLUMN_NAME;
 EOF
 ;;
 esac
@@ -3404,6 +3404,7 @@ case "$type_" in
  MATERIALIZED_VIEW_LOG)   o_type_='MATERIALIZED VIEW LOG' ;;
  RMGR_CONSUMER_GROUP)     o_type_='CONSUMER GROUP' ;;
  RMGR_PLAN)               o_type_='RESOURCE PLAN' ;;
+ ROLE)                    o_type_='ROLE' ;;
  *)                       o_type_=$type_ ;;
 esac
 
@@ -3438,12 +3439,44 @@ exec DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTER
 select dbms_metadata.get_ddl('$type_','$object_') from dual;
 EOF
 ;;
+ROLE)
+$SP <<EOF >>$LOGF
+set long 1000000 longchunksize 20000 pagesize 0 linesize 1000 feedback off verify off trimspool on
+column ddl format a1000
+begin
+   dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'SQLTERMINATOR', true);
+   dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'PRETTY', true);
+end;
+/
+variable v_role VARCHAR2(30);
+exec :v_role := upper('$object_');
+select dbms_metadata.get_ddl('ROLE', r.role) AS ddl
+from   dba_roles r
+where  r.role = :v_role
+union all
+select dbms_metadata.get_granted_ddl('ROLE_GRANT', rp.grantee) AS ddl
+from   dba_role_privs rp
+where  rp.grantee = :v_role
+and    rownum = 1
+union all
+select dbms_metadata.get_granted_ddl('SYSTEM_GRANT', sp.grantee) AS ddl
+from   dba_sys_privs sp
+where  sp.grantee = :v_role
+and    rownum = 1
+union all
+select dbms_metadata.get_granted_ddl('OBJECT_GRANT', tp.grantee) AS ddl
+from   dba_tab_privs tp
+where  tp.grantee = :v_role
+and    rownum = 1
+/
+EOF
+;;
 *)
 $SP <<EOF >$LOGF
 set echo off feed off veri off tab off
 alter session set NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss';
 prompt "NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss'"
-set linesize 2400 pages 0
+set linesize 5000 pages 0
 set long 10000000 longc 10000000
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 declare
