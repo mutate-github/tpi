@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 09.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 14.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
 
@@ -70,7 +70,7 @@ init_msg()
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
-  dhash__="dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJTYPE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  dhash__="dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJ%TYPE] [SIZE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -213,7 +213,7 @@ P1_=$1 #; echo "P1_: "$P1_
 P2_=$2 #; echo "P2_: "$P2_
 
 case "$P1_" in
- access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT like upper('$P2_%')" ; P1_="a" ;;
+ access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = '$P2_'" ; P1_="a" ;;
  *)      : ;;
 esac
 
@@ -234,6 +234,7 @@ esac
 
 
 $SP <<EOF >$LOGF
+alter session set "_optimizer_cartesian_enabled"=false;
 set lines 300 pages 1000
 set echo off feed off veri off tab off
 col spid for a8
@@ -335,7 +336,7 @@ P)
 $SP <<EOF >$LOGF
 set serveroutput on size 500000
 set echo off feed off veri off tab off
-set lines 180
+set lines 230
 set pages 100
 ttitle left "Session parameters  V\$SES_OPTIMIZER_ENV :"
 column NAME for a40 
@@ -400,8 +401,10 @@ BEGIN
   dbms_output.put_line(chr(126)||'Latch Spin                : '|| nvl(p.latchspin, 'NONE'));
 
   dbms_output.put_line(chr(126)||'Session Waits:');
-  for c1 in ( select * from sys.v_\$session_wait where sid = s.sid) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3);
+--  for c1 in ( select * from sys.v_\$session_wait where sid = s.sid) loop
+--    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3);
+    for c1 in ( select w.*, case when event like '%latch%' then ', LatchName: '||l.name else '' end name  from sys.v_\$session_wait w, sys.v\$latchname l where w.p2=l.latch#(+) and w.sid = s.sid) loop
+    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3||c1.name );
     for c2 in (SELECT MAX (SYS_CONNECT_BY_PATH (name||' '||value,'    ')) scbp from (
                  select a.name, b.value, ROW_NUMBER () OVER (ORDER BY name desc) rn from v\$statname a, v\$sesstat b
                  where a.statistic#=b.statistic# and b.sid=s.sid and a.name in ('db block gets','consistent gets','physical reads')
@@ -2959,8 +2962,8 @@ column misses for 999999999999
 column im_gets for 999999999999
 select n.name name, l.gets gets, l.misses misses, l.sleeps sleep ,
 l.immediate_gets im_gets,l.immediate_misses im_misses, 
-decode(l.gets,0,0,misses/l.gets*100) pct, 
-decode(l.immediate_gets,0,0,l.immediate_misses/l.immediate_gets*100) im_pct 
+round(decode(l.gets,0,0,misses/l.gets*100),3) pct, 
+round(decode(l.immediate_gets,0,0,l.immediate_misses/l.immediate_gets*100),3) im_pct 
 from v$latchname n, v$latchholder h, v$latch l 
 where l.gets>0 and l.latch#=n.latch# 
 and l.addr=h.laddr(+) 
@@ -3734,7 +3737,7 @@ END`
 
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
 
-SET_COL='set lines 250 pages 60
+SET_COL='set lines 250 pages 80
 column TIME for a9
 column SID for 99999
 column SERIAL for 999999
@@ -3754,7 +3757,8 @@ column PMAM for a85 heading "PROGRAM \ MODULE \ ACTION \ MACHINE"
 column CPU for 999999
 column WAIT for 999999
 column IO for 999999
-column TOTAL for 999999'
+column TOTAL for 999999
+column OBJECT_NAME for a35'
 
 case $type_ in
 event)
@@ -3851,7 +3855,7 @@ select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SE
 blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action,machine*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id and dbid=(select dbid from v\$database) and 
 sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour
-and lower(event) like '%$EVENT_%' order by sample_time;
+and event like '%$EVENT_%' order by sample_time;
 EOF
 else
 shift
@@ -4204,11 +4208,21 @@ EOF
 fi
 ;;
 segstat)
-OBJTYPE_=`echo $* | awk '{print $2" "$3}' | tr '[:lower:]' '[:upper:]'`
+OBJTYPE_=`echo $* | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+if [ $(is_number ${OBJTYPE_}) -eq 1 ]; then
+ SIZE_=$OBJTYPE_
+ OBJTYPE_=''
+else
+ SIZE_=`echo $* | awk '{print $3}'`
+ if [ -z "$SIZE_" ]; then SIZE_=0; fi
+fi
 $SP <<EOF >$LOGF
-PROMPT "Segment statistics for OBJECTS with max BLOCK_CHANGED from AWR for last hours: $HH_  $xrange"
+PROMPT "Segment statistics for OBJECTS with max BLOCK_CHANGED from AWR for last hours: $HH_  $xrange" for OBJTYPE: $OBJTYPE_  and SUM(db_block_changes_delta) > $SIZE_
 $SET_COL
+set pages 1000
 col SNAP_TIME for a15
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF block_changed on report
 SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
            dhso.object_name,dhso.object_type,
            SUM (db_block_changes_delta) block_changed
@@ -4219,10 +4233,10 @@ SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
            AND dhs.instance_number = dhss.instance_number
            AND dhss.obj# = dhso.obj#
            AND dhss.dataobj# = dhso.dataobj#
-           AND begin_interval_time  >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour
+	   AND begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour
 	   and object_type like nvl(trim('$OBJTYPE_'),'%')
 GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.object_name,dhso.object_type
-  HAVING   SUM (db_block_changes_delta) > 0
+  HAVING   SUM (db_block_changes_delta) > nvl(trim('$SIZE_'), 0)
 ORDER BY   snap_time;
 EOF
 ;;
