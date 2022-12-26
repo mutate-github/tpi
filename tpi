@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 14.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 26.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
 
@@ -54,7 +54,7 @@ init_msg()
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u USERNAME - dba_users information"
   invalid__="invalid [OWNER] - invalid objects" 
-  profile__="profile - profiles information"
+  profile__="profile [PROFILE] - profiles information"
   links__="links - links information"
   latch__="latch - latch information"
   lock__="lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information"
@@ -440,7 +440,7 @@ $CMD2_
   dbms_output.put_line(chr(126)||'Previous SQL statement:');
   for c1 in ( select * from sys.v_\$sqltext
               where HASH_VALUE = s.prev_hash_value order by piece) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.sql_text);
+    dbms_output.put_line(chr(126)||chr(32)||c1.sql_id||'     '||c1.sql_text);
   end loop;
   dbms_output.put_line(chr(126)||'=====================================================================');
 END;
@@ -2885,7 +2885,7 @@ logf
 
 invalid()
 {
-P1_=$1
+P1_="$1"
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -2905,13 +2905,14 @@ logf
 
 profile()
 {
+P1_="$1"
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 60
 column PROFILE for a30
 column RESOURCE_NAME for a30
 column LIMIT for a30
-select * from dba_profiles order by profile, RESOURCE_NAME;
+select * from dba_profiles where profile like nvl(upper('$P1_'),'%') order by profile, RESOURCE_NAME;
 EOF
 logf
 }
@@ -5557,7 +5558,7 @@ l)   shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)   shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
 invalid) shift; ALL=$* ; echo $invalid__  ${reset}; invalid $ALL ;;
-profile)   echo $profile__  ${reset}; profile ;;
+profile) shift; ALL=$* ; echo $profile__  ${reset}; profile $ALL ;;
 links)   echo $links__ ${reset} ; links ;;
 latch)   echo $latch__ ${reset} ; latch ;;
 bind) shift ; ALL=$* ; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;

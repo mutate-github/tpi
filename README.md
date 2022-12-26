@@ -20,7 +20,7 @@ l LOB_NAME - dba_lobs information
 c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ] - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys
 u USERNAME - dba_users information
 invalid [OWNER] - invalid objects
-profile - profiles information
+profile [PROFILE] - profiles information
 links - links information
 latch - latch information
 lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information
