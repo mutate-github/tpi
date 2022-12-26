@@ -7,7 +7,7 @@ sid=$1
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
 EPS*|creditc)               . ~/db12.env ;;
-KIKOPDR|sdfo)               . ~/db11.env ;;
+KIKOPDR)                    . ~/db11.env ;;
 jet|ja)                     . /etc/profile.ora ;;
 aisutf*|unit*)              . ~/.ora_env ;;
 askona*|aixtdb*|sbaskona)   . ~/.profile ;;
