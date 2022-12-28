@@ -13,7 +13,7 @@ undo [recovery] - undo active transaction information, recovery information
 sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME
 topseg - top 20 segments statistics information from V$SEGMENT_STATISTICS
 o OBJECT_NAME | OBJECT_ID - dba_objects information
-s SEGMENT_NAME - dba_segments information
+s SEGMENT_NAME [OWNER] - dba_segments information
 t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information
 i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information
 l LOB_NAME - dba_lobs information
@@ -36,6 +36,6 @@ report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin 
 corrupt [DBA (number)] - Find DB Object by DBA number, [FB (file) (block)] - Find DB Object in dba_extents by file/block, v$database_block_corruption v$nonlogged_block information
 sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V$SQLSTAT by sql_id
 ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V$ACTIVE_SESSION_HISTORY in last time
-dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJ%TYPE] [SIZE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY
+dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [TBS] [SEGMENT] | segstat [OBJ%TYPE] [SIZE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY
 spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap] | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE | sql_profile_drop NAME | report_sql_monitor SQL_ID ]
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 26.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 28.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
 
@@ -47,7 +47,7 @@ init_msg()
   sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
   topseg__="topseg - top 20 segments statistics information from V\$SEGMENT_STATISTICS" 
   o__="o OBJECT_NAME | OBJECT_ID - dba_objects information" 
-  s__="s SEGMENT_NAME - dba_segments information" 
+  s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
   t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
   i__="i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information" 
   l__="l LOB_NAME - dba_lobs information" 
@@ -70,7 +70,7 @@ init_msg()
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last time"
-  dhash__="dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [SEGMENT] | segstat [OBJ%TYPE] [SIZE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  dhash__="dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [fmt display plan] | sqlstat SQL_ID | growseg [TBS] [SEGMENT] | segstat [OBJ%TYPE] [SIZE] | temp [sizeMb] ] - Top Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | usage SQL_ID | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -482,22 +482,22 @@ PROMPT 5: S/Row-X (SSX) Share/Row Exclusive
 PROMPT 6: Exclusive (X) "
 case "$P2_" in
 lib) $SP <<'END' > $LOGF
-set lines 170
+set lines 230
 set echo off feed off veri off tab off pages 40
-column sid for 9999
-column serial# for 999999
+column sid for 999999
+column serial# for 9999999
 column m for 9
 column r for 9
 column username for a10
 column status for a1
 column osuser for a13
 column machine for a15
-column program for a21
+column program for a35
 column Object for a30
-column event for a10
+column event for a25
 column s_w for 9999
 column spid for a16
-column logon_time for a10 wrap
+column logon_time for a20 wrap
 prompt "-- kglpnmod M  (0: no lock; 1: null; 2: shared; 3: exclusive)"
 SELECT /* +rule */ 'kill -9 '||pr.spid spid, s.sid, s.serial#, sw.event, sw.seconds_in_wait s_w,
 ob.kglnaown||'.'||ob.kglnaobj "Object", p.kglpnmod "M", p.kglpnreq "R",
@@ -1461,10 +1461,11 @@ logf
 
 segment()
 {
-P1_=$1
+P1_="$1"
+P2_="$2"
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 60
+set echo off feed off veri off tab off pages 80
 column owner for a20
 column segment_name for a30
 column segment_type for a15
@@ -1473,19 +1474,22 @@ column SEGMENT_SUBTYPE for a15
 column max_size for 999,999,999,999
 column tablespace_name for a22
 ttitle left "Segment name from DBA_SEGMENTS:"
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF size_Mb on report
 select tablespace_name, owner, segment_name, PARTITION_NAME, segment_type, SEGMENT_SUBTYPE, bytes/(1024*1024) size_Mb, blocks, max_size
-from dba_segments where upper(segment_name) like upper('$P1_') order by owner, segment_name, segment_type, PARTITION_NAME;
+from dba_segments where segment_name like '$P1_' and owner like nvl(trim('$P2_'),'%')
+order by owner, segment_name, segment_type, PARTITION_NAME;
 
 ttitle left "Table name from DBA_LOBS:"
 column table_name for a30
 column column_name for a30
 select tablespace_name, owner, segment_name, table_name, column_name, partitioned, compression
-from dba_lobs where upper(table_name) like upper('$P1_');
+from dba_lobs where table_name like '$P1_' and owner like nvl(trim('$P2_'),'%');
 
 ttitle left "Lob segment name from DBA_SEGMENTS, DBA_LOBS:"
 column index_name for a30
 select s.tablespace_name, s.owner, s.segment_name, s.PARTITION_NAME, l.INDEX_NAME, s.segment_type, s.SEGMENT_SUBTYPE, s.bytes/(1024*1024) size_Mb, s.blocks, s.max_size
-from dba_segments s, dba_lobs l where s.owner=l.owner and s.segment_name=l.segment_name and upper(l.table_name) like upper('$P1_') 
+from dba_segments s, dba_lobs l where s.owner=l.owner and s.segment_name=l.segment_name and l.table_name like '$P1_' and s.owner like nvl(trim('$P2_'),'%')
 order by owner, segment_name, segment_type, PARTITION_NAME;
 EOF
 logf
@@ -4153,17 +4157,21 @@ order by snap_id, end_interval_time;
 EOF
 ;;
 growseg)
-SEG=`echo $* | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+TBS=`echo $* | awk '{print $2}'`
+SEG=`echo $* | awk '{print $3}'`
 if [ -z "$SEG" ]; then
 $SP <<EOF >$LOGF
 PROMPT "DBA_HIST_SEG_STAT: Most segments growth in the last: $HH_ hours  $xrange"
-set lines 250 pages 60
+set lines 250 pages 80
 column owner for a20
 column TABLESPACE for a20
 column OBJECT_NAME for a30
 column SUBOBJECT_NAME for a46
 column OBJECT_TYPE for a18
 column TABLESPACE for a20
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF "Growth in MB" on report
+COMPUTE SUM LABEL 'SUM' OF "Total Size(GB)" on report
 select * from (SELECT o.OWNER , o.OBJECT_NAME , o.SUBOBJECT_NAME , o.OBJECT_TYPE ,
     t.NAME "Tablespace", round(s.growth/(1024*1024),2) "Growth in MB",
     (SELECT round(sum(bytes)/(1024*1024*1024),2)
@@ -4176,24 +4184,27 @@ FROM DBA_OBJECTS o,
     GROUP BY TS#,OBJ#
     HAVING SUM(SPACE_ALLOCATED_DELTA) > 0
     ORDER BY 2 DESC ) s,
-    v\$tablespace t
+    v\$tablespace t 
 WHERE s.OBJ# = o.OBJECT_ID
-AND s.TS#=t.TS#
-ORDER BY 6 DESC) where rownum<=40;
+AND s.TS# = t.TS# and t.name like nvl(trim('$TBS'),'%')
+ORDER BY 6 DESC) where rownum<=6000;
 EOF
 else
 $SP <<EOF >$LOGF
 PROMPT "DBA_HIST_SEG_STAT: $SEG segment growth in the last: $HH_ hours  $xrange"
-set lines 250 pages 60
+set lines 250 pages 80
 column owner for a20
 column SEGMENT_NAME for a30
+column TABLESPACE for a20
+column SUBOBJECT_NAME for a46
 column end_interval_time for a13 heading "end_interval_time"
-column space_used_delta for 999,999,999.99 heading "Space grows (MB)"
+column space_used_delta for 999999999 heading "Space grows (MB)"
 column usage for 999.99 heading "% of total Disk Usage"
-
-select * from (select to_char(end_interval_time, 'DD/MM/YYYY HH24') end_interval_time, c.owner, c.segment_name,
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF space_used_delta on report
+select * from (select to_char(end_interval_time, 'DD/MM/YYYY HH24') end_interval_time, c.owner, c.segment_name, b.SUBOBJECT_NAME, c.tablespace_name,
 round(sum(space_used_delta) / 1024 / 1024, 2) space_used_delta,
-avg(c.bytes) / 1024 / 1024 "Total Object Size (MB)",
+trunc(sum(c.bytes) / 1024 / 1024) "Total Object Size (MB)",
 round(sum(space_used_delta) / sum(c.bytes) * 100, 2) usage
 from dba_hist_snapshot sn, dba_hist_seg_stat a, dba_objects b, dba_segments c
 where begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour
@@ -4201,8 +4212,8 @@ and sn.snap_id = a.snap_id
 and b.object_id = a.obj#
 and b.owner = c.owner
 and b.object_name = c.segment_name
-and c.segment_name = '$SEG'
-group by to_char(end_interval_time, 'DD/MM/YYYY HH24'), c.owner, c.segment_name
+and c.segment_name = '$SEG' and c.tablespace_name like nvl(trim('$TBS'),'%')
+group by to_char(end_interval_time, 'DD/MM/YYYY HH24'), c.owner, c.segment_name, b.SUBOBJECT_NAME, c.tablespace_name
 having sum(space_used_delta) > 0 )
 order by owner, segment_name, to_date(end_interval_time, 'DD/MM/YYYY HH24');
 EOF
