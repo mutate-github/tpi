@@ -27,7 +27,7 @@ lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock in
 bind [SQL] - sql not using bind variable information
 pipe [PIPE_NAME] - pipes information, read PIPE_NAME
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time
-scheduler [log|run JOB_NAME [hours]] - dba_scheduler_jobs information, log|run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]
+scheduler [JOB_NAME | run JOB_NAME [hours] | log] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]
 job [OWNER] - dba_jobs information
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off

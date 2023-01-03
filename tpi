@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 28.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 30.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
 
@@ -61,7 +61,7 @@ init_msg()
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
-  scheduler__="scheduler [log|run JOB_NAME [hours]] - dba_scheduler_jobs information, log|run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
+  scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
@@ -3322,7 +3322,7 @@ order by ACTUAL_START_DATE;
 EOF
 ;;
 *)
-$SP <<'EOF' >$LOGF
+$SP <<EOF >$LOGF
 set echo off feed off veri off tab off pages 60
 set lines 230
 col owner for a15
@@ -3337,8 +3337,8 @@ col LAST_START_DATE for a10
 col LAST_RUN_DURATION for a14
 select owner, job_name, (PROGRAM_OWNER || CASE when PROGRAM_OWNER is null then '' else '.' END || PROGRAM_NAME) PROGRAM, JOB_ACTION, ENABLED, REPEAT_INTERVAL,
 cast(LAST_START_DATE as date) LAST_START_DATE, LAST_RUN_DURATION
-from dba_scheduler_jobs where ENABLED='TRUE'
- order by owner, job_name;
+from dba_scheduler_jobs where job_name like nvl('$P1_','%') --and ENABLED='TRUE'
+order by owner, job_name;
 
 prompt "View: dba_scheduler_running_jobs"
 col elapsed_time for a16
