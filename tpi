@@ -1,5 +1,6 @@
 #!/bin/sh
 set -f
+
 # version 04.01.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
