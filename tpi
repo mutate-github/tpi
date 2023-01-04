@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 30.12.2022 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 04.01.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$*
 sid=$1
 
@@ -2777,11 +2777,18 @@ col STANDBY_COMPLETION_TIME format a23
 col STANDBY_NEXT_TIME format a23
 col SEQ_GAP format 9999999
 col LAG_MINUTES format 9999999.99
+/*
 SELECT   prim.thread# thread, prim.dest_id, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
          TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_next_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
   FROM   (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
          (SELECT thread#,dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database)
                                                              and dest_id IN (SELECT dest_id FROM v\$archive_dest WHERE target = 'STANDBY') AND applied = 'YES' GROUP BY thread#, dest_id) tgt
+ WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id order by prim.thread#, prim.dest_id;
+*/
+SELECT   prim.thread# thread, prim.dest_id, tgt.status, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYYY HH24:MI:SS') primary_time, tgt.thread# standby_thread, tgt.dest_id, tgt.seq standby_seq,
+         TO_CHAR (tgt.tm, 'DD/MM/YYYY HH24:MI:SS') standby_next_time, prim.seq - tgt.seq seq_gap, (prim.tm - tgt.tm) * 24 * 60 lag_minutes
+  FROM   (SELECT thread#, dest_id, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log where RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) GROUP BY thread#,dest_id) prim,
+         (SELECT thread#, al.dest_id, ad.status, MAX(sequence#) seq, MAX(next_time) tm FROM v\$archived_log al, v\$archive_dest ad where al.dest_id=ad.dest_id and ad.target='STANDBY' and RESETLOGS_CHANGE#=(select RESETLOGS_CHANGE# from v\$database) and applied = 'YES' GROUP BY thread#, al.dest_id, ad.status) tgt
  WHERE   prim.thread# = tgt.thread# and prim.dest_id = tgt.dest_id order by prim.thread#, prim.dest_id;
 
 column deleted format a7
