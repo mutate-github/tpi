@@ -2645,7 +2645,7 @@ select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.bl
 esac
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 1000
 set numwidth 15
 column file_id for 999
 column file# for 999
