@@ -1,7 +1,6 @@
 #!/bin/sh
 
 #export PROMPT_COMMAND='PS1=`echo "\n\[\e[0;33m\][\D{%d.%m.%Y %H:%M:%S}] \[\e[01;31m\]\u@\h:\$ORACLE_SID \[\e[1;34m\]\w\n\$ \[\e[0;32m\]\[\e[0m\]"`'
-#alias rtpi='~/tal/run_tpi.sh'
 
 # . /home/oracle/.dbs_alias
 aliases=/etc/profile.d/00-dbs-aliases.sh
@@ -48,6 +47,7 @@ case "$P1_" in
 esac
 
 exit
+
 #######################################################
 
 host=$1
