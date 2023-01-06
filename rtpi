@@ -60,8 +60,8 @@ shift
 args=$*
 
 case $host in
-askona*|192.168.1.132|192.168.1.131) username=grid ;;
-*) username=oracle ;;
+  askona*|192.168.1.132|192.168.1.131) username=grid ;;
+  *) username=oracle ;;
 esac
 
 cat ~/tal/tpi | ssh $username@$HST "/bin/sh -s $args"

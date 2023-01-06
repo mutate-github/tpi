@@ -16,7 +16,7 @@ unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
-#           if [ -f ~/.profile ]; then . ~/.profile ; fi 
+   #        if [ -f ~/.profile ]; then . ~/.profile ; fi 
    case `uname | awk -F_ '{print $1}'` in
       Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi 
               rc=`find . -maxdepth 1 -name "${sid}_setenv.sh" -print -quit`
