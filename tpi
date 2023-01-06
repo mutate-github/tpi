@@ -4,6 +4,7 @@ set -f
 # echo "tpi:"$*
 sid=$1
 
+
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
 EPS*|creditc)               . ~/db12.env ;;
