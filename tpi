@@ -85,6 +85,7 @@ if [ -z "$sid" ]; then
   echo "NOT EXIT"
 fi
 
+
 ORACLE_SID=$sid
 export ORACLE_SID
 #NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
