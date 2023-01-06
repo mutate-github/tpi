@@ -1,18 +1,17 @@
 #!/bin/sh
 
-# scp tpi key3.dbservices@10.113.25.58:
-scp tpi 172.16.249.1:~/tal/
-scp rtpi 172.16.249.1:~/tal/
-./tpi | sed -n '/Usage/,$p' > README.md
-scp README.md 172.16.249.1:~/tal/
+#scp tpi 172.16.249.1:~/tal/
+#scp rtpi 172.16.249.1:~/tal/
+#./tpi | sed -n '/Usage/,$p' > README.md
+#scp README.md 172.16.249.1:~/tal/
 
 #askona
-scp tpi 192.168.1.53:tal/
-scp tpi 192.168.1.178:tal/
+#scp tpi 192.168.1.53:tal/
+#scp tpi 192.168.1.178:tal/
 
 #dixy
-scp tpi 10.0.7.21:tal/
-scp tpi 10.0.17.21:tal/
+#scp tpi 10.0.7.21:tal/
+#scp tpi 10.0.17.21:tal/
 
 git add README.md
 git add tpi

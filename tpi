@@ -1,9 +1,8 @@
 #!/bin/sh
 set -f
 # version 07.01.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
-# echo "tpi:"$*
+# echo "tpi:"$* 
 sid=$1
-
 
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
@@ -85,7 +84,6 @@ if [ -z "$sid" ]; then
   exit
   echo "NOT EXIT"
 fi
-
 
 ORACLE_SID=$sid
 export ORACLE_SID
