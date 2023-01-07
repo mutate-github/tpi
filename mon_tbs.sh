@@ -3,6 +3,7 @@ set -f
 
 WRTPI=`which rtpi`
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -16,9 +17,9 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
-    LOGF=$BASEDIR/log/mon_tbs_${HOST}_${DB}.log
-    LOGF_TRG=$BASEDIR/log/mon_tbs_${HOST}_${DB}_trg.log
-    LOGF_HEAD=$BASEDIR/log/mon_tbs_${HOST}_${DB}_heading_$$.log
+    LOGF=$LOGDIR/mon_tbs_${HOST}_${DB}.log
+    LOGF_TRG=$LOGDIR/mon_tbs_${HOST}_${DB}_trg.log
+    LOGF_HEAD=$LOGDIR/mon_tbs_${HOST}_${DB}_heading_$$.log
     $WRTPI $HOST $DB tbs free | awk '/Tablespace Name/,/Elapsed/' | egrep -v "Elapsed" > $LOGF
     awk -v lim=$limPER '{if($NF+0>=lim) {print $0}}' $LOGF > $LOGF_TRG
 

@@ -9,6 +9,7 @@ export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 
 WRTPI=`which rtpi`
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -20,12 +21,12 @@ EXCLUDE=`$BASEDIR/iniget.sh mon.ini alert exclude`
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
   for DB in `echo "$DBS" | xargs -n1 echo`; do
-    LOGF=$BASEDIR/log/mon_alert_${HOST}_${DB}.log
-    LOGF_HEAD=$BASEDIR/log/mon_alert_${HOST}_${DB}_head.log
-    LASTALERTTIME=$BASEDIR/log/mon_alert_${HOST}_${DB}_lastalerttime.tmp
-    EXCLFILE=$BASEDIR/log/mon_alert_${HOST}_${DB}_exclude.tmp
+    LOGF=$LOGDIR/mon_alert_${HOST}_${DB}.log
+    LOGF_HEAD=$LOGDIR/mon_alert_${HOST}_${DB}_head.log
+    LASTALERTTIME=$LOGDIR/mon_alert_${HOST}_${DB}_lastalerttime.tmp
+    EXCLFILE=$LOGDIR/mon_alert_${HOST}_${DB}_exclude.tmp
     echo $EXCLUDE > $EXCLFILE
-    AWKFILE=$BASEDIR/log/mon_alert_${HOST}_${DB}_awkfile.awk
+    AWKFILE=$LOGDIR/mon_alert_${HOST}_${DB}_awkfile.awk
 
     echo "START HOST="$HOST "DB="$DB "at: "`date`
     $WRTPI $HOST $DB alert $LINES > $LOGF

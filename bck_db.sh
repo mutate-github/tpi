@@ -2,6 +2,7 @@
 set -f
 
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -25,7 +26,7 @@ for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
   NAS=`echo $HDS | awk -F: '{print $3}'`
   echo "DEBUG HOST DB NAS="$HOST" "$DB" "$NAS
 
-  logf="$BASEDIR/log/bck_db_${HOST}_${DB}_`date '+%m%di_%H-%M'`.log"
+  logf="$LOGDIR/bck_db_${HOST}_${DB}_`date '+%m%di_%H-%M'`.log"
   exec > $logf 2>&1
   #exec &> >(tee -a "$logf")
 
@@ -171,7 +172,7 @@ EOF_CREATE_F1
   cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (host: $HOST, db: $DB) "$BCK_STATUS $ADMINS 2>/dev/null
 
 #  rm ${logf}.mail.log
-  find $BASEDIR/log -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
+  find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
 
 done  # for $HDS
 

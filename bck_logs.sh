@@ -2,6 +2,7 @@
 set -f
 
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
 CATALOG=`$BASEDIR/iniget.sh mon.ini backup catalog`
@@ -18,7 +19,7 @@ for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
   NAS=`echo $HDS | awk -F: '{print $3}'`
   echo "DEBUG HOST DB NAS="$HOST" "$DB" "$NAS
 
-  logf="$BASEDIR/log/bck_logs_${HOST}_${DB}.log"
+  logf="$LOGDIR/bck_logs_${HOST}_${DB}.log"
   exec >> $logf 2>&1
 
   a=`ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep`

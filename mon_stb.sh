@@ -2,6 +2,7 @@
 
 WRTPI=`which rtpi`
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -17,11 +18,11 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
-    LOG_FILE=$BASEDIR/log/mon_stb_${HOST}_${DB}_${DEST_ID}_$$.log
+    LOG_FILE=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_$$.log
     $WRTPI $HOST $DB arch | awk '/LAG_MINUTES/,/Elapsed/' | egrep -v "Elapsed" > $LOG_FILE
     awk '!/LAG_MINUTES|--------/{print $2" "$(NF-1)" "$NF}' $LOG_FILE | while read DEST_ID SEQ_GAP_NOW LAG_MINUTES_NOW; do
-      TRG_FILE_SEQ_GAP=$BASEDIR/log/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_seq_gap.log
-      TRG_FILE_LAG_MINUTES=$BASEDIR/log/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_lag_minutes.log
+      TRG_FILE_SEQ_GAP=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_seq_gap.log
+      TRG_FILE_LAG_MINUTES=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_lag_minutes.log
 
       echo "GAP: " $SEQ_GAP_NOW"  LAG: " $LAG_MINUTES_NOW
       LAG_MINUTES_NOW=`echo "$LAG_MINUTES_NOW/1" | bc`

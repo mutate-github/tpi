@@ -2,6 +2,7 @@
 set -f
 
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -13,8 +14,8 @@ limGB=`$BASEDIR/iniget.sh mon.ini diskspace limitGB`
 echo `date`" BEGIN ========================================================= "
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
-  LOGF=$BASEDIR/log/mon_diskspace_${HOST}.log
-  LOGF_HEAD=$BASEDIR/log/mon_diskspace_${HOST}_head.log
+  LOGF=$LOGDIR/mon_diskspace_${HOST}.log
+  LOGF_HEAD=$LOGDIR/mon_diskspace_${HOST}_head.log
   OS=`ssh $HOST "uname"`
   case "$OS" in
    Linux)

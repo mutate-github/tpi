@@ -1,6 +1,7 @@
 #!/bin/sh
 set -f
 BASEDIR=`dirname $0`
+LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
@@ -19,8 +20,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
   for DB in `echo "$DBS" | xargs -n1 echo`; do
 #    echo "DB="$DB
-    LOGFILE=$BASEDIR/log/mon_alert_adrci_${HOST}_${DB}_log.txt
-    LOGHEAD=$BASEDIR/log/mon_alert_adrci_${HOST}_${DB}_head.txt
+    LOGFILE=$LOGDIR/mon_alert_adrci_${HOST}_${DB}_log.txt
+    LOGHEAD=$LOGDIR/mon_alert_adrci_${HOST}_${DB}_head.txt
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
