@@ -1,8 +1,10 @@
 #!/bin/sh
 set -f
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-WMMAIL=`which mmail`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 PART_OF_DAY=`$BASEDIR/iniget.sh mon.ini alert part_of_day`
 EXCLUDE=`$BASEDIR/iniget.sh mon.ini alert exclude`
@@ -64,7 +66,7 @@ cat $LOGFILE | tail -n +2 | sed '/^ *$/d' > $LOGFILE.new.txt
 mv $LOGFILE.new.txt $LOGFILE
 
 if [ -s $LOGFILE ];then
-  cat $LOGHEAD  $LOGFILE | $WMMAIL -s "ALERT_LOG warning: $HOST / $DB" $ADMINS
+	cat $LOGHEAD  $LOGFILE | $WMMAIL -s "$MPREFIX ALERT_LOG warning (host: $HOST / db: $DB)" $ADMINS
 fi
 
 rm $LOGHEAD $LOGFILE $ONE_EXEC_F

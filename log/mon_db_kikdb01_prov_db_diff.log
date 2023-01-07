@@ -1,0 +1,4 @@
+0a1,3
+>         DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+>   1406517326 PROV     18/03/2022 ARCHIVELOG         18/03/2022 READ WRITE MAXIMUM PERF PRIMARY   TO STANDBY  YES     NO           NO        Linux x86 64-bit
+>                                                                 13:29:50             ORMANCE

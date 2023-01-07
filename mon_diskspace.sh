@@ -1,8 +1,10 @@
 #!/bin/sh
 set -f
 
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 limPER=`$BASEDIR/iniget.sh mon.ini diskspace limitPER`
@@ -30,7 +32,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   esac
   if [ "$PCT" -gt "$limPER" -a "$FS_" -lt "$limGB" ]; then
     echo "Fired: "$0"\n" > $LOGF_HEAD
-    cat $LOGF_HEAD $LOGF | $WMMAIL -s "DISKSPACE usage warning: $HOST (current: ${PCT} %, threshold: ${limPER} % and below ${limGB} Gb)" $ADMINS
+    cat $LOGF_HEAD $LOGF | $WMMAIL -s "$MPREFIX DISKSPACE usage warning: $HOST (current: ${PCT} %, threshold: ${limPER} % and below ${limGB} Gb)" $ADMINS
   fi
   rm $LOGF $LOGF_HEAD
 done

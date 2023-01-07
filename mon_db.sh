@@ -2,8 +2,10 @@
 set -f
 
 WRTPI=`which rtpi`
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 
@@ -34,10 +36,10 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     rc_db=$?
 
     if [ "$rc_inst" -ne 0 -a -s $LOGF_INST_DIFF ]; then
-      cat $LOGF_INST_DIFF $LOGF_INST_OLD $LOGF_INST | $WMMAIL -s "INSTANCE status has been changed (host: ${HOST} / db: ${DB})" $ADMINS
+      cat $LOGF_INST_DIFF $LOGF_INST_OLD $LOGF_INST | $WMMAIL -s "$MPREFIX INSTANCE status has been changed (host: ${HOST} / db: ${DB})" $ADMINS
     fi
     if [ "$rc_db" -ne 0 -a -s $LOGF_DB_DIFF ]; then
-      cat $LOGF_DB_DIFF $LOGF_DB_OLD $LOGF_DB | $WMMAIL -s "DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
+      cat $LOGF_DB_DIFF $LOGF_DB_OLD $LOGF_DB | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
     fi
     cp $LOGF_INST $LOGF_INST_OLD
     cp $LOGF_DB $LOGF_DB_OLD

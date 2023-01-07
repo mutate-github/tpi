@@ -1,0 +1,46 @@
+[32mDB=creditc   07-01-2023 21:37:26   db [ nls|option|properties ] - v$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information (B[m
+v$instance:
+
+INSTANCE_NAME   HOST_NAME                 VERSION    STARTUP_TIME        STATUS     ARCHIVER   LOGINS     DATABASE_STATUS INSTANCE_ROLE
+--------------- ------------------------- ---------- ------------------- ---------- ---------- ---------- --------------- --------------------
+creditc         kikdb02                   12.2.0.1.0 06/01/2023 21:26:44 OPEN       STARTED    ALLOWED    ACTIVE          PRIMARY_INSTANCE
+
+v$database:
+
+                                                               RESETLOGS             PROTECTION   DATABASE  SWITCHOVER  FORCE   SUPPLEMENTAL FLASHBACK
+        DBID NAME     CREATED    LOG_MODE          CURRENT_SCN TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+------------ -------- ---------- ------------- --------------- ---------- ---------- ------------ --------- ----------- ------- ------------ --------- ----------------------------
+   974199922 CREDITC  06/09/2017 ARCHIVELOG        19519787605 01/08/2021 READ ONLY  MAXIMUM PERF PHYSICAL  NOT ALLOWED YES     NO           NO        Linux x86 64-bit
+                                                                11:22:38  WITH APPLY ORMANCE      STANDBY
+
+
+DBA_REGISTRY:
+
+COMP_ID    COMP_NAME                                VERSION      STATUS       MODIFIED             SCHEMA          PROCEDURE
+---------- ---------------------------------------- ------------ ------------ -------------------- --------------- ---------------------------------------------
+CATALOG    Oracle Database Catalog Views            12.2.0.1.0   VALID        04-AUG-2018 20:01:09 SYS             DBMS_REGISTRY_SYS.VALIDATE_CATALOG
+CATPROC    Oracle Database Packages and Types       12.2.0.1.0   VALID        04-AUG-2018 20:01:09 SYS             DBMS_REGISTRY_SYS.VALIDATE_CATPROC
+JAVAVM     JServer JAVA Virtual Machine             12.2.0.1.0   VALID        04-AUG-2018 20:01:10 SYS             INITJVMAUX.VALIDATE_JAVAVM
+XML        Oracle XDK                               12.2.0.1.0   VALID        04-AUG-2018 20:01:10 SYS             XMLVALIDATE
+CATJAVA    Oracle Database Java Packages            12.2.0.1.0   VALID        04-AUG-2018 20:01:10 SYS             DBMS_REGISTRY_SYS.VALIDATE_CATJAVA
+APS        OLAP Analytic Workspace                  12.2.0.1.0   VALID        04-AUG-2018 20:01:11 SYS             APS_VALIDATE
+OWM        Oracle Workspace Manager                 12.2.0.1.0   VALID        04-AUG-2018 20:01:10 WMSYS           VALIDATE_OWM
+CONTEXT    Oracle Text                              12.2.0.1.0   VALID        04-AUG-2018 20:01:10 CTXSYS          VALIDATE_CONTEXT
+XDB        Oracle XML Database                      12.2.0.1.0   VALID        04-AUG-2018 20:01:11 XDB             DBMS_REGXDB.VALIDATEXDB
+ORDIM      Oracle Multimedia                        12.2.0.1.0   VALID        04-AUG-2018 20:01:11 ORDSYS          VALIDATE_ORDIM
+SDO        Spatial                                  12.2.0.1.0   VALID        04-AUG-2018 20:01:17 MDSYS           VALIDATE_SDO
+XOQ        Oracle OLAP API                          12.2.0.1.0   VALID        04-AUG-2018 20:01:17 OLAPSYS         XOQ_VALIDATE
+AMD        OLAP Catalog                             11.2.0.4.0   OPTION OFF   04-AUG-2018 19:38:53 OLAPSYS         CWM2_OLAP_INSTALLER.VALIDATE_CWM2_INSTALL
+APEX       Oracle Application Express               5.0.4.00.12  VALID        04-AUG-2018 20:01:22 APEX_050000     VALIDATE_APEX
+
+REGISTRY$HISTORY:
+
+ACTION_TIME         ACTION          NAMESPACE       VERSION                 ID COMMENTS                                                               BUNDLE_SERIES
+------------------- --------------- --------------- --------------- ---------- ---------------------------------------------------------------------- --------------------
+24/08/2013 12:03:45 APPLY           SERVER          11.2.0.4                 0 Patchset 11.2.0.2.0                                                    PSU
+06/09/2017 12:46:55 APPLY           SERVER          11.2.0.4                 0 Patchset 11.2.0.2.0                                                    PSU
+                    BOOTSTRAP       DATAPATCH       12.2.0.1                   RDBMS_12.2.0.1.0_LINUX.X64_170125
+04/08/2018 19:55:00 VIEW INVALIDATE                                    8289601 view invalidation
+04/08/2018 19:56:25 UPGRADE         SERVER          12.2.0.1.0                 Upgraded from 11.2.0.4.0
+
+DBA_REGISTRY_SQLPATCH:

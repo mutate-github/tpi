@@ -1,8 +1,10 @@
 #!/bin/sh
 
 WRTPI=`which rtpi`
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 SEQ_GAP=`$BASEDIR/iniget.sh mon.ini standby seq_gap`
@@ -27,13 +29,13 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
         if [ "$SEQ_GAP_NOW" -lt "$SEQ_GAP" ]; then
           SEQ_GAP_WAS=`cat $TRG_FILE_SEQ_GAP`
           rm $TRG_FILE_SEQ_GAP
-          cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - RECOVER: `date +%H:%M:%S-%d/%m/%y` was ${SEQ_GAP_WAS}, now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
+          cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - RECOVER: `date +%H:%M:%S-%d/%m/%y` was ${SEQ_GAP_WAS}, now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
           echo "SEQ_GAP recover host: "${HOST} " database: "${DB}
         fi
       else
         if [ "$SEQ_GAP_NOW" -ge "$SEQ_GAP" ]; then
           echo "$SEQ_GAP_NOW" > "$TRG_FILE_SEQ_GAP"
-          cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - TRIGGER: `date +%H:%M:%S-%d/%m/%y` now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
+          cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - TRIGGER: `date +%H:%M:%S-%d/%m/%y` now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
           echo "SEQ_GAP trigger host: "${HOST} " database: "${DB}
         fi
       fi
@@ -42,13 +44,13 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
         if [ "$LAG_MINUTES_NOW" -lt "$LAG_MINUTES" ]; then
           LAG_MINUTES_WAS=`cat $TRG_FILE_LAG_MINUTES`
           rm $TRG_FILE_LAG_MINUTES
-          cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - RECOVER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} was ${LAG_MINUTES_WAS}, now ${LAG_MINUTES_NOW} minuted behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
+          cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - RECOVER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} was ${LAG_MINUTES_WAS}, now ${LAG_MINUTES_NOW} minuted behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
           echo "LAG_MINUTES recover host: "${HOST} " database: "${DB}
         fi
       else
         if [ "$LAG_MINUTES_NOW" -ge "$LAG_MINUTES" ]; then
           echo "$LAG_MINUTES_NOW" > "$TRG_FILE_LAG_MINUTES"
-          cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - TRIGGER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} is ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
+          cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - TRIGGER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} is ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
           echo "LAG_MINUTES trigger host: "${HOST} " database: "${DB}
         fi
       fi
@@ -60,14 +62,14 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
          FF=`find "$TRG_FILE_SEQ_GAP" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l`
          if [ "$FF" -eq 1 ]; then
            CNT=`head -1 $TRG_FILE_SEQ_GAP`
-           cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` more ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
+           cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` more ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)" $ADMINS
            echo "SEQ_GAP repeat trigger host: "${HOST} " database: "${DB}
          fi
 
          FF=`find "$TRG_FILE_LAG_MINUTES" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l`
          if [ "$FF" -eq 1 ]; then
            CNT=`head -1 $TRG_FILE_LAG_MINUTES`
-           cat $LOG_FILE | $WMMAIL -s "${HOST} / ${DB} - TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} more ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
+           cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} more ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)" $ADMINS
            echo "LAG_MINUTES repeat trigger host: "${HOST} " database: "${DB}
          fi
       ;;

@@ -1,0 +1,4 @@
+0a1,3
+>         DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+>   1668320018 KIKM     15/12/2022 NOARCHIVELOG       15/12/2022 READ WRITE UNPROTECTED  PRIMARY   NOT ALLOWED YES     NO           NO        Linux x86 64-bit
+>                                                                 21:59:47

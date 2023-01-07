@@ -8,8 +8,10 @@ set -f
 export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 
 WRTPI=`which rtpi`
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 LINES=`$BASEDIR/iniget.sh mon.ini alert lines`
@@ -108,7 +110,7 @@ if [ "$ERRCT" -gt 1 ]; then
  echo "$ERRCT Errors Found \n"
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}'
  echo " "\\n"$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}' >> $LOGF_HEAD
- cat $LOGF_HEAD | $WMMAIL -s "ALERT_LOG warning: $HOST / $DB" $ADMINS
+ cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
 fi
 
 rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE

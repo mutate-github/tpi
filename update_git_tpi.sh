@@ -13,10 +13,7 @@
 #scp tpi 10.0.7.21:tal/
 #scp tpi 10.0.17.21:tal/
 
-git add README.md
-git add tpi
-git add rtpi
-git add update_git_tpi.sh
+git add *
 DT=`date`
 git commit -m "$DT"
 #git push

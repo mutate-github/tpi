@@ -1,8 +1,10 @@
 #!/bin/bash
 set -f
 
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
 CATALOG=`$BASEDIR/iniget.sh mon.ini backup catalog`
@@ -166,7 +168,7 @@ EOF_CREATE_F1
   egrep -i "input |oradata|LEVEL-|/oracle|error|REDUNDANT|RMAN-" $logf          >> $logf.mail.log
   echo "----------------------------------------------------------------------" >> $logf.mail.log
 
-  cat $logf.mail.log | $WMMAIL -s "BACKUP on HOST:$HOST, DB:$DB "$BCK_STATUS $ADMINS 2>/dev/null
+  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (host: $HOST, db: $DB) "$BCK_STATUS $ADMINS 2>/dev/null
 
 #  rm ${logf}.mail.log
   find $BASEDIR/log -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;

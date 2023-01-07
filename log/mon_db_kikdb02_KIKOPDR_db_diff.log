@@ -1,0 +1,4 @@
+0a1,3
+>         DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+>   1502515375 KIKOPDR  21/12/2014 ARCHIVELOG         26/05/2021 READ ONLY  MAXIMUM PERF PHYSICAL  NOT ALLOWED YES     NO           NO        Linux x86 64-bit
+>                                                                 21:06:31  WITH APPLY ORMANCE      

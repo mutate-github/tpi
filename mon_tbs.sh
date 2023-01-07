@@ -2,8 +2,10 @@
 set -f
 
 WRTPI=`which rtpi`
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 limPER=`$BASEDIR/iniget.sh mon.ini tbs limitPER`
@@ -35,7 +37,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
            echo "" >> $LOGF_TRG
        done  >>  $LOGF_TRG
 
-       cat $LOGF_HEAD $LOGF_TRG | $WMMAIL -s "TBS usage warning: ${HOST} / ${DB} free space too low (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
+       cat $LOGF_HEAD $LOGF_TRG | $WMMAIL -s "$MPREFIX TBS usage warning: ${HOST} / ${DB} free space too low (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
        rm $LOGF $LOGF_TRG $LOGF_HEAD
     fi
   done # DB

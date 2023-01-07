@@ -1,0 +1,4 @@
+0a1,3
+> INSTANCE_NAME   HOST_NAME                 VERSION    STARTUP_TIME        STATUS     ARCHIVER   LOGINS     DATABASE_STATUS INSTANCE_ROLE
+> kikm            kikdb02                   12.2.0.1.0 15/12/2022 22:04:19 OPEN       STOPPED    ALLOWED    ACTIVE          PRIMARY_INSTANCE
+> 

@@ -1,0 +1,3 @@
+        DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+  2348641413 CFT      25/11/2022 ARCHIVELOG         03/12/2022 READ ONLY  MAXIMUM PERF PHYSICAL  NOT ALLOWED YES     NO           NO        Linux x86 64-bit
+                                                                15:35:48  WITH APPLY ORMANCE      

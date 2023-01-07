@@ -1,7 +1,6 @@
 #!/bin/bash
 set -f
 
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`

@@ -1,0 +1,39 @@
+[32mDB=kika   07-01-2023 21:37:36   db [ nls|option|properties ] - v$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information (B[m
+v$instance:
+
+INSTANCE_NAME   HOST_NAME                 VERSION    STARTUP_TIME        STATUS     ARCHIVER   LOGINS     DATABASE_STATUS INSTANCE_ROLE
+--------------- ------------------------- ---------- ------------------- ---------- ---------- ---------- --------------- --------------------
+kika            kikdb03                   12.2.0.1.0 31/12/2022 15:07:36 MOUNTED    STARTED    ALLOWED    ACTIVE          PRIMARY_INSTANCE
+
+v$database:
+
+                                                               RESETLOGS             PROTECTION   DATABASE  SWITCHOVER  FORCE   SUPPLEMENTAL FLASHBACK
+        DBID NAME     CREATED    LOG_MODE          CURRENT_SCN TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
+------------ -------- ---------- ------------- --------------- ---------- ---------- ------------ --------- ----------- ------- ------------ --------- ----------------------------
+  1162267779 KIKA     28/08/2021 ARCHIVELOG        22378092964 28/08/2021 MOUNTED    MAXIMUM PERF PHYSICAL  NOT ALLOWED YES     NO           NO        Linux x86 64-bit
+                                                                19:55:55             ORMANCE      STANDBY
+
+
+DBA_REGISTRY:
+select comp_id, comp_name, version, status, modified, schema, procedure from dba_registry
+                                                                             *
+ERROR at line 1:
+ORA-01219: database or pluggable database not open: queries allowed on fixed tables or views only
+
+
+
+REGISTRY$HISTORY:
+select * from sys.registry$history
+                  *
+ERROR at line 1:
+ORA-01219: database or pluggable database not open: queries allowed on fixed tables or views only
+
+
+
+DBA_REGISTRY_SQLPATCH:
+      select action_time, PATCH_ID, PATCH_UID, VERSION, STATUS, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time
+                                                                                 *
+ERROR at line 1:
+ORA-01219: database or pluggable database not open: queries allowed on fixed tables or views only
+
+

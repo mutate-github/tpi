@@ -1,8 +1,10 @@
 #!/bin/sh
 set -f
 
-WMMAIL=`which mmail`
 BASEDIR=`dirname $0`
+MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+WMMAIL=`which $MAILS`
+MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 
@@ -17,7 +19,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   else MSG="PING warning: "
   fi
   if [ -n "$MSG" ]; then
-    echo "" | $WMMAIL -s $MSG "host " $HOST " - not responding" $ADMINS
+    echo "" | $WMMAIL -s "$MPREFIX $MSG host $HOST - not responding" $ADMINS
   fi
 done
 
