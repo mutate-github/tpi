@@ -8,7 +8,6 @@ WMMAIL=`which $MAILS`
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
-CATALOG=`$BASEDIR/iniget.sh mon.ini backup catalog`
 TNS_CATALOG=`$BASEDIR/iniget.sh mon.ini backup tns_catalog`
 HOST_DB_SET=`$BASEDIR/iniget.sh mon.ini backup host:db:set`
 shopt -s extglob
@@ -20,38 +19,38 @@ SET_ENV=`cat $SET_ENV_F`
 me=$$
 ONE_EXEC_F=$BASEDIR/one_exec_bck_db_${me}.sh
 
+echo "Checking if previous script did finish..."
+not_me=`date +%H:%M`
+#  echo $not_me
+ps -ef | egrep "[b]ck_db.sh" | grep -v "$not_me"
+if [ $? -eq 0 ]; then
+   echo "Previous script did not finish."
+   echo "Cancelling today's backup and exiting ..."
+   exit 0
+fi
+
 for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`
   DB=`echo $HDS | awk -F: '{print $2}'`
   NAS=`echo $HDS | awk -F: '{print $3}'`
-  echo "DEBUG HOST DB NAS="$HOST" "$DB" "$NAS
+#  echo "DEBUG HOST DB NAS="$HOST" "$DB" "$NAS
 
   logf="$LOGDIR/bck_db_${HOST}_${DB}_`date '+%m%di_%H-%M'`.log"
   exec > $logf 2>&1
   #exec &> >(tee -a "$logf")
 
-  echo "Checking if previous script did finish..."
-  not_me=`date +%H:%M`
-  echo $not_me
-  ps -ef | egrep "[b]ck_db.sh" | grep -v "$not_me"
-  if [ $? -eq 0 ]; then
-    echo "Previous script did not finish."
-    echo "Cancelling today's backup and exiting ..."
-    exit 0
-  fi
-
   WD=`date +"%a"`
-  echo "WD="$WD
+#  echo "WD="$WD
   case $WD in
     ${LEVEL0}) LVL=0 ;;
     ${LEVEL1}) LVL=1 ;;
     ${LEVEL2}) LVL=2 ;;
     *)         LVL=0 ;  not_backed="not backed up since time 'sysdate-1'" ;;
   esac
-  echo "DEBUG LEVEL0="$LEVEL0
-  echo "DEBUG LEVEL1="$LEVEL1
-  echo "DEBUG LEVEL2="$LEVEL2
-  echo "DEBUG LVL="$LVL
+#  echo "DEBUG LEVEL0="$LEVEL0
+#  echo "DEBUG LEVEL1="$LEVEL1
+#  echo "DEBUG LEVEL2="$LEVEL2
+#  echo "DEBUG LVL="$LVL
 
   RP=`echo $HDS | awk -F: '{print $4}' | sed 's/_/ /g'`
   shopt -s nocasematch
@@ -59,7 +58,13 @@ for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
   shopt -u nocasematch
   RP2=`echo $HDS | awk -F: '{print $5}'`
   RETENTION="CONFIGURE RETENTION POLICY TO "$RP" "$RP2" ${DAYS};"
-  echo "DEBUG RETENTION="$RETENTION
+#  echo "DEBUG RETENTION="$RETENTION
+  CATALOG=`echo $HDS | awk -F: '{print $6}'`
+  shopt -s nocasematch
+  if [[ "$CATALOG" = nocatalog ]]; then
+     TNS_CATALOG=""
+  fi
+  shopt -u nocasematch
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
@@ -151,7 +156,8 @@ order by j.start_time;
 EOS
 EOF_CREATE_F1
 
-  cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
+  cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
+  rm $ONE_EXEC_F
 
   rc=`sed '/^$/d' $logf | tail -1 | awk '{print $10}'`
   echo "rc="$rc

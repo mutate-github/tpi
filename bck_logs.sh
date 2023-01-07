@@ -5,7 +5,6 @@ BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
-CATALOG=`$BASEDIR/iniget.sh mon.ini backup catalog`
 TNS_CATALOG=`$BASEDIR/iniget.sh mon.ini backup tns_catalog`
 HOST_DB_SET=`$BASEDIR/iniget.sh mon.ini backup host:db:set`
 SET_ENV_F="$BASEDIR/set_env"
@@ -39,6 +38,12 @@ for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
     echo "Backup script: bck_db.sh is running. Exitting ..."
     exit 128
   fi
+  CATALOG=`echo $HDS | awk -F: '{print $6}'`
+  shopt -s nocasematch
+  if [[ "$CATALOG" = nocatalog ]]; then
+     TNS_CATALOG=""
+  fi
+  shopt -u nocasematch
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
