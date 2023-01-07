@@ -128,3 +128,11 @@ backup piece handle=/nas20/cft/level_0_CFT_1125369687_ce1h7hqn_1_1 RECID=4134 ST
 channel ORA_DISK_1: input backup set: count=2445, stamp=1125369352, piece=1
 channel ORA_DISK_1: starting piece 1 at 08-JAN-23
 channel ORA_DISK_1: backup piece /nas20/cft/level_0_CFT_1125369352_cd1h7hg8_1_1
+piece handle=/u15/cft/_move_from_nas20_cd1h7hg8_1_2 comment=NONE
+channel ORA_DISK_1: finished piece 1 at 08-JAN-23
+channel ORA_DISK_1: backup piece complete, elapsed time: 00:04:05
+deleted backup piece
+backup piece handle=/nas20/cft/level_0_CFT_1125369352_cd1h7hg8_1_1 RECID=4135 STAMP=1125369352
+channel ORA_DISK_1: input backup set: count=2447, stamp=1125369695, piece=1
+channel ORA_DISK_1: starting piece 1 at 08-JAN-23
+channel ORA_DISK_1: backup piece /nas20/cft/level_0_CFT_1125369695_cf1h7hqv_1_1
