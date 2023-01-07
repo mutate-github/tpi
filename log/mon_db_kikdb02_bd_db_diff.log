@@ -1,4 +1,0 @@
-0a1,3
->         DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
->   2021703410 BD       11/08/2020 ARCHIVELOG         11/04/2022 READ ONLY  MAXIMUM PERF PHYSICAL  NOT ALLOWED YES     NO           NO        Linux x86 64-bit
->                                                                 14:34:05  WITH APPLY ORMANCE      

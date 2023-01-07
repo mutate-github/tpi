@@ -1,3 +1,0 @@
-        DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
-  1162267779 KIKA     28/08/2021 ARCHIVELOG         28/08/2021 READ WRITE MAXIMUM PERF PRIMARY   TO STANDBY  YES     NO           NO        Linux x86 64-bit
-                                                                19:55:55             ORMANCE

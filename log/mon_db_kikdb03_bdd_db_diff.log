@@ -1,4 +1,0 @@
-0a1,3
->         DBID NAME     CREATED    LOG_MODE           TIME       OPEN_MODE  LEVEL        ROLE      STATUS      LOGGING LOG_DATA     ON        PLATFORM_NAME
->   2021703410 BDD      10/08/2022 NOARCHIVELOG       10/08/2022 READ WRITE UNPROTECTED  PRIMARY   NOT ALLOWED YES     NO           NO        Linux x86 64-bit
->                                                                 00:00:14

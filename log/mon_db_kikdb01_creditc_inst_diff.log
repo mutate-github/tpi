@@ -1,4 +1,0 @@
-0a1,3
-> INSTANCE_NAME   HOST_NAME                 VERSION    STARTUP_TIME        STATUS     ARCHIVER   LOGINS     DATABASE_STATUS INSTANCE_ROLE
-> creditc         kikdb01                   12.2.0.1.0 29/12/2022 15:02:19 OPEN       STARTED    ALLOWED    ACTIVE          PRIMARY_INSTANCE
-> 
