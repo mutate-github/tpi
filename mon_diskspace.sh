@@ -4,7 +4,7 @@ set -f
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL=`which $MAILS`
+WMMAIL="$BASEDIR/$MAILS"
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`

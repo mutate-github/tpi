@@ -51,5 +51,8 @@ function iniget() {
   done
 }
 
-iniget $1 $2 $3
+
+BASEDIR=`dirname $0`
+
+iniget $BASEDIR/$1 $2 $3
 
