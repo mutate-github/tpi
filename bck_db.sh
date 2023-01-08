@@ -1,6 +1,18 @@
 #!/bin/bash
 set -f
 
+etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:00/{print $2}'`
+if [ -n "$etime" -a "$etime" != "00:00" ]; then
+   echo "Previous script did not finish. "`date`
+   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:00/'
+   echo "Cancelling today's backup and exiting ..."
+   exit 0
+fi
+
+# $1 is optional parameter, sample:  kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0
+# it's means forced start single backup with partucular parameters:
+HDSALL=$1
+
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
@@ -19,52 +31,43 @@ SET_ENV=`cat $SET_ENV_F`
 me=$$
 ONE_EXEC_F=$BASEDIR/one_exec_bck_db_${me}.sh
 
-echo "Checking if previous script did finish..."
-not_me=`date +%H:%M`
-#  echo $not_me
-ps -ef | egrep "[b]ck_db.sh" | grep -v "$not_me"
-if [ $? -eq 0 ]; then
-   echo "Previous script did not finish."
-   echo "Cancelling today's backup and exiting ..."
-   exit 0
+if [ -z "$HDSALL" ]; then
+  HDSLST=$HOST_DB_SET
+else
+  HDSLST=$HDSALL
 fi
 
-for HDS in `echo "$HOST_DB_SET" | xargs -n1 echo`; do
+for HDS in `echo $HDSLST | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`
   DB=`echo $HDS | awk -F: '{print $2}'`
   NAS=`echo $HDS | awk -F: '{print $3}'`
-#  echo "DEBUG HOST DB NAS="$HOST" "$DB" "$NAS
+  RP=`echo $HDS | awk -F: '{print $4}' | sed 's/_/ /g'`
+  RP2=`echo $HDS | awk -F: '{print $5}'`
+  CATALOG=`echo $HDS | awk -F: '{print $6}'`
+  LVL=`echo $HDS | awk -F: '{print $7}'`
 
-  logf="$LOGDIR/bck_db_${HOST}_${DB}_`date '+%m%di_%H-%M'`.log"
+  logf="$LOGDIR/bck_db_${HOST}_${DB}_`date '+%m%d_%H-%M'`.log"
   exec > $logf 2>&1
   #exec &> >(tee -a "$logf")
 
-  WD=`date +"%a"`
-#  echo "WD="$WD
-  case $WD in
-    ${LEVEL0}) LVL=0 ;;
-    ${LEVEL1}) LVL=1 ;;
-    ${LEVEL2}) LVL=2 ;;
-    *)         LVL=0 ;  not_backed="not backed up since time 'sysdate-1'" ;;
-  esac
-#  echo "DEBUG LEVEL0="$LEVEL0
-#  echo "DEBUG LEVEL1="$LEVEL1
-#  echo "DEBUG LEVEL2="$LEVEL2
-#  echo "DEBUG LVL="$LVL
-
-  RP=`echo $HDS | awk -F: '{print $4}' | sed 's/_/ /g'`
   shopt -s nocasematch
   if [[ "$RP" =~ "WINDOW" ]]; then DAYS="DAYS"; else DAYS=""; fi
-  shopt -u nocasematch
-  RP2=`echo $HDS | awk -F: '{print $5}'`
   RETENTION="CONFIGURE RETENTION POLICY TO "$RP" "$RP2" ${DAYS};"
-#  echo "DEBUG RETENTION="$RETENTION
-  CATALOG=`echo $HDS | awk -F: '{print $6}'`
-  shopt -s nocasematch
   if [[ "$CATALOG" = nocatalog ]]; then
      TNS_CATALOG=""
   fi
   shopt -u nocasematch
+
+  if [ -z "$LVL" ]; then
+    WD=`date +"%a"`
+    case $WD in
+      ${LEVEL0}) LVL=0 ;;
+      ${LEVEL1}) LVL=1 ;;
+      ${LEVEL2}) LVL=2 ;;
+      *)         LVL=0 ;  not_backed="not backed up since time 'sysdate-1'" ;;
+    esac
+  fi
+#  echo "DEBUG LVL="$LVL
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
@@ -73,8 +76,11 @@ sid=\$1
 $SET_ENV
 export ORACLE_SID=\$sid
 
-echo "START BACKUP > HOST: $HOST, DB: $DB,  LEVEL-$LVL at `date`"
-echo "======================================================================"
+INF_STR="HOST: $HOST, DB: $DB, NAS: $NAS, RET_POL: $RP $RP2, CATALOG: $CATALOG, LEVEL: $LVL"
+
+echo "START BACKUP > \$INF_STR at `date`"
+echo "=============================================================================================================="
+
 echo "alter system set control_file_record_keep_time=60;" | sqlplus '/as sysdba'
 
 \$ORACLE_HOME/bin/rman target $TARGET $CATALOG $TNS_CATALOG << EOF
@@ -88,26 +94,34 @@ run {
   allocate channel cpu2 type disk;
   backup AS COMPRESSED BACKUPSET incremental level = $LVL database filesperset 1 $not_backed
   format '/$NAS/$DB/level_${LVL}_%d_%t_%U';
-  sql 'alter system archive log current';
   backup archivelog all format '/$NAS/$DB/logs_%d_%t_%U' delete input;
   backup spfile format '/$NAS/$DB/spfile_%d_%U.bck';
 }
 EOF
 
-echo "FINISH BACKUP > HOST: $HOST, DB: $DB  LEVEL-$LVL at `date`"
-echo "======================================================================"
+echo "FINISH BACKUP > \$INF_STR at `date`"
+echo "=============================================================================================================="
 
-echo "START DELETE REDUNDANT BACKUPSET > HOST: $HOST, DB: $DB at `date`"
-echo "--------------------------------------------------------------------"
+echo "START DELETE REDUNDANT BACKUPSET > \$INF_STR at `date`"
+echo "--------------------------------------------------------------------------------------------------------------"
+
+VALUE=\`sqlplus -s '/as sysdba' <<'END'
+set pagesize 0 feedback off verify off heading off echo off
+select database_role from v\$database;
+END\`
+echo "VALUE of database_role: "\$VALUE
+if [[ "\$VALUE" =~ "PRIMARY" ]]; then
+  RETENTION_="$RETENTION"
+fi
 
 \$ORACLE_HOME/bin/rman target $TARGET $CATALOG $TNS_CATALOG <<EOF
 allocate channel for maintenance type disk;
-$RETENTION
+\$RETENTION_
 delete noprompt obsolete;
 EOF
 
-echo "FINISH DELETE REDUNDANT BACKUPSET > HOST: $HOST, DB: $DB at `date`"
-echo "--------------------------------------------------------------------"
+echo "FINISH DELETE REDUNDANT BACKUPSET > \$INF_STR at `date`"
+echo "--------------------------------------------------------------------------------------------------------------"
 
 echo "Backups last 30 days stats:"
 sqlplus -s '/ as sysdba' <<'EOS'
@@ -151,7 +165,6 @@ from V\$RMAN_BACKUP_JOB_DETAILS j
                    group by d.session_recid, d.session_stamp) x
     on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
 where j.start_time > trunc(sysdate)-30 and j.input_type='DB INCR'
---where j.start_time = (select max(start_time) from V\$RMAN_BACKUP_JOB_DETAILS where start_time>sysdate-30 and input_type='DB INCR')
 order by j.start_time;
 EOS
 EOF_CREATE_F1
@@ -159,9 +172,9 @@ EOF_CREATE_F1
   cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
   rm $ONE_EXEC_F
 
-  rc=`sed '/^$/d' $logf | tail -1 | awk '{print $10}'`
-  echo "rc="$rc
-  if [ "$rc" = "COMPLETED" ]; then
+  rc=`sed '/^$/d' $logf | tail -1`
+#  echo "rc="$rc >> $logf
+  if [[ "$rc" =~ "COMPLETED" ]]; then
     BCK_STATUS=" completed with SUCCESS"
   else
     BCK_STATUS=" completed with FAILURE"
@@ -175,7 +188,7 @@ EOF_CREATE_F1
   egrep -i "input |oradata|LEVEL-|/oracle|error|REDUNDANT|RMAN-" $logf          >> $logf.mail.log
   echo "----------------------------------------------------------------------" >> $logf.mail.log
 
-  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (host: $HOST, db: $DB) "$BCK_STATUS $ADMINS 2>/dev/null
+  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS 2>/dev/null
 
 #  rm ${logf}.mail.log
   find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;

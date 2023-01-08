@@ -3,7 +3,7 @@
 HOST="k2"
 DB="cft bd kika prov EPS creditc KIKOPDR"
 #DB="creditc"
-DB="cft bd kika prov EPS KIKOPDR"
+DB="cft bd kika prov EPS creditc KIKOPDR"
 
 BASEDIR=`dirname $0`
 SET_ENV_F="$BASEDIR/set_env"
@@ -24,28 +24,32 @@ sid=\$1
 echo "sid="\$sid
 $SET_ENV
 export ORACLE_SID=\$sid
-#sqlplus -S '/as sysdba' <<EOF
-#set serveroutput on
-#column value for a80
-#set lines 250 pages 0 echo off termout off feedback off
-#spool exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
-#SELECT 'EXEC DBMS_BACKUP_RESTORE.DELETECONFIG('||conf#||');' FROM v\\\$rman_configuration where name='RETENTION POLICY';
-#spool off
-#@exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
-#VARIABLE RECNO NUMBER;
-#EXECUTE :RECNO := SYS.DBMS_BACKUP_RESTORE.SETCONFIG('RETENTION POLICY','TO REDUNDANCY 1');
-#EOF
+sqlplus -S '/as sysdba' <<EOF
+set serveroutput on
+column value for a80
+set lines 250 pages 0 echo off termout off feedback off
+--spool exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
+--SELECT 'EXEC DBMS_BACKUP_RESTORE.DELETECONFIG('||conf#||');' FROM v\\\$rman_configuration where name='RETENTION POLICY';
+--spool off
+--@exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
+--VARIABLE RECNO NUMBER;
+--EXECUTE :RECNO := SYS.DBMS_BACKUP_RESTORE.SETCONFIG('RETENTION POLICY','TO REDUNDANCY 1');
+set lines 200
+column value for a80
+SELECT * FROM v\\\$rman_configuration;
+EOF
+#rm exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
 
 #rman  target / nocatalog <<EOR
 #delete noprompt obsolete;
 #EOR
 
-rman  target / nocatalog <<EOR2
-backup backupset completed before 'SYSDATE-1/2' format '/u15/\\\$ORACLE_SID/_move_from_nas20_%U' delete input;
-EOR2
+#rman  target / nocatalog <<EOR2
+#backup backupset completed before 'SYSDATE-1/2' format '/u15/\\\$ORACLE_SID/_move_from_nas20_%U' delete input;
+#EOR2
 EOF_CREATE_F1
 
-cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $DB"
+cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $D"
 
 rm $ONE_EXEC_F
 
