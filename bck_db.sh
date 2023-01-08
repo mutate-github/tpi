@@ -1,22 +1,26 @@
 #!/bin/bash
 set -f
 
-etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:00/{print $2}'`
-if [ -n "$etime" -a "$etime" != "00:00" ]; then
-   echo "Previous script did not finish. "`date`
-   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:00/'
-   echo "Cancelling today's backup and exiting ..."
-   exit 0
-fi
+etime=`ps -eo 'pid,etime,args' | grep $0 | sort -nk2 | head -1 | awk '!/grep|00:00/{print $2}'`
+echo "etime: "$etime
 
-# $1 is optional parameter, sample:  kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0
-# it's means forced start single backup with partucular parameters:
+#if [ -n "$etime" -a "$etime" != "00:00" ]; then
+#   echo "Previous script did not finish. "`date`
+#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:00/'
+#   echo "Cancelling today's backup and exiting ..."
+#   exit 0
+#fi
+
+# $1 is optional parameter, sample usage:
+# $0 kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup with partucular parametersf
+# $0 kikdb02                                    - start multiple backups with partucular parameters from mon.ini
 HDSALL=$1
+echo `date`"   HDSALL: "$HDSALL
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL=`which $MAILS`
+WMMAIL="$BASEDIR/$MAILS"
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
@@ -34,8 +38,13 @@ ONE_EXEC_F=$BASEDIR/one_exec_bck_db_${me}.sh
 if [ -z "$HDSALL" ]; then
   HDSLST=$HOST_DB_SET
 else
-  HDSLST=$HDSALL
+  if [[ "$HDSALL" =~ ":" ]]; then
+    HDSLST=$HDSALL
+  else
+    HDSLST=`$BASEDIR/iniget.sh mon.ini backup host:db:set | grep "$HDSALL"`
+  fi
 fi
+
 
 for HDS in `echo $HDSLST | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`
@@ -171,6 +180,7 @@ EOF_CREATE_F1
 
   cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
   rm $ONE_EXEC_F
+  exec >> $logf 2>&1
 
   rc=`sed '/^$/d' $logf | tail -1`
 #  echo "rc="$rc >> $logf
@@ -188,10 +198,9 @@ EOF_CREATE_F1
   egrep -i "input |oradata|LEVEL-|/oracle|error|REDUNDANT|RMAN-" $logf          >> $logf.mail.log
   echo "----------------------------------------------------------------------" >> $logf.mail.log
 
-  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS 2>/dev/null
-
+  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS  # 2>/dev/null
 #  rm ${logf}.mail.log
-  find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
 
+  find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
 done  # for $HDS
 
