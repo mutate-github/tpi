@@ -16,12 +16,14 @@ sid=\$1
 echo "sid="\$sid
 $SET_ENV
 export ORACLE_SID=\$sid
-sqlplus -S '/as sysdba' <<EOF
-select * from dual;
-EOF
+VALUE=\`sqlplus -S '/as sysdba' <<'EOF'
+set pagesize 0 feedback off verify off heading off echo off
+select database_role from v\$database;
+EOF\`
+echo \$VALUE
 EOF_CREATE_F1
 
 cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $DB"
 
-rm $ONE_EXEC_F
+# rm $ONE_EXEC_F
 
