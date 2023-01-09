@@ -1,8 +1,8 @@
 #!/bin/bash
 set -f
 
-sender=dba.almaty@gmail.com
-gapp=tfoxgnbygggtelgy
+sender=t.mukhametshin@db-service.ru
+gapp=vngogoshxiqchxsz
 
 if [ $# -lt 1 ]; then
   echo "Usage: $0 [-s subject] email [-a attachment_file]"
@@ -29,9 +29,9 @@ msg=${msg%x}
 #printf %s "$msg"
 #echo "$msg"
 
-if [ -z "$file" ]; then 
+if [ -z "$file" ]; then
     #    --mail-rcpt $receiver \
-    curl -s --url 'smtps://smtp.gmail.com:465' --ssl-reqd \
+    curl -s --url 'smtps://smtp.yandex.ru:465' --ssl-reqd \
     --mail-from $sender \
     $receiver \
     --user $sender:$gapp \
@@ -44,7 +44,7 @@ else
     # MIME type for multiple type of input file extensions
     #    --mail-rcpt $receiver\
     MIMEType=`file --mime-type "$file" | sed 's/.*: //'`
-    curl -s --url 'smtps://smtp.gmail.com:465' --ssl-reqd \
+    curl -s --url 'smtps://smtp.yandex.ru:465' --ssl-reqd \
     --mail-from $sender \
     $receiver \
     --user $sender:$gapp \
