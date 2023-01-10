@@ -13,6 +13,11 @@
 # $ iniget file.ini Machine3
 # $ iniget file.ini Machine1 app
 
+# DBS
+aliases=/etc/profile.d/00-dbs-aliases.sh
+if [ -s $aliases ]; then
+  . /etc/profile.d/00-dbs-aliases.sh
+fi
 
 
 function iniget() {
@@ -38,13 +43,22 @@ function iniget() {
 #  local lines=$(awk '/\[/{prefix=$0; next} $1{print prefix $0}' $inifile)
   local lines=$(awk '/\[/{prefix=$0; gsub(/[ \t]+$/,"",prefix); next} $1{print prefix $0}' $inifile | sed '/ *#/d; /^ *$/d')
   for line in $lines; do
+	      if [[ "$key" == "db" ]]; then               # DBS
+	        s1=$(grep $section /etc/profile.d/00-dbs-aliases.sh | sed 's/alias //' | awk -F= '{print $1}' | head -1)    #DBS
+		section=$s1                               #DBS
+	      fi                                          #DBS
     if [[ "$line" == \[$section\]* ]]; then
       local keyval=$(echo $line | sed -e "s/^\[$section\]//")
       if [[ -z "$key" ]]; then
         echo $keyval
       else
         if [[ "$keyval" = $key=* ]]; then
-          echo $(echo $keyval | sed -e "s/^$key=//")
+	  if [[ "$section" =~ "servers"  ]]; then          #DBS
+	    str1=$(echo $keyval | sed -e "s/^$key=//")     #DBS
+            echo $(alias "$str1" |  awk -F"=" '{print $3}'  | tr -d \' | awk '{print $NF}')     #DBS
+          else                                             #DBS
+              echo $(echo $keyval | sed -e "s/^$key=//")
+	  fi                                               #DBS
         fi
       fi
     fi
