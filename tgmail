@@ -20,7 +20,7 @@ done
 
 #echo "sub="$sub
 #echo "receiver="$receiver
-#receiver_=`echo $receiver | sed 's/--mail-rcpt //g'`
+receiver_=`echo $receiver | sed 's/--mail-rcpt //g'`
 #echo "receiver_="$receiver_
 #echo "file="$file
 

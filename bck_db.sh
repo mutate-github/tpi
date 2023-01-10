@@ -12,7 +12,7 @@ echo "etime: "$etime
 #fi
 
 # $1 is optional parameter, sample usage:
-# $0 kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup with partucular parametersf
+# $0 kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup with partucular parameters
 # $0 kikdb02                                    - start multiple backups with partucular parameters from mon.ini
 HDSALL=$1
 echo `date`"   HDSALL: "$HDSALL

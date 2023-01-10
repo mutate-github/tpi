@@ -29,20 +29,30 @@ msg=${msg%x}
 #printf %s "$msg"
 #echo "$msg"
 
+<<<<<<< HEAD
 #MIME-Version: 1.0
 #Content-Type: text/plain; charset=utf-8; format=flowed
 #Content-Type: text/html; charset=windows-1251; format=flowed
 #Content-Transfer-Encoding: 8bit
 #Content-Language: ru
 if [ -z "$file" ]; then 
+=======
+if [ -z "$file" ]; then
+>>>>>>> 416b38e5e18d33ccd41c62fa1ca9b57a5f88a8f4
     #    --mail-rcpt $receiver \
     curl -s --url 'smtps://smtp.yandex.ru:465' --ssl-reqd \
     --mail-from $sender \
     $receiver \
     --user $sender:$gapp \
+<<<<<<< HEAD
      -T <(echo -e "From: ${sender} 
 To: ${receiver_} 
 Subject: ${sub}
+=======
+     -T <(echo -e "From: ${sender}
+To: ${receiver_}
+Subject:${sub}
+>>>>>>> 416b38e5e18d33ccd41c62fa1ca9b57a5f88a8f4
 ${msg}")
 else
     # attachment exists condition
