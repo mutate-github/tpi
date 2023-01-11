@@ -19,7 +19,6 @@ if [ -s $aliases ]; then
   . /etc/profile.d/00-dbs-aliases.sh
 fi
 
-
 function iniget() {
   if [[ $# -lt 2 || ! -f $1 ]]; then
     echo "usage: iniget <file> [--list|<section> [key]]"
@@ -40,13 +39,13 @@ function iniget() {
 
   # https://stackoverflow.com/questions/49399984/parsing-ini-file-in-bash
   # This awk line turns ini sections => [section-name]key=value
-#  local lines=$(awk '/\[/{prefix=$0; next} $1{print prefix $0}' $inifile)
+  # local lines=$(awk '/\[/{prefix=$0; next} $1{print prefix $0}' $inifile)
   local lines=$(awk '/\[/{prefix=$0; gsub(/[ \t]+$/,"",prefix); next} $1{print prefix $0}' $inifile | sed '/ *#/d; /^ *$/d')
   for line in $lines; do
-              if [[ "$key" == "db" && -s $aliases ]]; then               # DBS
-                s1=$(grep $section /etc/profile.d/00-dbs-aliases.sh 2>/dev/null | sed 's/alias //' | awk -F= '{print $1}' | head -1)    #DBS
-                section=$s1                               #DBS
-              fi                                          #DBS
+    if [[ "$key" == "db" && -s $aliases ]]; then               # DBS
+       s1=$(grep $section /etc/profile.d/00-dbs-aliases.sh 2>/dev/null | sed 's/alias //' | awk -F= '{print $1}' | head -1)    #DBS
+       section=$s1                               #DBS
+    fi                                          #DBS
     if [[ "$line" == \[$section\]* ]]; then
       local keyval=$(echo $line | sed -e "s/^\[$section\]//")
       if [[ -z "$key" ]]; then
@@ -55,8 +54,8 @@ function iniget() {
         if [[ "$keyval" = $key=* ]]; then
           if [[ "$section" =~ "servers"  ]]; then          #DBS
               str1=$(echo $keyval | sed -e "s/^$key=//")     #DBS
-              str2=$(alias "$str1" 2>/dev/null|  awk -F"=" '{print $3}'  | tr -d \' | awk '{print $NF}')
-              if [[ -n "$str2" ]]; then
+              str2=$(alias "$str1" 2>/dev/null|  awk -F"=" '{print $3}'  | tr -d \' | awk '{print $NF}')  #DBS
+              if [[ -n "$str2" ]]; then                    #DBS
                 echo $str2                                 #DBS
               else
                 echo $(echo $keyval | sed -e "s/^$key=//")
