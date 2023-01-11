@@ -16,6 +16,7 @@ echo `date`" BEGIN ========================================================= "
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   LOGF=$LOGDIR/mon_diskspace_${HOST}.log
   LOGF_HEAD=$LOGDIR/mon_diskspace_${HOST}_head.log
+  echo "HOST: "$HOST
   OS=`ssh $HOST "uname"`
   case "$OS" in
    Linux)
