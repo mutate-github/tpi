@@ -1,7 +1,9 @@
 [servers]
 #host=kikdb01
-host=kikdb02
+#host=kikdb02
 #host=kikdb03
+host=srv-axdb1-mrg
+host=srv-axdb2-mrg
 
 [kikdb01] 
 db=cft 
@@ -29,14 +31,41 @@ db=kikt
 db=bdd 
 db=EPSTEST4
 
+[srv-axdb1-mrg]
+db=dbdat
+db=yardb01
+db=OBL
+db=dbcon
+db=dbsml
+db=VOS
+db=LOG
+db=cheldb
+db=dbklg
+db=RZN2
+db=catdb
+
+[srv-axdb2-mrg]
+db=dbdat
+db=yardb01
+db=OBL
+db=dbcon
+db=dbsml
+db=VOS
+db=LOG
+db=cheldb
+db=dbklg
+db=RZN2
+db=catdb
+
+
 [mail]
-script=mmail
+#script=mmail
 #script=tgmail
-#script=tyandex
-prefix=KIK->
+script=tyandex
+prefix=DBS
 
 [admins]
-email=dba.almaty@gmail.com
+email=t.mukhametshin@db-service.ru
 
 [diskspace]
 # free space limit in %
@@ -72,19 +101,20 @@ exclude=ORA-01422
 exclude=ORA-06512
 exclude=ORA-12012
 
+# backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 [backup]
 level0=Sun
 level1=Wed,Fri
 level2=Mon,Tue,Sat
 target=/
 tns_catalog=rman/rman@prov
-host:db:set=kikdb01:cft:nas20:RECOVERY_WINDOW_OF:5:catalog
-host:db:set=kikdb01:bd:nas20:REDUNDANCY:1:catalog
-host:db:set=kikdb01:prov:nas20:RECOVERY_WINDOW_OF:5:catalog
-host:db:set=kikdb01:kika:nas20:REDUNDANCY:1:catalog
-host:db:set=kikdb01:EPS:nas20:RECOVERY_WINDOW_OF:5:catalog
-host:db:set=kikdb01:creditc:nas20:RECOVERY_WINDOW_OF:5:catalog
-host:db:set=kikdb01:KIKOPDR:nas20:RECOVERY_WINDOW_OF:5:catalog
+#host:db:set=kikdb01:cft:nas20:RECOVERY_WINDOW_OF:5:catalog
+#host:db:set=kikdb01:bd:nas20:REDUNDANCY:1:catalog
+#host:db:set=kikdb01:prov:nas20:RECOVERY_WINDOW_OF:5:catalog
+#host:db:set=kikdb01:kika:nas20:REDUNDANCY:1:catalog
+#host:db:set=kikdb01:EPS:nas20:RECOVERY_WINDOW_OF:5:catalog
+#host:db:set=kikdb01:creditc:nas20:RECOVERY_WINDOW_OF:5:catalog
+#host:db:set=kikdb01:KIKOPDR:nas20:RECOVERY_WINDOW_OF:5:catalog
 # #backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 host:db:set=kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:bd:u15:REDUNDANCY:1:nocatalog:0
