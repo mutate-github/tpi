@@ -2,7 +2,8 @@
 set -f
 
 sender=dba.almaty@gmail.com
-gapp=tfoxgnbygggtelgy
+#gapp=tfoxgnbygggtelgy
+gapp=gwhfgwyjyyuosqqh
 
 if [ $# -lt 1 ]; then
   echo "Usage: $0 [-s subject] email [-a attachment_file]"

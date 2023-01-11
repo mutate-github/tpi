@@ -91,7 +91,7 @@ run{
 #  not backed up 1 times
 #  format '/$NAS/$DB/logs_%d_%t_%U'
 #  delete input;
-  backup AS COMPRESSED BACKUPSET archivelog until time 'sysdate' not backed up 1 times format '/$NAS/$DB/logs_%d_%t_%U' delete input tag='ARCHIVELOGS';
+  backup AS COMPRESSED BACKUPSET archivelog until time 'sysdate' not backed up 1 times format '/$NAS/$DB/logs_%d_%t_%U' delete input tag 'ARCHIVELOGS';
 }
 EOF
 echo "FINISH ARCHIVELOGS BACKUP > \$INF_STR at `date`"
