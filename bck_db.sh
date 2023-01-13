@@ -194,7 +194,7 @@ EOF_CREATE_F1
     BCK_STATUS=" completed with FAILURE"
     FAILURE_LIST=$DB" "$FAILURE_LIST
   fi
-  HOST_DB_NAS_LVL=$HOST"/"$DB"/"$NAS"/"$LVL"  "$HOST_DB_NAS_LVL
+  HOST_DB=$HOST"/"$DB" "$HOST_DB
 
   echo "" > $logf.mail.log
   sed -n '/Backups last/,$p' $logf  >> $logf.mail.log
@@ -205,7 +205,7 @@ EOF_CREATE_F1
   echo "----------------------------------------------------------------------" >> $logf.mail.log
 
   echo "Backup Report for:" >> $LOGF_TOTAL
-  echo "HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL" >> $LOGF_TOTAL
+  echo "HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL  -  $BCK_STATUS" >> $LOGF_TOTAL
   cat $logf.mail.log  >> $LOGF_TOTAL
 
 #  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS  # 2>/dev/null
@@ -215,7 +215,7 @@ done  # for $HDS
 
 
 exec >> $logf 2>&1
-cat $LOGF_TOTAL | $WMMAIL -s "$MPREFIX BACKUP Report (HOST/DB/NAS/LVL: $HOST_DB_NAS_LVL) Success list (${SUCCESS_LIST}) / Failure list (${FAILURE_LIST})" $ADMINS  # 2>/dev/null
+cat $LOGF_TOTAL | $WMMAIL -s "$MPREFIX BACKUP Report (HOST/DB: $HOST_DB) Success list (${SUCCESS_LIST}) / Failure list (${FAILURE_LIST})" $ADMINS  # 2>/dev/null
 
 find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
 
