@@ -15,7 +15,8 @@ echo "etime: "$etime
 # $0 kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup with partucular parameters
 # $0 kikdb02                                    - start multiple backups with partucular parameters from mon.ini
 HDSALL=$1
-echo `date`"   HDSALL: "$HDSALL
+DS_=`date '+%m%d_%H-%M'`
+echo $DS_"   HDSALL: "$HDSALL
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
@@ -45,6 +46,8 @@ else
   fi
 fi
 
+LOGF_TOTAL="$LOGDIR/bck_db_total_${DS_}.log"
+echo "Start time: "$DS_  > $LOGF_TOTAL
 
 for HDS in `echo $HDSLST | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`
@@ -186,9 +189,12 @@ EOF_CREATE_F1
 #  echo "rc="$rc >> $logf
   if [[ "$rc" =~ "COMPLETED" ]]; then
     BCK_STATUS=" completed with SUCCESS"
+    SUCCESS_LIST=$DB" "$SUCCESS_LIST
   else
     BCK_STATUS=" completed with FAILURE"
+    FAILURE_LIST=$DB" "$FAILURE_LIST
   fi
+  HOST_DB_NAS_LVL=$HOST"/"$DB"/"$NAS"/"$LVL"  "$HOST_DB_NAS_LVL
 
   echo "" > $logf.mail.log
   sed -n '/Backups last/,$p' $logf  >> $logf.mail.log
@@ -198,9 +204,18 @@ EOF_CREATE_F1
   egrep -i "input |oradata|LEVEL-|/oracle|error|REDUNDANT|RMAN-" $logf          >> $logf.mail.log
   echo "----------------------------------------------------------------------" >> $logf.mail.log
 
-  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS  # 2>/dev/null
-#  rm ${logf}.mail.log
+  echo "Backup Report for:" >> $LOGF_TOTAL
+  echo "HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL" >> $LOGF_TOTAL
+  cat $logf.mail.log  >> $LOGF_TOTAL
 
-  find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
+#  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS  # 2>/dev/null
+  rm ${logf}.mail.log
+
 done  # for $HDS
+
+
+exec >> $logf 2>&1
+cat $LOGF_TOTAL | $WMMAIL -s "$MPREFIX BACKUP Report (HOST/DB/NAS/LVL: $HOST_DB_NAS_LVL) Success list (${SUCCESS_LIST}) / Failure list (${FAILURE_LIST})" $ADMINS  # 2>/dev/null
+
+find $LOGDIR -name "bck_db_*.log" -mtime +31 -exec rm -f {} \;
 
