@@ -4,12 +4,19 @@ BASEDIR=`dirname $0`
 echo $BASEDIR
 #cd $BASEDIR
 
+echo "Monitor: mon_ping_ssh.sh"
+$BASEDIR/mon_ping_ssh.sh
+echo "Monitor: mon_diskspace.sh"
 $BASEDIR/mon_diskspace.sh
-$BASEDIR/mon_tbs.sh
-$BASEDIR/mon_stb.sh
-$BASEDIR/mon_fra.sh
+echo "Monitor: mon_db.sh"
+$BASEDIR/mon_db.sh
+echo "Monitor: mon_alert.sh"
 $BASEDIR/mon_alert.sh
 #$BASEDIR/mon_adrci_alert.sh
-$BASEDIR/mon_ping_ssh.sh
-$BASEDIR/mon_db.sh
+echo "Monitor: mon_fra.sh"
+$BASEDIR/mon_fra.sh
+echo "Monitor: mon_tbs.sh"
+$BASEDIR/mon_tbs.sh
+echo "Monitor: mon_stb.sh"
+$BASEDIR/mon_stb.sh
 

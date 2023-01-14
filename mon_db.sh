@@ -31,8 +31,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     LOGF_DB_OLD=$LOGDIR/mon_db_${HOST}_${DB}_db_old.log
     touch $LOGF_DB_OLD
     LOGF_DB=$LOGDIR/mon_db_${HOST}_${DB}_db.log
-    cat $LOGF | egrep -A3 -i OPEN_MODE | grep -v '\----' > $LOGF_DB
-    sed -i -r 's/\S+//5' $LOGF_DB
+    cat $LOGF | egrep -A3 -i OPEN_MODE | grep -v '\----' | cut -c 1-108 | cut --complement -b '46-62' > $LOGF_DB
     diff $LOGF_DB_OLD $LOGF_DB > $LOGF_DB_DIFF
     rc_db=$?
 
@@ -43,6 +42,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
       cat $LOGF_DB_DIFF $LOGF_DB_OLD $LOGF_DB | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
     fi
     cp $LOGF_INST $LOGF_INST_OLD
+    cp $LOGF_DB_OLD $LOGF_DB_OLD"_old.log"
     cp $LOGF_DB $LOGF_DB_OLD
 #    rm $LOGF_INST_DIFF $LOGF_INST  $LOGF_DB_DIFF $LOGF_DB
   done

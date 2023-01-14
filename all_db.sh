@@ -38,7 +38,7 @@ set lines 200
 column value for a80
 SELECT * FROM v\\\$rman_configuration;
 EOF
-#rm exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
+rm exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
 
 #rman  target / nocatalog <<EOR
 #delete noprompt obsolete;
