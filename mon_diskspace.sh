@@ -33,10 +33,11 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
           ;;
   esac
   if [ "$PCT" -gt "$limPER" -a "$FS_" -lt "$limGB" ]; then
-    echo "Fired: "$0"\n" > $LOGF_HEAD
+    echo -e "Fired: "$0"\n" > $LOGF_HEAD
     cat $LOGF_HEAD $LOGF | $WMMAIL -s "$MPREFIX DISKSPACE usage warning: $HOST (current: ${PCT} %, threshold: ${limPER} % and below ${limGB} Gb)" $ADMINS
+    rm $LOGF_HEAD
   fi
-  rm $LOGF $LOGF_HEAD
+  rm $LOGF
 done
 
 echo `date`" END ========================================================= "
