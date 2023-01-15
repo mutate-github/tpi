@@ -71,6 +71,11 @@ function iniget() {
 
 
 BASEDIR=`dirname $0`
-
-iniget $BASEDIR/$1 $2 $3
+INI_FILE="$BASEDIR/$1"
+if [ -f "$INI_FILE" ]; then
+  iniget $INI_FILE $2 $3
+else
+  echo "Configuration file: "$INI_FILE" not found. Exiting.."
+  exit 127
+fi
 
