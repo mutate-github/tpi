@@ -42,7 +42,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
       cat $LOGF_DB_DIFF $LOGF_DB_OLD $LOGF_DB | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
     fi
     cp $LOGF_INST $LOGF_INST_OLD
-    cp $LOGF_DB_OLD $LOGF_DB_OLD"_old.log"
+#    cp $LOGF_DB_OLD $LOGF_DB_OLD"_old.log"
     cp $LOGF_DB $LOGF_DB_OLD
 #    rm $LOGF_INST_DIFF $LOGF_INST  $LOGF_DB_DIFF $LOGF_DB
   done

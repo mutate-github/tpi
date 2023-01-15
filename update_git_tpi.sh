@@ -13,7 +13,7 @@
 #scp tpi 10.0.7.21:tal/
 #scp tpi 10.0.17.21:tal/
 
-git add *
+# git add *
 DT=`date`
 git commit -m "$DT"
 #git push
