@@ -71,6 +71,9 @@ function iniget() {
 
 
 BASEDIR=`dirname $0`
-
-iniget $BASEDIR/$1 $2 $3
+if [[ -f "$1" ]]; then
+  iniget $BASEDIR/$1 $2 $3
+else
+  echo "Configuration file: "$1" not found. Exiting.."
+fi
 
