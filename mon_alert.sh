@@ -111,7 +111,7 @@ ERRCT=$(echo $ERRMESS | awk 'BEGIN {RS="<BR>"} END {print NR}')
 if [ "$ERRCT" -gt 1 ]; then
  echo "$ERRCT Errors Found \n"
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}'
- echo " "\\n"$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}' >> $LOGF_HEAD
+ echo -e " "\\n"$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}' >> $LOGF_HEAD
  cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
 fi
 

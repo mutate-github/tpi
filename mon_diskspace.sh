@@ -11,7 +11,6 @@ ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 limPER=`$BASEDIR/iniget.sh mon.ini diskspace limitPER`
 limGB=`$BASEDIR/iniget.sh mon.ini diskspace limitGB`
 
-echo `date`" BEGIN ========================================================= "
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   LOGF=$LOGDIR/mon_diskspace_${HOST}.log
@@ -40,5 +39,4 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   rm $LOGF
 done
 
-echo `date`" END ========================================================= "
 
