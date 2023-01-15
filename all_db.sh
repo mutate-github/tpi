@@ -28,12 +28,12 @@ sqlplus -S '/as sysdba' <<EOF
 set serveroutput on
 column value for a80
 set lines 250 pages 0 echo off termout off feedback off
---spool exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
---SELECT 'EXEC DBMS_BACKUP_RESTORE.DELETECONFIG('||conf#||');' FROM v\\\$rman_configuration where name='RETENTION POLICY';
---spool off
---@exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
---VARIABLE RECNO NUMBER;
---EXECUTE :RECNO := SYS.DBMS_BACKUP_RESTORE.SETCONFIG('RETENTION POLICY','TO REDUNDANCY 1');
+spool exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
+SELECT 'EXEC DBMS_BACKUP_RESTORE.DELETECONFIG('||conf#||');' FROM v\\\$rman_configuration where name='RETENTION POLICY';
+spool off
+@exec_DBMS_BACKUP_RESTORE_DELETECONFIG.sql
+VARIABLE RECNO NUMBER;
+EXECUTE :RECNO := SYS.DBMS_BACKUP_RESTORE.SETCONFIG('RETENTION POLICY','TO REDUNDANCY 1');
 set lines 200
 column value for a80
 SELECT * FROM v\\\$rman_configuration;

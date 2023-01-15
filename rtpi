@@ -13,7 +13,8 @@ shift
 args=$*
 # args=`echo $args | tr '$' '~'`
 args=$(echo $args | sed  's|\$|\\$|g')
-wtpi=`which tpi`
+BASEDIR=`dirname $0`
+wtpi="$BASEDIR/tpi"
 
 # echo "host: "$P1_
 # echo "args: "$args
