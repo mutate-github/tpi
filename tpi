@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 07.01.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 16.01.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 sid=$1
 
@@ -1237,10 +1237,10 @@ select * from v$option;
 END
 ;;
 *)
- SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode,current_scn, resetlogs_time,open_mode,protection_level,database_role,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
+ SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
  REL=$(db_version)
  case $REL in
-   9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,protection_mode,protection_level,database_role,switchover_status,force_logging,supplemental_log_data_min from v\$database;"
+   9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;"
    ;;
    12|18|19) SQL_TEXT12="prompt
       prompt DBA_REGISTRY_SQLPATCH:
@@ -1264,18 +1264,18 @@ select INSTANCE_NAME, HOST_NAME, VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS,
 prompt
 prompt v\$database:
 column current_scn for 99999999999999
-column resetlogs_time for a10 heading "RESETLOGS|TIME"
+column resetlogs_time for a19 heading "RESLOGTIME"
 column dbid for 99999999999
 column name for a8
 column created for a10
 column LOG_MODE for a13
-column open_mode for a10
-column database_role for a9 heading "DATABASE|ROLE"
-column protection_level for a12 heading "PROTECTION|LEVEL"
-column switchover_status for a11 heading "SWITCHOVER|STATUS"
-column force_logging for a7 heading "FORCE|LOGGING"
-column supplemental_log_data_min for a12 heading "SUPPLEMENTAL|LOG_DATA"
-column FLASHBACK_ON for a9 heading "FLASHBACK|ON"
+column open_mode for a20
+column database_role for a20 heading "DB_ROLE"
+column protection_level for a20 heading "PROTECTION_LEVEL"
+column switchover_status for a15 heading "SWITCH_STATUS"
+column force_logging for a8 heading "FORCELOG"
+column supplemental_log_data_min for a8 heading "SUPPLLOG"
+column FLASHBACK_ON for a9 heading "FLASHB_ON"
 column platform_name for a28
 $SQL_TEXT
 EOF
