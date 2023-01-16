@@ -72,14 +72,13 @@ BEGIN {
             errloc=index(\$0,"ORA-")
             if (errloc > 0)
               { oraerr=substr(\$0,errloc);
-                if (index(oraerr,":") < 1)
-                   { oraloc2=index(oraerr," ") }
-                else
-                   { oraloc2=index(oraerr,":") }
-                oraloc2=oraloc2-1;
+                if (index(oraerr," ") > 0)
+                   { oraloc2=index(oraerr," "); }
                 oraerr=substr(oraerr,1,oraloc2);
+                if (index(oraerr,":") > 0)
+                   { oraloc2=index(oraerr,":"); oraloc2=oraloc2-1; oraerr=substr(oraerr,1,oraloc2); }
                 if (index(excldata,oraerr) < 1)
-                   { errfound = errfound +1; }
+                   { errfound = errfound +1;  }
               }
             else # treat fuzzy as errors
               { errfound = errfound +1; }
@@ -116,7 +115,7 @@ if [ "$ERRCT" -gt 1 ]; then
  cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
 fi
 
-rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
+# rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
 # rm $LASTALERTTIME
 
   done    # DB
