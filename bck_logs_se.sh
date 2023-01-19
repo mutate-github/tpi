@@ -46,25 +46,12 @@ for HDS in `echo "$HDSLST" | xargs -n1 echo`; do
   exec >> $logf 2>&1
   echo "DEBUG HOST="$HOST"   DB="$DB"   NAS="$NAS"  HOST_STB_SE="$HOST_STB_SE
 
-#  a=`ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep`
-#  echo -e "a="$a
-#  a0=`ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep | wc -l`
-#  echo "a0="$a0
-#  if [ "$a0" -gt "1" ]; then
-#    echo "Script "$0" already running.. Exiting..."
-#    ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep
-#    echo "Others ps -ef:"
-#    ps -ef | grep "$0" | grep -v [g]rep
-#    exit 128
-#  fi
-
   CATALOG=`echo $HDS | awk -F: '{print $6}'`
   shopt -s nocasematch
   if [[ "$CATALOG" = nocatalog ]]; then
      TNS_CATALOG=""
   fi
   shopt -u nocasematch
-
 
 
 HOST_STB_DB=`echo $HOST_STB_SE | awk -F: '{print $1}'`
