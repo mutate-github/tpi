@@ -57,6 +57,7 @@ for HDS in `echo $HDSLST | xargs -n1 echo`; do
   RP2=`echo $HDS | awk -F: '{print $5}'`
   CATALOG=`echo $HDS | awk -F: '{print $6}'`
   LVL=`echo $HDS | awk -F: '{print $7}'`
+echo "1LVL="$LVL
 
   logf="$LOGDIR/bck_db_${HOST}_${DB}_`date '+%m%d_%H-%M'`.log"
   exec > $logf 2>&1
@@ -72,14 +73,21 @@ for HDS in `echo $HDSLST | xargs -n1 echo`; do
 
   if [ -z "$LVL" ]; then
     WD=`date +"%a"`
+echo "WD="$WD
+echo "LEVEL0="${LEVEL0}
+echo "LEVEL1="${LEVEL1}
+echo "LEVEL2="${LEVEL2}
     case $WD in
       ${LEVEL0}) LVL=0 ;;
       ${LEVEL1}) LVL=1 ;;
       ${LEVEL2}) LVL=2 ;;
-      *)         LVL=0 ;  not_backed="not backed up since time 'sysdate-1'" ;;
+      *)         LVL=0 ; echo "ENTER";  not_backed="not backed up since time 'sysdate-1'" ;;
     esac
   fi
 #   echo "DEBUG LVL="$LVL
+echo "3LVL="$LVL
+
+#exit
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
