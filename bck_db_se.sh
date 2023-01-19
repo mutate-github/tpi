@@ -1,14 +1,13 @@
 #!/bin/bash
 set -f
 
-etime=`ps -eo 'pid,etime,args' | grep $0 | sort -nk2 | head -1 | awk '!/grep|00:00/{print $2}'`
+etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
-
-#if [ -n "$etime" -a "$etime" != "00:00" ]; then
+#if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
 #   echo "Previous script did not finish. "`date`
-#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:00/'
+#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
 #   echo "Cancelling today's backup and exiting ..."
-#   exit 0
+#   exit 127
 #fi
 
 # $1 is optional parameter, sample usage:
