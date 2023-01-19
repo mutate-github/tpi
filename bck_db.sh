@@ -84,10 +84,7 @@ echo "LEVEL2="${LEVEL2}
       *)         LVL=0 ; echo "ENTER";  not_backed="not backed up since time 'sysdate-1'" ;;
     esac
   fi
-#   echo "DEBUG LVL="$LVL
-echo "3LVL="$LVL
 
-#exit
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
 #!/bin/sh
