@@ -1,14 +1,13 @@
 #!/bin/bash
 set -f
 
-etime=`ps -eo 'pid,etime,args' | grep $0 | sort -nk2 | head -1 | awk '!/grep|00:00/{print $2}'`
+etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
-
-#if [ -n "$etime" -a "$etime" != "00:00" ]; then
+#if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
 #   echo "Previous script did not finish. "`date`
-#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:00/'
+#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
 #   echo "Cancelling today's backup and exiting ..."
-#   exit 0
+#   exit 127
 #fi
 
 # $1 is optional parameter, sample usage:
@@ -46,18 +45,6 @@ for HDS in `echo "$HDSLST" | xargs -n1 echo`; do
 
   logf="$LOGDIR/bck_logs_${HOST}_${DB}.log"
   exec >> $logf 2>&1
-
-#  a=`ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep`
-#  echo -e "a="$a
-#  a0=`ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep | wc -l`
-#  echo "a0="$a0
-#  if [ "$a0" -gt "1" ]; then
-#    echo "Script "$0" already running.. Exiting..."
-#    ps -eo 'pid,ppid,args' | egrep "$0" | egrep -v "$$" | egrep -v [e]grep
-#    echo "Others ps -ef:"
-#    ps -ef | grep "$0" | grep -v [g]rep
-#    exit 128
-#  fi
 
   CATALOG=`echo $HDS | awk -F: '{print $6}'`
   shopt -s nocasematch
