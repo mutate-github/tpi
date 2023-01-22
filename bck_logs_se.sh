@@ -68,7 +68,7 @@ export ORACLE_SID=\\$sid
 END
 EOF`
  VALUE_STB=`echo $VALUE_STB | sed -e 's/^ //'`
- VALUE_STB=`expr $VALUE_STB - 10`
+ VALUE_STB=`expr $VALUE_STB - 1`
  LOGS="until logseq=$VALUE_STB"
  if [ -z "$VALUE_STB" ]; then
    echo "standby don't answer, then:  until logseq=0"
