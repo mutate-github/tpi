@@ -27,7 +27,8 @@ function iniget() {
   local inifile=$1
 
   if [ "$2" == "--list" ]; then
-    for section in $(cat $inifile | sed '/ *#/d; /^ *$/d' | grep "\[" | sed -e "s#\[##g" | sed -e "s#\]##g"); do
+#    for section in $(cat $inifile | sed '/ *#/d; /^ *$/d' | grep "\[" | sed -e "s#\[##g" | sed -e "s#\]##g"); do
+    for section in $(cat $inifile | sed '/^#.*$/d; /^ *$/d' | grep "\[" | sed -e "s#\[##g" | sed -e "s#\]##g"); do
       echo $section
     done
     return 0
@@ -40,7 +41,8 @@ function iniget() {
   # https://stackoverflow.com/questions/49399984/parsing-ini-file-in-bash
   # This awk line turns ini sections => [section-name]key=value
   # local lines=$(awk '/\[/{prefix=$0; next} $1{print prefix $0}' $inifile)
-  local lines=$(awk '/\[/{prefix=$0; gsub(/[ \t]+$/,"",prefix); next} $1{print prefix $0}' $inifile | sed '/ *#/d; /^ *$/d')
+#  local lines=$(awk '/\[/{prefix=$0; gsub(/[ \t]+$/,"",prefix); next} $1{print prefix $0}' $inifile | sed '/ *#/d; /^ *$/d')
+  local lines=$(awk '/\[/{prefix=$0; gsub(/[ \t]+$/,"",prefix); next} $1{s=gensub("^#.*$","","G",$1); if(s!="") print prefix s}' $inifile)
   for line in $lines; do
     if [[ "$key" == "db" && -s $aliases ]]; then               # DBS
        s1=$(grep $section /etc/profile.d/00-dbs-aliases.sh 2>/dev/null | sed 's/alias //' | awk -F= '{print $1}' | head -1)    #DBS
