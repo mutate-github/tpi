@@ -35,7 +35,7 @@ EOF`
     echo $VALUE
 
     if [ "$VALUE" -gt "$PERCENT" ]; then
-      cat $LOG_FILE | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} % " $ADMINS
+      echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)" $ADMINS
     fi
   done # DB
 done # HOST
