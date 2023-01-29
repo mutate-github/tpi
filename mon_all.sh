@@ -23,5 +23,7 @@ echo "Monitor: =================================================================
 $BASEDIR/mon_stb.sh
 echo "Monitor: ================================================================================ mon_db_files.sh"
 $BASEDIR/mon_db_files.sh
+echo "Monitor: ================================================================================ mon_processes_sessions.sh"
+$BASEDIR/mon_processes_sessions.sh
 echo "FINISH ALL MONITORING ****************************************************************************"`date`
 
