@@ -9,6 +9,7 @@ HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+  MSG=""
   ping -w3 -W 10 $HOST
   if [ $? -eq 0 ]; then
     ssh -q $HOST exit
