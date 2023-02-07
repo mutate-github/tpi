@@ -25,5 +25,7 @@ echo "Monitor: =================================================================
 $BASEDIR/mon_db_files.sh
 echo "Monitor: ================================================================================ mon_processes_sessions.sh"
 $BASEDIR/mon_processes_sessions.sh
+echo "Monitor: ================================================================================ mon_lock.sh"
+$BASEDIR/mon_lock.sh
 echo "FINISH ALL MONITORING ****************************************************************************"`date`
 
