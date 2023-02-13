@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 12.02.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 13.02.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 sid=$1
 
@@ -438,11 +438,13 @@ $CMD2_
 
 ------------
   dbms_output.put_line(chr(126)||'Previous SQL statement:');
+  select sql_id into  STR_ from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value and rownum=1;
+  dbms_output.put_line(chr(126)||'sql_id: '||STR_);
   for c1 in ( select * from sys.v_\$sqltext
               where HASH_VALUE = s.prev_hash_value order by piece) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.sql_id||'     '||c1.sql_text);
+    dbms_output.put_line(chr(126)||chr(32)||c1.sql_text);
   end loop;
-  dbms_output.put_line(chr(126)||'=====================================================================');
+  dbms_output.put_line(chr(126)||'===============================================================================');
 END;
 /
 spool off
@@ -2119,6 +2121,17 @@ sesstat()
 {
 P1_=`echo $* | awk '{print $1}'`
 P2_=`echo $* | awk '{print $2}'`
+SET_COL='set lines 230
+set echo off feed off veri off tab off pages 70
+col sid for 99999
+col serial# for 999999
+col username for a25
+col osuser for a20
+col module for a50
+col action for a30
+col name for a70
+col value for 999999999999999'
+
 case "$P1_" in
 list)
 $SP <<EOF >$LOGF
@@ -2133,43 +2146,24 @@ shift
 ALL="$*"
 echo "sess) ALL: " $ALL
 $SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 70
+$SET_COL
 prompt
 prompt Top 60 Session event for SID = $P2_ and name like "$ALL%":
-col sid for 99999
-col serial# for 999999
-col username for a20
-col osuser for a20
-col module for a32
-col action for a30
-col name for a55
-col value for 999999999999999
 select * from (
-select b.sid, s.serial#, s.username, s.osuser, s.module, s.action, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
+select b.sid, s.serial#, s.username, s.osuser, s.module, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
 from v\$statname a, v\$sesstat b, v\$session s where a.statistic#=b.statistic#
 and s.sid=b.sid and s.serial#<>'1' and s.sid = '$P2_' and name like '$ALL%' order by value desc
 ) where rownum < 61;
 EOF
 ;;
 *)
-echo "* ALL: " $ALL
-
+echo "*) ALL: " $ALL
 $SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 70
+$SET_COL
 prompt
 prompt Sessions of top 60 event $P1:
-col sid for 99999
-col serial# for 999999
-col username for a20
-col osuser for a20
-col module for a32
-col action for a30
-col name for a35
-col value for 999999999999999
 select * from (
-select b.sid, s.serial#, s.username, s.osuser, s.module, s.action, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
+select b.sid, s.serial#, s.username, s.osuser, s.module, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
 from v\$statname a, v\$sesstat b, v\$session s where a.statistic#=b.statistic#
 and s.sid=b.sid and s.serial#<>'1' and name like '$ALL%' order by value desc
 ) where rownum < 61;
