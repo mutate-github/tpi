@@ -35,7 +35,8 @@ case "$P1_" in
          args2=$(echo "$args" | sed  's|\$|\\\\$|g')
 #        echo "args2:"$args2
 #   cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/sh -s $args"
-   cat $wtpi | eval ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
+#   cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
+    cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
  *) alias $P1_ >/dev/null 2>&1
     rc=$?

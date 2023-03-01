@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 13.02.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 01.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 sid=$1
 
@@ -36,7 +36,7 @@ init_msg()
   a__="a - all sessions  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
-  health__="health - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Latch contention, Hot buffers)"
+  health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
@@ -542,98 +542,31 @@ logf
 
 health()
 {
+P1_=`echo $ALL | awk '{print $1}'`
+case "$P1_" in 
+cr)
 $SP <<'EOF' >$LOGF
-set lines 180
-set pages 40
-set heading on
-set feedback off
-set termout off
-set heading on
-set termout on
-
-ttitle left "Database info:"
-select name, created, log_mode from v$database;
-ttitle off
-
-ttitle left "v$license information about session HWM:"
-select sessions_current,sessions_highwater,cpu_count_current from v$license;
-ttitle off
-
-column "Physical Reads" format 99,999,999,999,999
-column "Consistent Gets" format 99,999,999,999,999
-column "DB Block Gets" format 99,999,999,999,999
-column "Percent (Above 70% ?)" format 999.99
-TTitle left "DB Block Buffers - Hit Ratio: " skip 1 -
- left "Percent = (100*(1-(Physical Reads/(Consistent Gets + DB Block  Gets))))" skip 2
-select pr "Physical Reads",
-       cg "Consistent Gets",
-       dbbg "DB Block Gets",
-       round((100*(1-(PR/(CG+dbbg)))),3) "Percent (Above 70% ?)"
-        from (SELECT  VALUE as dbbg FROM V$SYSSTAT WHERE NAME = 'db block gets'),
-(SELECT  VALUE as cg FROM V$SYSSTAT WHERE NAME = 'consistent gets'),
-(SELECT  VALUE as pr FROM V$SYSSTAT WHERE NAME = 'physical reads');
-
-column "Executions" format 999,999,999,990
-column "Cache Misses Executing" format 999,999,999,990
-column "Data Dictionary Gets" format 999,999,999,999
-column "Get Misses" format 999,999,999,999
-ttitle left skip 1 -
-  left "Shared Pool Size - Gets and Misses:" skip 1
-select sum(pins) "Executions",
-       sum(reloads) "Cache Misses Executing",
-       round((sum(reloads)/sum(pins)*100),3) "% Ratio (STAY UNDER 1%)"
-from v$librarycache;
-
-ttitle left "Shared Pool Size (Dictionary Gets and Misses):"  skip 1
-select sum(gets) "Data Dictionary Gets",
-       sum(getmisses) "Get Misses",
-       round(100*(sum(getmisses)/sum(gets)),3) "% Ratio (STAY UNDER 12%)"
-from v$rowcache;
-ttitle off
-
-ttitle left "Log Buffers space requests:" skip 1
-column name for a30
-select  substr(name,1,25) Name,
-        substr(value,1,15) "VALUE (Near 0?)"
-from v$sysstat
-where name = 'redo log space requests';
-ttitle off
-
-ttitle left "TOP 10 - System Events waits:" skip 1
-column time_waited for 999999999999
-select inst_id, event, time_waited, total_waits, total_timeouts, pct_mis
-from (select inst_id, event, time_waited, total_waits, total_timeouts, round(total_timeouts/total_waits*100,3) pct_mis
-from gv$system_event where event not in ('rdbms ipc message','smon timer',
-'pmon timer','SQL*Net message from client',
-'lock manager wait for remote message','ges remote message', 'client message',
-'SQL*Net more data from client', 'pipe get', 'Null event', 'PX Idle Wait',
-'single-task message', 'wakeup time manager','lreg timer','Streams AQ: deallocate messages from Streams Pool',
-'OFS idle','AQPC idle','pman timer','wait for unread message on broadcast channel','DIAG idle wait')
-order by time_waited desc)
-where rownum < 11
-order by pct_mis desc;
-ttitle off
-
-
-ttitle left "Latch Contention information:" skip 1
-column name for a40
-column gets for 999999999999999
-column misses for 999999999999
-column im_gets for 999999999999
-column im_misses for 999999999999
-select n.name name, l.gets gets, l.misses misses, l.sleeps sleep ,
-l.immediate_gets im_gets,l.immediate_misses im_misses,
-round(decode(l.gets,0,0,misses/l.gets*100),3) pct,
-round(decode(l.immediate_gets,0,0,l.immediate_misses/l.immediate_gets*100),3) im_pct
-from v$latchname n, v$latchholder h, v$latch l
-where l.latch#=n.latch#
-and l.addr=h.laddr(+)
-and (l.immediate_misses*100>0.5*l.immediate_gets
-or misses*100>0.5*l.gets)
-order by misses/l.gets desc;
-ttitle off
-
-ttitle left "Hot buffers in buffer cache 'cache buffers chains' latch contention:" skip 1
+set lines 230 pages 100
+ttitle left "Consistent read buffers (>100) v$bh in SGA group by owner,object_name,object_type"
+set lines 230 pages 100 timing on
+col owner for a30
+col dirty for a5
+col object_name for a30
+col object_type for a10
+select d.owner, d.object_name, d.object_type, b.dirty, count(*) cnt
+  from v$bh b, dba_objects d
+where b.objd = d.data_object_id
+   and d.owner not in ('SYS', 'SYSTEM')
+   and b.status = 'cr'
+group by d.owner, d.object_name, d.object_type, b.dirty
+having count(*) > 100
+order by cnt desc;
+EOF
+;;
+hot)
+$SP <<'EOF' >$LOGF
+set lines 230 pages 100
+ttitle left "Hot buffers in buffer cache  avg(tch)>100 and count(buffers)>20, 'cache buffers chains' latch contention:" skip 1
 column owner for a20
 column avg_touches format 999
 column myname heading 'Name' format a30
@@ -647,8 +580,78 @@ having avg(tch) > 100 and count(1) > 20
 order by avg_touches desc;
 ttitle off
 EOF
+;;
+*)
+$SP <<'EOF' >$LOGF
+set lines 230 pages 100
+set heading on
+set feedback off
+set termout off
+set heading on
+set termout on
+
+ttitle left "v$license information about session HWM:"
+select sessions_current,sessions_highwater,cpu_count_current from v$license;
+ttitle off
+
+ttitle left "Cache usage:"
+col name for a70
+col Remarks for a70
+select 'Data Dictionary cache' Name, round((SUM(GETS - GETMISSES - USAGE - FIXED)) / SUM(GETS) * 100,4) Ratio, 'Target ~ 99%' Remarks
+    from V$ROWCACHE
+union all
+select 'Library cache' Name, round((SUM(PINS - RELOADS)) / SUM(PINS) * 100,4) Ratio, 'Target ~ 99%' Remarks
+    from V$LIBRARYCACHE
+union all
+select 'Index usage ratio' Name, round(sum(decode(name,'table fetch by rowid',value,0)) / sum(decode(name,'table fetch by rowid',value,'table scans (short tables)',value,'table scans (long tables)',value,0)) * 100,4) Ratio, 'Target ~ 99%' Remarks
+    from V$SYSSTAT
+union all
+select 'Memory usage in Sorts ratio' Name, round(sum(decode(name,'sorts (memory)',value,0)) / sum(decode(name,'sorts (memory)',value,'sorts (disk)',value,0)) * 100,4) Ratio, 'Ratio sorts in memory to total sorts' Remarks
+    from V$SYSSTAT
+union all
+select 'Buffer cache hit ratio' Name, round((1 - sum(decode(name,'physical reads',value,0)) / sum(decode(name,'db block gets',value,'consistent gets',value,0))) * 100,4) Ratio, 'Target ~ 99%' Remarks
+    from V$SYSSTAT
+union all
+select 'Buffer pool: ' || Name || ' block_size: '|| block_size || ' hit ratio' Name, round((1 - physical_reads / (db_block_gets+consistent_gets)) * 100,4) Ratio, 'Target ~ 99%' Remarks
+    from V$BUFFER_POOL_STATISTICS
+union all
+select 'Average buffers scanned' Name, round(1 + sum(decode(name,'free buffer inspected',value,0)) / sum(decode(name,'free buffer requested',value,0)),4), 'Target ~ 1..2, if above -- too low buffers' Remarks
+    from V$SYSSTAT
+union all
+select 'Average dirty buffers' Name, round(sum(decode(name,'dirty buffers inspected',value,0)) / sum(decode(name,'free buffer inspected',value,0)),4), 'Target ~ ??, if too much durty -- too low buffers' Remarks
+    from V$SYSSTAT
+union all
+select 'consistent reads - undo records applied / consistent read rollbacks', round((select value from V$SYSSTAT where name='transaction tables consistent reads - undo records applied')/(select value from V$SYSSTAT where name='transaction tables consistent read rollbacks'),4) ratio, 'Less is better' Remarks
+    from dual
+union all
+select 'Log Buffers space requests' Name, round(sum(decode(name,'redo log space requests',value,0))) Ratio,  'Target (..?)' Remarks
+    from V$SYSSTAT
+union all
+select 'Shared pool free memory (MB)' Name, round(bytes/1024/1024,4) Ration, 'If much free mem -- maybe its redundant??' Remarks
+    from V$SGASTAT
+    where name = 'free memory' and pool = 'shared pool';
+ttitle off
+
+ttitle left "TOP 10 - v$system_event waits:" skip 1
+column time_waited for 999999999999
+select inst_id, event, time_waited, total_waits, total_timeouts, pct_mis
+from (select inst_id, event, time_waited, total_waits, total_timeouts, round(total_timeouts/total_waits*100,3) pct_mis
+from gv$system_event where event not in ('rdbms ipc message','smon timer',
+'pmon timer','SQL*Net message from client',
+'lock manager wait for remote message','ges remote message', 'client message',
+'SQL*Net more data from client', 'pipe get', 'Null event', 'PX Idle Wait',
+'single-task message', 'wakeup time manager','lreg timer','Streams AQ: deallocate messages from Streams Pool',
+'OFS idle','AQPC idle','pman timer','wait for unread message on broadcast channel','DIAG idle wait')
+order by time_waited desc)
+where rownum <= 10
+order by pct_mis desc;
+ttitle off
+EOF
+;;
+esac
 logf
 }
+
 
 oratop()
 {
@@ -2960,22 +2963,26 @@ logf
 latch()
 {
 $SP <<'EOF' >$LOGF
-set lines 180
+set lines 230
 set echo off feed off veri off tab off pages 140
--- current latch
+ttitle left "Latch Contention information:" skip 1
+column name for a40
 column gets for 999999999999999
 column misses for 999999999999
 column im_gets for 999999999999
+column im_misses for 999999999999
 select n.name name, l.gets gets, l.misses misses, l.sleeps sleep ,
-l.immediate_gets im_gets,l.immediate_misses im_misses, 
-round(decode(l.gets,0,0,misses/l.gets*100),3) pct, 
-round(decode(l.immediate_gets,0,0,l.immediate_misses/l.immediate_gets*100),3) im_pct 
-from v$latchname n, v$latchholder h, v$latch l 
-where l.gets>0 and l.latch#=n.latch# 
-and l.addr=h.laddr(+) 
-and (l.immediate_misses*100>0.5*l.immediate_gets 
-or misses*100>0.5*l.gets) 
-order by misses/l.gets desc; 
+l.immediate_gets im_gets,l.immediate_misses im_misses,
+round(decode(l.gets,0,0,misses/l.gets*100),3) pct,
+round(decode(l.immediate_gets,0,0,l.immediate_misses/l.immediate_gets*100),3) im_pct
+from v$latchname n, v$latchholder h, v$latch l
+where l.latch#=n.latch#
+and l.addr=h.laddr(+)
+and (l.immediate_misses*100>0.5*l.immediate_gets
+or misses*100>0.5*l.gets)
+order by misses/l.gets desc;
+ttitle off
+
 
 DEF _lhp_what="sid,name,func"
 DEF _lhp_sid="%"
@@ -3765,6 +3772,7 @@ column CPU for 999999
 column WAIT for 999999
 column IO for 999999
 column TOTAL for 999999
+column owner for a30
 column OBJECT_NAME for a35'
 
 case $type_ in
@@ -4237,7 +4245,7 @@ col SNAP_TIME for a15
 BREAK ON REPORT
 COMPUTE SUM LABEL 'SUM' OF block_changed on report
 SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
-           dhso.object_name,dhso.object_type,
+           dhso.owner, dhso.object_name, dhso.object_type,
            SUM (db_block_changes_delta) block_changed
    FROM   dba_hist_seg_stat dhss,
            dba_hist_seg_stat_obj dhso,
@@ -4248,7 +4256,7 @@ SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
            AND dhss.dataobj# = dhso.dataobj#
 	   AND begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
 	   and object_type like nvl(trim('$OBJTYPE_'),'%')
-GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.object_name,dhso.object_type
+GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.owner, dhso.object_name, dhso.object_type
   HAVING   SUM (db_block_changes_delta) > nvl(trim('$SIZE_'), 0)
 ORDER BY   snap_time;
 EOF
@@ -5550,7 +5558,7 @@ case "$ID" in
 lock)   echo $lock__ ${reset}; lock $ALL ;;
 p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)  echo $db__ ${reset}; db ;;
-health)  echo $health__ ${reset}; health ;;
+health)  shift ; ALL=$* ; echo $health__ ${reset}; health $ALL ;;
 oratop)  shift ; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
 sga)  echo $sga__ ${reset}; sga ;;
 pga)  echo $pga__ ${reset}; pga ;;
