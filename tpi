@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 01.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 02.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 sid=$1
 
@@ -612,7 +612,7 @@ union all
 select 'Buffer cache hit ratio' Name, round((1 - sum(decode(name,'physical reads',value,0)) / sum(decode(name,'db block gets',value,'consistent gets',value,0))) * 100,4) Ratio, 'Target ~ 99%' Remarks
     from V$SYSSTAT
 union all
-select 'Buffer pool: ' || Name || ' block_size: '|| block_size || ' hit ratio' Name, round((1 - physical_reads / (db_block_gets+consistent_gets)) * 100,4) Ratio, 'Target ~ 99%' Remarks
+select 'Buffer pool: ' || Name || ' block_size: '|| block_size || ' hit ratio' Name, round((1 - physical_reads / decode(db_block_gets+consistent_gets,0,'',db_block_gets+consistent_gets) ) * 100,4) Ratio, 'Target ~ 99%' Remarks
     from V$BUFFER_POOL_STATISTICS
 union all
 select 'Average buffers scanned' Name, round(1 + sum(decode(name,'free buffer inspected',value,0)) / sum(decode(name,'free buffer requested',value,0)),4), 'Target ~ 1..2, if above -- too low buffers' Remarks
