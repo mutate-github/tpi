@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 02.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 15.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 sid=$1
 
@@ -2054,6 +2054,21 @@ SELECT s.sid, s.serial#, s.username, s.program, t.used_ublk, t.used_urec, t.star
 FROM v$session s, v$transaction t
 WHERE s.taddr = t.addr and s.status='ACTIVE'
 ORDER BY 7 , 5 desc, 6 desc, 1, 2, 3, 4
+) where rownum < 26;
+
+prompt Top 25 Sessions Generating Lots of Redo  V$SESSION s, V$SESSTAT t, V$STATNAME sn, V$SQLAREA :
+col program for a30
+col sql_text for a130
+select * from (
+SELECT s.sid, s.serial#, s.username, s.program, ROUND(t.VALUE/(1024*1024)) AS "Redo Size MB", sa.sql_text
+FROM V$SESSION s, V$SESSTAT t, V$STATNAME sn, V$SQLAREA sa
+WHERE s.sid = t.sid
+AND t.statistic# = sn.statistic#
+AND sn.name = 'redo size'
+AND s.type <> 'BACKGROUND'
+AND sa.sql_id(+) = s.sql_id
+AND ROUND(t.VALUE/(1024*1024)) != 0
+ORDER BY t.VALUE DESC
 ) where rownum < 26;
 EOF
 esac
