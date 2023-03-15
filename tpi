@@ -5553,8 +5553,8 @@ logf
 export TERM=xterm
 U=`uname | awk -F_ '{print $1}'`
 case "$U" in
- CYGWIN)  echo -n "DB="$sid"   "`date +%d-%m-%Y" "%H:%M:%S`"   " ;;
- AIX)     echo "DB="$sid"   "`date +%d-%m-%Y" "%H:%M:%S`"   " \\c ;;
+ CYGWIN)  echo -n "DB="$sid"   "`date +%d/%m/%Y" "%H:%M:%S`"   " ;;
+ AIX)     echo "DB="$sid"   "`date +%d/%m/%Y" "%H:%M:%S`"   " \\c ;;
  *)
  red=`tput setaf 1`
  green=`tput setaf 2`
@@ -5563,7 +5563,7 @@ case "$U" in
  magneta=`tput setaf 5`
  cyan=`tput setaf 6`
  reset=`tput sgr0`
- echo -n ${green}"DB="$sid"   "`date +%d-%m-%Y" "%H:%M:%S`"   "
+ echo -n ${green}"DB="$sid"   "`date +%d/%m/%Y" "%H:%M:%S`"   "
  ;;
 esac
 
