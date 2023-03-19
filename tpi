@@ -1,8 +1,15 @@
 #!/bin/sh
 set -f
-# version 15.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 19.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
-sid=$1
+P0_=$1
+
+PDB=`echo "$P0_" | awk -F/ '{print $2}'`
+sid=`echo "$P0_" | awk -F/ '{print $1}'`
+if [ -n "$PDB" ]; then
+  SET_PDB_="alter session set container=$PDB;"
+fi
+
 
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
@@ -140,6 +147,15 @@ echo $VALUE | tr -d '\r'
 # return $VALUE
 }
 
+db_is_pdb()
+{
+VALUE=`$SP <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select value from v$parameter where name ='enable_pluggable_database';
+END`
+echo $VALUE | tr -d '\r'
+}
+
 db_is_open()
 {
 VALUE=`$SP <<'END'
@@ -173,6 +189,7 @@ LOGF="/tmp/tpilog_$$.txt"
 export ORACLE_PATH=/tmp
 LOGINSQL=/tmp/login.sql
 cat << CREATELOGINSQL > $LOGINSQL
+$SET_PDB_
 set echo off
 set timing off
 set feedback off
@@ -1256,6 +1273,7 @@ END
 $SP <<EOF > $LOGF
 set lines 230 timing off
 set echo off feed off veri off tab off pages 50
+show pdbs
 prompt v\$instance:
 column instance_name for a15
 column host_name for a25
