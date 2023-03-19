@@ -16,7 +16,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_db_${HOST}_${DB}.log
-    $WRTPI $HOST $DB db | sed -n '2,12p' | grep -v '\----' | sed '/^$/d' > $LOGF
+    $WRTPI $HOST $DB db | sed -n '/v$instance:/,/DBA_REGISTRY/p'| grep -v DBA_REGISTRY | grep -v '\----' | sed '/^$/d' > $LOGF
 
     LOGF_DB_DIFF=$LOGDIR/mon_db_${HOST}_${DB}_db_diff.log
     LOGF_DB_OLD=$LOGDIR/mon_db_${HOST}_${DB}_db_old.log
