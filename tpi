@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 19.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 24.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -682,42 +682,44 @@ case "$P1_" in
 h)
 $SP <<'EOF' >$LOGF
 set lines 230 pages 100 tab off
-prompt NCPU   - Number of CPU                                   AAS    - Average Active Sessions. (red if > #cpu)       SSRT   - Sql service response time (T/call)
-prompt HCPUB  - Host cpu busy %(busy/busy+idle). (red if>90%)   AST    - Active user Sessions Total (ASCPU+ASIO+ASWA)   MBPS   - I/O megabytes per second (throughput)
-prompt CPUUPS - CPU Usage Per Sec                               ASCPU  - Active Sessions on CPU                         IOPS   - I/O requests per second
-prompt LOAD   - Current os load. (red if>2*#CPU and high cpu)   ASIO   - Active Sessions waiting on user I/O            IORL   - I/O avg synch s/b/read latency in msec (red>20ms)
-prompt DCTR   - DB CPU time ratio  % Cpu/DB_Time                ASWA   - Active Sessions Waiting, (red if>ASCPU+ASIO)   LOGR   - Logical reads per sec
-prompt DWTR   - DB WAIT time ratio (red if>50 and high ASWA)    ASPQ   - Active Parallel Sessions                       PHYR   - Physical reads per sec
-prompt SPFR   - Shared pool free %                              UTPS   - User transactions per sec                      PHYW   - Physical writes per sec
-prompt TPGA   - Total pga allocated                             UCPS   - User calls per sec                             TEMP   - Temp space used (Mb)                   DBTM - Database Time Per Sec
-col NCPU for 9999
-col HCPUB for 99999
+prompt NCPU   - Number of CPU                                   AAS    - Average Active Sessions. (! if>#cpu)           MBPS   - I/O megabytes per second (throughput)
+prompt HCPUB  - Host cpu busy %(busy/busy+idle). (! if>90%)     AST    - Active user Sessions Total (ASCPU+ASIO+ASWA)   IOPS   - I/O requests per second
+prompt CPUUPS - CPU Usage Per Sec                               ASCPU  - Active Sessions on CPU                         IORL   - I/O avg synch s/b/read latency in msec (! if>10ms)
+prompt LOAD   - Current os load. (! if>2*#CPU and high cpu)     ASIO   - Active Sessions waiting on user I/O            LOGR   - Logical reads per sec
+prompt DCTR   - DB CPU time ratio  % Cpu/DB_Time                ASWA   - Active Sessions Waiting, (! if>ASCPU+ASIO)     PHYR   - Physical reads per sec
+prompt DWTR   - DB WAIT time ratio (! if>50 and high ASWA)      ASPQ   - Active Parallel Sessions                       PHYW   - Physical writes per sec
+prompt SPFR   - Shared pool free %                              UTPS   - User transactions per sec                      TEMP   - Temp space used (Mb)
+prompt TPGA   - Total pga allocated                             UCPS   - User calls per sec                             DBTM   - Database Time Per Sec
+prompt SCT    - Session Count Total                             SSRT   - Sql service response time (T/call)
+col begin_time for a17
+col NCPU for 999
+col HCPUB for 9999
 col CPUUPS for 99999
+col LOAD for 999
+col DCTR for 999
+col DWTR for 999
 col SPFR for 99999
-col UTPS for 99999
-col UCPS for 9999999
-col AAS for 99999
-col MBPS for 99999
-col SSRT for 999999
-col IORL for 99999
-col LOAD for 99999
-col DCTR for 99999
-col DWTR for 99999
-col NCPU for 9999
+col TPGA for 99999
+col SCT for 9999
 col AAS for 9999
 col AST for 9999
 col ASCPU for 9999
 col ASIO for 9999
 col ASWA for 9999
-col ASPQ for 99999
-col TPGA for 999999
+col ASPQ for 9999
+col UTPS for 99999
+col UCPS for 9999999
+col SSRT for 9999999
+col MBPS for 99999
 col IOPS for 999999
+col IORL for 99999
+col LOGR for 9999999999
 col PHYR for 999999
-col PHYW for 99999
+col PHYW for 999999
 col TEMP for 99999
 col DBTM for 99999
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
-      begin_time, 
+      to_char(begin_time,'dd/mm/yy-hh24:mi:ss') begin_time, 
       ncpu,                           --  'NUM_CPUS'
       trunc(hcpu) hcpub,              --   %CPU      [m,N]: host cpu busy %(busy/busy+idle). (red if > 90%)
       trunc(dcpu) cpuups,             --  'CPU Usage Per Sec'  'CentiSeconds Per Second'
@@ -726,6 +728,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(dbwa) dwtr,               --   DWTR      [m,N]: database wait time ratio. (red if > 50 and high ASW)
       trunc(sgfr) spfr,               --   %FR       [s,N]: shared pool free %
       round(upga/1024/1024,0) tpga,   --   PGA       [s,N]: total pga allocated
+      sct,                            --   Session Count Total
       trunc(saas) aas,                --   AAS       [s,N]: Average Active Sessions. (red if > #cpu)
       ast,                            --   AST       [c,N]: Active user Sessions Total (ASC+ASI+ASW)
       ascpu,                          --?  ASCPU     [c,N]: active Sessions on CPU
@@ -742,14 +745,14 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(phyr) phyr,               --   PHYR      [s,N]: physical reads per sec
       trunc(phyw) phyw,               --   PHYW      [s,N]: physical writes per sec
       round(temp/1024/1024,0) temp,   --   TEMP      [s,N]: temp space used (Mb)
-      trunc(dbtm) dbtm                --'Database Time Per Sec'
-  FROM   (  SELECT   begin_time, 
+      trunc(dbtm) dbtm                --   Database Time Per Sec
+  FROM   (  SELECT  begin_time, end_time,
                      SUM(DECODE (metric_name, 'CPU Usage Per Sec', VALUE, 0)) dcpu,
                      SUM(DECODE (metric_name, 'Host CPU Utilization (%)', VALUE, 0)) hcpu,
                      SUM(DECODE (metric_name, 'I/O Megabytes per Second', VALUE, 0)) mbps,
                      SUM(DECODE (metric_name, 'SQL Service Response Time', VALUE, 0)) ssrt,
                      SUM(DECODE (metric_name, 'Average Synchronous Single-Block Read Latency', VALUE, 0)) iorl,
-                     SUM(DECODE (metric_name, 'Current OS Load', VALUE, 0)) load, 
+                     SUM(DECODE (metric_name, 'Current OS Load', VALUE, 0)) load,
                      SUM(DECODE (metric_name, 'Active Parallel Sessions', VALUE, 0)) aspq,
                      SUM(DECODE (metric_name, 'Database CPU Time Ratio', VALUE, 0)) dbcp,
                      SUM(DECODE (metric_name, 'Database Wait Time Ratio', VALUE, 0)) dbwa,
@@ -758,6 +761,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                      SUM(DECODE (metric_name, 'User Transaction Per Sec', VALUE, 0)) utps,
                      SUM(DECODE (metric_name, 'User Calls Per Sec', VALUE, 0)) ucps,
                      SUM(DECODE (metric_name, 'Average Active Sessions', VALUE, 0)) saas,
+                     SUM(DECODE (metric_name, 'Session Count', VALUE, 0)) sct,
                      SUM(DECODE (metric_name, 'Total PGA Allocated', VALUE, 0)) upga,
                      SUM(DECODE (metric_name, 'Logical Reads Per Sec', VALUE, 0)) logr,
                      SUM(DECODE (metric_name, 'Physical Reads Per Sec', VALUE, 0)) phyr,
@@ -785,26 +789,27 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                               'Temp Space Used',
                               'Database Time Per Sec',
                               'Average Active Sessions',
+                              'Session Count',
                               'Total PGA Allocated')
                      AND GROUP_ID in (2,3)
-          GROUP BY   begin_time ), 
+          GROUP BY  begin_time, end_time ),
           (SELECT inst_id id3, TO_NUMBER (VALUE) ncpu  FROM   gv$osstat  WHERE   stat_name = 'NUM_CPUS')
- , (select sample_time, count(*) ast, nvl(round((count(*)/sum(asct))*sum(cpas)),0) ascpu, nvl(round((count(*)/sum(asct))*sum(ioas)),0) asio, nvl(round((count(*)/sum(asct))*sum(waas)),0) aswa
+ , ( select trunc(sample_time, 'mi') sample_time, trunc(avg(asct)) ast, nvl(round((avg(asct)/sum(asct))*sum(cpas)),0) ascpu, nvl(round((avg(asct)/sum(asct))*sum(ioas)),0) asio, nvl(round((avg(asct)/sum(asct))*sum(waas)),0) aswa
 from(
-SELECT cast(sample_time as date) sample_time, session_id, "SESSION_SERIAL#",
+SELECT cast(sample_time as date) sample_time,
  COUNT ( * ) asct,
  SUM(DECODE(wait_time, 0, 0, 1)) cpas,
  SUM(DECODE(wait_class, 'User I/O', 1, 0)) ioas,
  SUM(DECODE(wait_time, 0, DECODE (wait_class,'User I/O', 0, 1))) waas
 FROM V$ACTIVE_SESSION_HISTORY
-WHERE SESSION_TYPE <> 'BACKGROUND' AND user_id > 0
-group by cast(sample_time as date), session_id, "SESSION_SERIAL#"
+WHERE SESSION_TYPE <> 'BACKGROUND' --AND user_id > 0
+group by cast(sample_time as date)
 order by sample_time
 )
-group by sample_time
+group by trunc(sample_time, 'mi')
 order by sample_time
 ) act_sess
-where act_sess.sample_time=begin_time
+where act_sess.sample_time between begin_time and end_time
 ORDER BY begin_time;
 EOF
 ;;
@@ -1166,7 +1171,7 @@ $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
 set lines 230
-col host_name    format a25
+col host_name    format a40
 col service_name format a25
 col network_name format a25
 prompt v\$services:
@@ -1276,7 +1281,7 @@ set echo off feed off veri off tab off pages 50
 show pdbs
 prompt v\$instance:
 column instance_name for a15
-column host_name for a25
+column host_name for a30
 column version for a10
 column status for a10
 column ARCHIVER for a10
