@@ -713,7 +713,7 @@ col SSRT for 9999999
 col MBPS for 99999
 col IOPS for 999999
 col IORL for 99999
-col LOGR for 9999999999
+col LOGR for 999999999
 col PHYR for 999999
 col PHYW for 999999
 col TEMP for 99999
