@@ -2135,13 +2135,13 @@ prompt
 prompt Sessions with active transactions v\$session, v\$transaction, dba_undo_extents (F: 0-triansaction, 8-rollback), estimate USED_UBLK: (used_later / (used_now - used_later)) :
 col sid for 99999
 col serial# for 9999999
-col username for a25
+col username for a20
 col osuser for a15
 col segment_name for a23
 col used_ublk for 9999999
 col undo for 99,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
-col pma for a60 heading "PROGRAM \ MODULE \ ACTION"
+col pma for a65 heading "PROGRAM \ MODULE \ ACTION"
 col status for a10
 col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
