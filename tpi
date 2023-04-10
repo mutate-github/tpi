@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 24.03.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 10.04.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -2135,13 +2135,13 @@ prompt
 prompt Sessions with active transactions v\$session, v\$transaction, dba_undo_extents (F: 0-triansaction, 8-rollback), estimate USED_UBLK: (used_later / (used_now - used_later)) :
 col sid for 99999
 col serial# for 9999999
-col username for a15
+col username for a25
 col osuser for a15
 col segment_name for a23
 col used_ublk for 9999999
 col undo for 99,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
-col pma for a70 heading "PROGRAM \ MODULE \ ACTION"
+col pma for a60 heading "PROGRAM \ MODULE \ ACTION"
 col status for a10
 col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
@@ -3351,7 +3351,7 @@ EOF
 ;;
 run)
 $SP <<EOF >$LOGF
-prompt dba_scheduler_job_run_details for job_name like '$P2_' and ACTUAL_START_DATE > nvl('$P3_',24) hours
+prompt dba_scheduler_job_run_details for job_name like '$P2_' and ACTUAL_START_DATE > sysdate - (1*(nvl('$P3_',24)/24)) 
 set echo off feed off veri off tab off pages 70
 set lines 230
 col owner for a25
@@ -5373,7 +5373,7 @@ logf
 }
 
 
-kill()
+kill_()
 {
 P1_=`echo $ALL | awk '{print $1}'`
 P2_=`echo $ALL | awk '{print $2}'`
@@ -5646,7 +5646,7 @@ scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)  shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
 get_ddl) shift ; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace) shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
-kill) shift; ALL=$*; echo $kill__ ${reset}; kill $ALL ;;
+kill) shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
 alert) shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
 report) shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
 corrupt) shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
