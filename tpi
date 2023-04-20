@@ -343,7 +343,8 @@ case "$(db_version)" in
 9)  CMD1_=$CODE9_ 
     CMD2_=$CODE9_2_ ;;
 *)  CMD1_=$CODE11_ 
-    CMD2_=$CODE11_2_;;
+    CMD2_=$CODE11_2_
+    CMD3_="select owner||'.'||object_name into STR_ from dba_objects where object_id=s.PLSQL_ENTRY_OBJECT_ID;" ;;
 esac
 
 P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
@@ -369,7 +370,7 @@ set echo off feed off veri off tab off
 set lines 230
 DECLARE
   id varchar2(20);
-  STR_ varchar2(20);
+  STR_ varchar2(60);
   v_sid number;
   s sys.v_\$session%ROWTYPE;
   p sys.v_\$process%ROWTYPE;
@@ -401,6 +402,7 @@ BEGIN
 
   select * into s from sys.v_\$session where sid  = v_sid;
   select * into p from sys.v_\$process where addr = s.paddr;
+  $CMD3_
 
   dbms_output.put_line(chr(126)||'===============================================================================');
   dbms_output.put_line(chr(126)||'SID/Serial                : '|| s.sid||'  '||s.serial#);
@@ -411,6 +413,7 @@ BEGIN
   dbms_output.put_line(chr(126)||'OS User                   : '|| s.osuser||' on '||s.machine);
   dbms_output.put_line(chr(126)||'Oracle User               : '|| s.username);
   dbms_output.put_line(chr(126)||'Program / Module / Action : '|| s.program||' / '||s.module||' / '||s.action);
+  dbms_output.put_line(chr(126)||'PLSQL_ENTRY               : '|| STR_);
   dbms_output.put_line(chr(126)||'Status Flags              : '|| s.status||' '||s.server||' '||s.type);
   dbms_output.put_line(chr(126)||'Tran Active               : '|| nvl(s.taddr, 'NONE'));
   dbms_output.put_line(chr(126)||'Login Time                : '|| to_char(s.logon_time, 'Dy HH24:MI:SS'));
@@ -817,7 +820,7 @@ EOF
 *)
 ACTION_=" CASE when '$NLS_VALUE'='$WINCP' then s.action when replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(s.action)), '$NLS_VALUE','$WINCP'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null then UTL_RAW.CAST_TO_VARCHAR2(UTL_RAW.CONVERT(UTL_RAW.CAST_TO_RAW(nvl(s.action,' ')),'AMERICAN_AMERICA.$NLS_VALUE', 'AMERICAN_AMERICA.$WINCP')) else s.action end "
 $SP <<EOF >$LOGF
-set lines 230
+set lines 230 timing off
 set echo off feed off veri off tab off pages 90
 set serveroutput on
 begin
