@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 19.04.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 20.04.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -815,44 +815,45 @@ ORDER BY begin_time;
 EOF
 ;;
 *)
-$SP <<'EOF' >$LOGF
-set lines 180
-set echo off feed off veri off tab off pages 60
+ACTION_=" CASE when '$NLS_VALUE'='$WINCP' then s.action when replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(s.action)), '$NLS_VALUE','$WINCP'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null then UTL_RAW.CAST_TO_VARCHAR2(UTL_RAW.CONVERT(UTL_RAW.CAST_TO_RAW(nvl(s.action,' ')),'AMERICAN_AMERICA.$NLS_VALUE', 'AMERICAN_AMERICA.$WINCP')) else s.action end "
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 90
 set serveroutput on
 begin
 for i in (
 SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */     *
   FROM   (SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 trunc(SUM(VALUE)) taas             -- CentiSeconds Per Second
-            FROM   gv$sysmetric
+            FROM   gv\$sysmetric
            WHERE   metric_name = 'Database Time Per Sec' AND GROUP_ID = 3),
          (SELECT    /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 COUNT(*) sess,
                    COUNT (DISTINCT username) duser
-            FROM   gv$session
+            FROM   gv\$session
            WHERE       TYPE <> 'BACKGROUND'
                    AND username IS NOT NULL
                    AND schema# != 0),
          (SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 TO_CHAR (MAX(end_time), 'hh24:mi:ss') dbts,
                    round(SUM (VALUE/1024/1024),0) spga
-            FROM   gv$sysmetric
+            FROM   gv\$sysmetric
            WHERE   metric_name = 'Total PGA Allocated' AND GROUP_ID = 3),
-         (SELECT   trunc(SYSDATE - startup_time)/* * 86400 */ uptm FROM v$instance),
+         (SELECT   trunc(SYSDATE - startup_time)/* * 86400 */ uptm FROM v\$instance),
          (SELECT     /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 SUM(VALUE) scpu,
                 COUNT (DISTINCT inst_id) inst
-            FROM   gv$osstat
+            FROM   gv\$osstat
            WHERE   stat_name = 'NUM_CPUS'),
          (SELECT         /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
-                round(SUM (VALUE/1024/1024/1024),0) ssga FROM gv$sga),
+                round(SUM (VALUE/1024/1024/1024),0) ssga FROM gv\$sga),
          (SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 SUM(VALUE) prob
-            FROM   gv$diag_info
+            FROM   gv\$diag_info
            WHERE   name = 'Active Problem Count'),
          (SELECT   SUM (fra) reco
             FROM   (SELECT   space_used / GREATEST (space_limit, 1) * 100 fra
-                      FROM   v$recovery_file_dest
+                      FROM   v\$recovery_file_dest
                     UNION
                     SELECT   0 fra FROM DUAL)),
          (SELECT   INITCAP(SUBSTR (SYS_CONTEXT ('USERENV', 'DATABASE_ROLE'), -7, 16)) dbro
@@ -860,7 +861,7 @@ SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */
          (SELECT   SUM (ar) dgar
             FROM   (SELECT    /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                           sofar ar
-                      FROM   gv$recovery_progress
+                      FROM   gv\$recovery_progress
                      WHERE  TYPE = 'Media Recovery'
                              AND item = 'Active Apply Rate'
                              AND ROWNUM = 1
@@ -868,7 +869,7 @@ SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */
                     SELECT   0 ar FROM DUAL)),
          (SELECT   /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                 round(MAX(VALUE/1024/1024/1024),0)  pgag
-            FROM   gv$pgastat
+            FROM   gv\$pgastat
            WHERE   name = 'aggregate PGA target parameter')
   ) loop
 
@@ -917,7 +918,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                      SUM(DECODE (metric_name, 'Database CPU Time Ratio', VALUE, 0)) dbcp,
                      SUM(DECODE (metric_name, 'Database Wait Time Ratio', VALUE, 0)) dbwa,
                      SUM(DECODE (metric_name, 'I/O Requests per Second', VALUE, 0)) iops
-              FROM   gv$sysmetric
+              FROM   gv\$sysmetric
              WHERE   metric_name IN
                              ('CPU Usage Per Sec',
                               'Host CPU Utilization (%)',
@@ -943,7 +944,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                      SUM(DECODE (metric_name, 'Physical Writes Per Sec', VALUE, 0)) phyw,
                      SUM(DECODE (metric_name, 'Temp Space Used', VALUE, 0)) temp,
                      SUM(DECODE (metric_name, 'Database Time Per Sec', VALUE, 0)) dbtm
-              FROM   gv$sysmetric
+              FROM   gv\$sysmetric
              WHERE   metric_name IN
                              ('Shared Pool Free %',
                               'User Transaction Per Sec',
@@ -969,7 +970,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                                  SUM(DECODE (status, 'ACTIVE', DECODE (wait_time, 0, 0, 1), 0)) cpas,
                                  SUM(DECODE (status, 'ACTIVE', DECODE (wait_class, 'User I/O', 1, 0), 0)) ioas,
                                  SUM(DECODE (status, 'ACTIVE', DECODE (wait_time, 0, DECODE (wait_class,'User I/O', 0, 1), 0), 0)) waas
-                          FROM   gv$session
+                          FROM   gv\$session
                          WHERE       TYPE <> 'BACKGROUND'
                                  AND username IS NOT NULL
                                  AND schema# != 0
@@ -983,13 +984,13 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                                  0 cpas,
                                  0 ioas,
                                  0 waas
-                          FROM   gv$instance)
+                          FROM   gv\$instance)
             GROUP BY   id2),
            (SELECT       /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
                   inst_id id3, TO_NUMBER (VALUE) ncpu
-              FROM   gv$osstat
+              FROM   gv\$osstat
              WHERE   stat_name = 'NUM_CPUS')
-   WHERE   id1 = inid AND id2 = inid AND id3 = inid AND inid=(select instance_number from v$instance) and  ROWNUM <= 5
+   WHERE   id1 = inid AND id2 = inid AND id3 = inid AND inid=(select instance_number from v\$instance) and  ROWNUM <= 5
 ORDER BY   dbtm DESC) loop
 
 dbms_output.put_line(rpad(rpad(i.ncpu,10,' ') || '- Number of CPU',50,' ')||rpad(rpad(i.hcpu,8,' ') || '- Host CPU busy %bsy/bsy+idle (red>90%)',50,' ')||rpad(rpad(i.load,6,' ') || '- Current os load. (red>2*#cpu and high cpu)',60,' '));
@@ -1027,7 +1028,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                      AVG (average_wait) * 10 avgms,
                      wait_class wclas,
                      event_id evtid
-              FROM   gv$system_event
+              FROM   gv\$system_event
              WHERE   wait_class <> 'Idle'
           GROUP BY   event, wait_class, event_id
             HAVING   SUM (total_waits) > 0
@@ -1040,7 +1041,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                    0 avgms,
                    NULL wclas,
                    19 evtid
-            FROM   gv$sysstat
+            FROM   gv\$sysstat
            WHERE   name LIKE '%CPU used by this session%'
           ORDER BY   twsec DESC)
  WHERE   ROWNUM < 6;
@@ -1067,7 +1068,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                      avgms,
                      sw.wait_class wclas,
                      sw.event# evtid
-              FROM   gv$session_wait_class se  JOIN   gv$session sw
+              FROM   gv\$session_wait_class se  JOIN   gv\$session sw
                      ON se.inst_id = sw.inst_id AND se.sid = sw.sid
              WHERE   se.wait_class != 'Idle' AND sw.wait_class != 'Idle'
           GROUP BY   sw.event, sw.wait_class, sw.event#
@@ -1080,7 +1081,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                    0 avgms,
                    NULL wclas,
                    19 evtid
-            FROM  gv$sesstat se JOIN  gv$session s2
+            FROM  gv\$sesstat se JOIN  gv\$session s2
                    ON se.inst_id = s2.inst_id AND se.sid = s2.sid
            WHERE   se.statistic# = 19
                    AND se.VALUE > 0
@@ -1100,6 +1101,7 @@ column pma for a60   HEADING "PROGRAM / MODULE / ACTION"
 column PGAU for 9999 HEADING "PGA"
 column OPN for a6    HEADING "CMD"
 column SQID for a13  HEADING "SQLID"
+column PLSQL_ENTRY for a30  HEADING "PLSQL_ENTRY"
 column ST4 for a1
 column SU4 for a3    HEADING "STE"
 column EV4 for a24   HEADING "EVENT/*LATCH"
@@ -1117,7 +1119,8 @@ ttitle left "Database active sessions:"
 --           substr(DECODE (p.pname, NULL, s.program, p.pname),1,22) prg4,
 --           substr(s.module,1,22) modl,
 --           substr(s.action,1,22) actn,
-           substr(DECODE(p.pname, NULL, s.program, p.pname)||' / '||case when s.module<>p.pname then s.module else '' end ||' / '||s.action,1,60) pma,
+--!           substr(DECODE(p.pname, NULL, s.program, p.pname)||' / '||case when s.module<>p.pname then s.module else '' end ||' / '||s.action,1,60) pma,
+           substr(DECODE(p.pname, NULL, s.program, p.pname)||' / '||case when s.module<>p.pname then s.module else '' end ||' / '|| $ACTION_  ,1,60) pma,
 --           substr(DECODE(p.pname, NULL, s.program, p.pname)||' / '||case when s.module<>p.pname then s.module else '' end ||' / '||convert(s.action, 'AL32UTF8','CL8MSWIN1251'),1,60) pma,
 --           substr(DECODE(p.pname, NULL, s.program, p.pname)||' / '||case when s.module<>p.pname then s.module else '' end ||' / '||regexp_replace(s.action, '[^[:print:]]', ''), 1, 60) pma,
            trunc(p.pga_used_mem/1024/1024) pgau,
@@ -1126,6 +1129,7 @@ ttitle left "Database active sessions:"
 --           x.pgax pgax,
            substr(c.command_name,1,6) opn,
            DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sqid,
+	   o.owner || CASE WHEN o.object_name is null THEN null ELSE '.' END || o.object_name PLSQL_ENTRY,
 --           DECODE (s.final_blocking_session_status,'VALID', TO_CHAR (s.final_blocking_instance)|| ':' || TO_CHAR (s.final_blocking_session), NULL) bses,
            substr(s.status,1,1) st4,
            substr(DECODE(s.state,'WAITING',DECODE (s.wait_class, 'User I/O', 'I/O', s.state),'CPU'),1,3) su4,
@@ -1141,18 +1145,16 @@ ttitle left "Database active sessions:"
 --           s.service_name svcn,
 --           DECODE (n.name, NULL, NULL, '*' || n.name) lp2n,
 --           DECODE (s.row_wait_obj#, -1,NULL,SUBSTR (TO_CHAR (s.row_wait_file#)|| ':' || TO_CHAR (s.row_wait_block#),1,24)) fbon
-     FROM  gv$session s JOIN gv$process p
+     FROM  gv\$session s JOIN gv\$process p
        ON (p.inst_id = s.inst_id AND p.addr = s.paddr)
-     LEFT OUTER JOIN v$sqlcommand c
+     LEFT OUTER JOIN  dba_objects o
+       on  (s.PLSQL_ENTRY_OBJECT_ID=o.object_id)
+     LEFT OUTER JOIN v\$sqlcommand c
        ON (s.command = c.command_type)
-     LEFT OUTER JOIN v$latchname n
+     LEFT OUTER JOIN v\$latchname n
        ON (s.p2 = n.latch#),
-           (SELECT     /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */
-                   inst_id,
-                   MAX (pga_max_mem) pgax
-              FROM   gv$process
-          GROUP BY   inst_id) x
-   WHERE   x.inst_id = s.inst_id AND s.wait_class <> 'Idle'
+           (SELECT inst_id, MAX (pga_max_mem) pgax FROM gv\$process GROUP BY inst_id) x
+   WHERE   x.inst_id = s.inst_id AND  s.status <> 'INACTIVE' AND s.type <> 'BACKGROUND'  -- s.wait_class <> 'Idle'
 ORDER BY lcet desc,  siw DESC;
 EOF
 ;;
