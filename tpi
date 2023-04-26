@@ -402,7 +402,12 @@ BEGIN
 
   select * into s from sys.v_\$session where sid  = v_sid;
   select * into p from sys.v_\$process where addr = s.paddr;
-  $CMD3_
+  begin
+    null; 
+    $CMD3_
+  exception
+    when no_data_found then null;
+  end;
 
   dbms_output.put_line(chr(126)||'===============================================================================');
   dbms_output.put_line(chr(126)||'SID/Serial                : '|| s.sid||'  '||s.serial#);
