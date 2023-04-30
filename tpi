@@ -5347,8 +5347,10 @@ esac
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed on veri off tab off pages 400
+col rownum for 999 noprint
 set long 1000000000 longc 1000000000
-select substr(extractvalue(value(d), '/hint'), 1, 600) as outline_hints
+--SELECT  LISTAGG(TRIM(outline_hints), ' ') WITHIN GROUP( ORDER BY rownum ) AS RESULT from (
+select substr(extractvalue(value(d), '/hint'), 1, 32760) as outline_hints, rownum
   from xmltable('/outline_data/hint' passing
                 (select xmltype(comp_data) as xmlval
                    from sys.sqlobj\$data od, sys.sqlobj\$ o
@@ -5357,7 +5359,9 @@ select substr(extractvalue(value(d), '/hint'), 1, 600) as outline_hints
                     and o.name = '$P3_'
                     and o.signature = od.signature
                     and o.plan_id = od.plan_id
-                    and comp_data is not null)) d;
+                    and comp_data is not null)) d
+--)
+;
 EOF
 ;;
 report_sql_monitor)
