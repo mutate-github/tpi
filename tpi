@@ -10,7 +10,6 @@ if [ -n "$PDB" ]; then
   SET_PDB_="alter session set container=$PDB;"
 fi
 
-
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
 EPS*|creditc)               . ~/db12.env ;;
@@ -4368,7 +4367,6 @@ temp)
 *) echo "Nothing..." ;;
 esac
 fi
-
 logf
 }
 
