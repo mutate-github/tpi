@@ -4562,7 +4562,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username,nvl(event,'ON CPU') even
      sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0))    "IO" ,
      sum(decode(h.session_state,'ON CPU',1,1))     "TOTAL"
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
-and sql_id is not null
+--and sql_id is not null
 group by session_id,"SESSION_SERIAL#",username,event --,session_state,program,module,action,machine
 order by sum(decode(h.session_state,'ON CPU',1,1)) desc
 ) where sid = '$P1_' and serial = '$P2_' and rownum < 31;
@@ -4581,7 +4581,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU
      sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0))    "IO" ,
      sum(decode(h.session_state,'ON CPU',1,1))     "TOTAL"
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
-and sql_id is not null
+--and sql_id is not null
 group by session_id,"SESSION_SERIAL#",username,sql_id,event --,session_state,program,module,action,machine
 order by sum(decode(h.session_state,'ON CPU',1,1)) desc
 --order by sum(decode(h.session_state,'WAITING',1,0)) - sum(decode(h.session_state,'WAITING', decode(wait_class, 'User I/O',1,0),0)) desc
