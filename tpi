@@ -5492,7 +5492,7 @@ echo "ALL: "$ALL
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 60
-prompt Execute SQL command: "$ALL"  , Note: Must be escaped with \ characters: * ' ( )
+prompt Execute SQL command: "$ALL"  , Note: Must be escaped with \ characters: * ; ' ! ( )
 $ALL
 /
 EOF
