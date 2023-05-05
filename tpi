@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 02.05.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 05.05.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -20,6 +20,7 @@ askona*|aixtdb*|sbaskona)   . ~/.profile ;;
 egais*|GOLD506*)            . ~/.bashrc ;;
 unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
+opndb)                      . ~/BRSKDB_setenv.sh ; login_str="tal/tal#123@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
    #        if [ -f ~/.profile ]; then . ~/.profile ; fi 
@@ -72,6 +73,7 @@ init_msg()
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
+  exec__="exec - execute \"SQL Commands\""
   alert__="alert [num] - tail -num alert_[sid].log, default num = 100"
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
@@ -86,8 +88,8 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i . | l . | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | kill | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
-  echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
+  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph <param>] | a(order by u m o l w) | lock | p  . | db [nls|option|properties] | health | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TABLESPACE]]|maxseg [TABLESPACE]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i . | l . | c . | u . | invalid | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | kill | exec | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
+  echo -e $a__"\n"$p__"\n"$db__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$invalid__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
 fi
@@ -107,7 +109,9 @@ ALL=$(echo $*)
 #format .tpi_login file: sid username/password@tns_alias
 path_to_tpi=`dirname $0`
 #echo "path_to_tpi: "$path_to_tpi
-login_str=`awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null`
+if [ -z "$login_str" ]; then
+ login_str=`awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null`
+fi
 #echo "login_str: "$login_str
 
 if [ -n "$login_str" ]; then
@@ -5479,6 +5483,25 @@ logf
 }
 
 
+exec_()
+{
+P1_=`echo $ALL | awk '{print $1}'`
+P2_=`echo $ALL | awk '{print $2}'`
+set -f
+echo "ALL: "$ALL
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 60
+prompt Execute SQL command: "$ALL"  , Note: Must be escaped with \ characters: * ' ( )
+$ALL
+/
+EOF
+touch $LOGF
+logf
+}
+
+
+
 alert()
 {
 NUM_=`echo $ALL | awk '{print $1}'`
@@ -5736,6 +5759,7 @@ job)  shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
 get_ddl) shift ; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace) shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
 kill) shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
+exec) shift; ALL=$*; echo $exec__ ${reset}; exec_ $ALL ;;
 alert) shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
 report) shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
 corrupt) shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
