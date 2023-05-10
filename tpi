@@ -74,7 +74,7 @@ init_msg()
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
-  exec__="exec - execute \"SQL Commands\""
+  exec__="exec - execute \"SQL Commands\"  Note: Must be escaped with \\ characters: * ; ' ! ( ) "
   alert__="alert [num] - tail -num alert_[sid].log, default num = 100"
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [DBA (number)] - Find DB Object by DBA number,  [FB (file) (block)] - Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
@@ -5493,7 +5493,7 @@ echo "ALL: "$ALL
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 60
-prompt Execute SQL command: "$ALL"  , Note: Must be escaped with \ characters: * ; ' ! ( )
+prompt Execute SQL command: "$ALL"
 $ALL
 /
 EOF
