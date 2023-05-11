@@ -736,18 +736,18 @@ P1_=$1
 if [ -z "$P1_" ]; then P1_=100; fi
 LC=$(psql -t -q -c "select setting from pg_settings where name like 'logging_collector';")
 LC=$(echo $LC | sed 's/^[ \t]*//')
-if [ "$LC" = "no" ]; then
-  LOG_=$(pg_lsclusters | tail -1 | awk '{print $NF}')
-  echo "tail -$P1_ " $LOG_
-  tail -${P1_} $LOG_
-else
+if [ "$LC" = "on" ]; then
   PTLOGS=$(psql -t -q -c "select setting||'/'||(select setting from pg_settings where name like 'log_directory') from pg_settings where name like 'data_directory';")
   PTLOGS=$(echo $PTLOGS | sed 's/^[ \t]*//')
   CMD=$(psql -t -q -c "select 'select pg_ls_dir from pg_ls_dir('''||setting||''') where  (pg_stat_file('''||setting||'/'' || pg_ls_dir)).isdir = false ORDER BY   (pg_stat_file('''||setting||'/'' || pg_ls_dir)).modification   DESC LIMIT 1;' from pg_settings where name like 'log_directory';")
   LOGF=$(psql -t -q -c "$CMD")
   LOGF=$(echo $LOGF | sed 's/^[ \t]*//')
   LOG_=$PTLOGS'/'$LOGF
-  echo "LOG: "$LOG_
+  echo "tail -$P1_ " $LOG_
+  tail -${P1_} $LOG_
+else
+  LOG_=$(pg_lsclusters | tail -1 | awk '{print $NF}')
+  echo "tail -$P1_ " $LOG_
   tail -${P1_} $LOG_
 fi
 }
