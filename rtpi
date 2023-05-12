@@ -2,11 +2,10 @@
 
 #export PROMPT_COMMAND='PS1=`echo "\n\[\e[0;33m\][\D{%d.%m.%Y %H:%M:%S}] \[\e[01;31m\]\u@\h:\$ORACLE_SID \[\e[1;34m\]\w\n\$ \[\e[0;32m\]\[\e[0m\]"`'
 
-# . /home/oracle/.dbs_alias
-aliases=/etc/profile.d/00-dbs-aliases.sh
-if [ -s $aliases ]; then
-  . /etc/profile.d/00-dbs-aliases.sh
-fi
+#aliases=/etc/profile.d/00-dbs-aliases.sh
+#if [ -s $aliases ]; then
+#  . /etc/profile.d/00-dbs-aliases.sh
+#fi
 
 P1_=$1
 shift
@@ -22,7 +21,8 @@ wtpi="$BASEDIR/tpi"
 
 case "$P1_" in
  s-dtln-wmsdb*|db06.wms.korablik.ru)
-   cat $wtpi | eval $P1_ "sudo -i -u oracle /bin/sh -s $args"
+#   cat $wtpi | eval $P1_ "sudo -i -u oracle /bin/sh -s $args"
+   cat $wtpi | ssh  $P1_ "sudo -i -u oracle /bin/sh -s $args"
    ;;
  storgco|ikb)
    $wtpi $P1_ $args
@@ -38,13 +38,13 @@ case "$P1_" in
 #   cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
     cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
- *) alias $P1_ >/dev/null 2>&1
-    rc=$?
-    if [ "$rc" -eq 0 ]; then
-      cat $wtpi | eval $P1_ '/bin/sh -s $args'
-    else
+ *) #alias $P1_ >/dev/null 2>&1
+    #rc=$?
+    #if [ "$rc" -eq 0 ]; then
+    #  cat $wtpi | eval $P1_ '/bin/sh -s $args'
+    #else
       cat $wtpi | ssh oracle@$P1_ "/bin/sh -s $args"
-    fi
+    #fi
    ;;
 esac
 
