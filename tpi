@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 10.05.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 24.05.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -432,7 +432,7 @@ BEGIN
   dbms_output.put_line(chr(126)||'Session Waits:');
 --  for c1 in ( select * from sys.v_\$session_wait where sid = s.sid) loop
 --    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3);
-    for c1 in ( select w.*, case when event like '%latch%' then ', LatchName: '||l.name else '' end name  from sys.v_\$session_wait w, sys.v\$latchname l where w.p2=l.latch#(+) and w.sid = s.sid) loop
+    for c1 in ( select w.*, case when event like '%latch%' then ', LatchName: '||l.name else '' end name  from sys.v_\$session_wait w, sys.v_\$latchname l where w.p2=l.latch#(+) and w.sid = s.sid) loop
     dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3||c1.name );
     for c2 in (SELECT MAX (SYS_CONNECT_BY_PATH (name||' '||value,'    ')) scbp from (
                  select a.name, b.value, ROW_NUMBER () OVER (ORDER BY name desc) rn from v\$statname a, v\$sesstat b
@@ -2165,8 +2165,8 @@ col serial# for 9999999
 col username for a20
 col osuser for a15
 col segment_name for a23
-col used_ublk for 9999999
-col undo for 99,999 heading "Undo Mb"
+col used_ublk for 999999999
+col undo for 9999,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
 col pma for a65 heading "PROGRAM \ MODULE \ ACTION"
 col status for a10
