@@ -5,10 +5,13 @@ shift
 args=$*
 
 args=$(echo $args | sed  's|\$|\\$|g')
+# args=$(echo $args | sed  's|-|=|g')
 BASEDIR=`dirname $0`
 wtps="$BASEDIR/tps"
 
+
+
 #cat tps | ssh $SRV "sudo su - postgres"
 
-cat $wtps | ssh $SRV "sudo -i -u postgres /bin/sh -s $args"
+cat $wtps | ssh $SRV "sudo -i -u postgres /bin/bash -s $args"
 

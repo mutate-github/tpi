@@ -1,15 +1,26 @@
 #!/bin/bash
 # version 11/05/2023 Talgat Mukhametshin  email: mutate@mail.ru
 set -f
+
+shopt -s nocasematch
+if [[ "$1" =~ "=" ]]; then 
+  eval "$1"
+  if [ -n "$d" ]; then db="-d $d"; fi
+  shift
+fi
+shopt -u nocasematch
 ID=$1
+
+psql_="psql -q $db "
+
 
 init_msg()
 {
   sess__="sess [ idle | active | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
   p__="p [parameter] - parameter from pg_file_settings and pg_settings"
-  exec__="exec - execute any command, sample: \047\\0134\0134\0164\047 "
+  exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' "
   activity__="activity  - activity sessions in DB"
-  locks__="locks [all|dead|tree] - locks"
+  lock__="lock [all|dead|tree] - locks"
   vacuum__="vacuum - vacuum activity"
   topsql__="topsql - top 20 sql"
   bloat__="bloat - bloat tables"
@@ -24,40 +35,42 @@ init_msg
 
 inf()
 {
-psql -q <<EOF
+$psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
 SELECT version();
 \l+
 \db+
-\du
-\dn
-\dt
+--\du
+--\dn
+--\dt
 EOF
 }
 
 if [ -z "$ID" ]; then
 #  ps -fu postgres
-  echo "Usage: $0 server"
-  echo $sess__"\n"$p__"\n"$exec__"\n"$activity__"\n"$locks__"\n"$vacuum__"\n"$topsql__"\n"$bloat__"\n"$dead__"\n"$mastrep__"\n"$stblag__"\n"$kill__"\n"$log__"\n"
+  echo "Usage: $0 server [d=database]"
+  echo -e $sess__"\n"$p__"\n"$exec__"\n"$activity__"\n"$lock__"\n"$vacuum__"\n"$topsql__"\n"$bloat__"\n"$dead__"\n"$mastrep__"\n"$stblag__"\n"$log__"\n"
   inf
   exit
 fi
 
 shift
 ALL=$*
+echo "ALL :" $ALL
 
 db_version()
 {
-VALUE=$(psql -qx -c "SHOW server_version;" | awk '/server_version/{print $3}' | awk -F. '{print $1}')
+VALUE=$($psql_ -x -c "SHOW server_version;" | awk '/server_version/{print $3}' | awk -F. '{print $1}')
 echo $VALUE | tr -d '\r'
 }
 
 
 execute()
 {
-psql -q <<EOF
+echo -e "exec: "$ALL
+$psql_ <<EOF
 $ALL
 EOF
 }
@@ -69,7 +82,7 @@ P1_=$1
 case $P1_ in
 trx)
 P2_=$( if [ -z "$2" ]; then echo "60"; else echo "$2"; fi  )
-psql -q <<EOF
+$psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
@@ -84,7 +97,7 @@ shift $(( $# > 1 ? 1 : 0 ))
 ALL=$*
 for PID in $ALL; do
 echo "cancel pid process: " $PID
-psql -q <<EOF
+$psql_ <<EOF
  select pg_cancel_backend($PID);
 EOF
 done
@@ -94,13 +107,13 @@ shift $(( $# > 1 ? 1 : 0 ))
 ALL=$*
 for PID in $ALL; do
 echo "kill pid process: " $PID
-psql -q <<EOF
+$psql_ <<EOF
  select pg_terminate_backend($PID);
 EOF
 done
 ;;
 *)
-psql -q <<EOF
+$psql_ <<EOF
 \timing
 \pset format wrapped
 \pset columns 230
@@ -120,7 +133,7 @@ esac
 p()
 {
 P1_=$ALL
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -136,7 +149,7 @@ EOF
 activity()
 {
 P1_=$ALL
-psql -q <<EOF
+$psql_ <<EOF
 \timing
 \pset format wrapped
 \pset columns 230
@@ -150,12 +163,12 @@ EOF
 }
 
 
-locks()
+lock()
 {
 P1_=`echo $ALL | awk '{print $1}'`
 case "$P1" in
 all)
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -174,7 +187,7 @@ WHERE NOT bdl.granted AND bga.datname = current_database();
 EOF
 ;;
 dead)
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -208,7 +221,7 @@ ORDER BY path;
 EOF
 ;;
 tree)
-psql -q <<EOF
+$psql_ <<EOF
 \timing
 \pset format wrapped
 \pset columns 230
@@ -250,7 +263,7 @@ SELECT (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
 EOF
 ;;
 *)
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -276,7 +289,7 @@ esac
 
 vacuum()
 {
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 -- vacuum activity
@@ -363,7 +376,7 @@ case "$(db_version)" in
 *)                S1_="total_time"      ; S2_="mean_time"      ;; 
 esac
 
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -486,7 +499,7 @@ EOF
 
 dead()
 {
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -527,7 +540,7 @@ EOF
 
 bloat()
 {
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -678,7 +691,7 @@ table()
 {
 P1_=`echo $ALL | awk '{print $1}'`
 echo $P1_
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -701,7 +714,7 @@ EOF
 
 mastrep()
 {
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -717,7 +730,7 @@ EOF
 
 stblag()
 {
-psql -q <<EOF
+$psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
@@ -734,13 +747,13 @@ log()
 {
 P1_=$1
 if [ -z "$P1_" ]; then P1_=100; fi
-LC=$(psql -t -q -c "select setting from pg_settings where name like 'logging_collector';")
+LC=$($psql_  -t -c "select setting from pg_settings where name like 'logging_collector';")
 LC=$(echo $LC | sed 's/^[ \t]*//')
 if [ "$LC" = "on" ]; then
-  PTLOGS=$(psql -t -q -c "select setting||'/'||(select setting from pg_settings where name like 'log_directory') from pg_settings where name like 'data_directory';")
+  PTLOGS=$($psql_ -t -c "select setting||'/'||(select setting from pg_settings where name like 'log_directory') from pg_settings where name like 'data_directory';")
   PTLOGS=$(echo $PTLOGS | sed 's/^[ \t]*//')
-  CMD=$(psql -t -q -c "select 'select pg_ls_dir from pg_ls_dir('''||setting||''') where  (pg_stat_file('''||setting||'/'' || pg_ls_dir)).isdir = false ORDER BY   (pg_stat_file('''||setting||'/'' || pg_ls_dir)).modification   DESC LIMIT 1;' from pg_settings where name like 'log_directory';")
-  LOGF=$(psql -t -q -c "$CMD")
+  CMD=$($psql_ -t -c "select 'select pg_ls_dir from pg_ls_dir('''||setting||''') where  (pg_stat_file('''||setting||'/'' || pg_ls_dir)).isdir = false ORDER BY   (pg_stat_file('''||setting||'/'' || pg_ls_dir)).modification   DESC LIMIT 1;' from pg_settings where name like 'log_directory';")
+  LOGF=$($psql_ -t -c "$CMD")
   LOGF=$(echo $LOGF | sed 's/^[ \t]*//')
   LOG_=$PTLOGS'/'$LOGF
   echo "tail -$P1_ " $LOG_
@@ -757,9 +770,9 @@ fi
 case "$ID" in
 sess)       echo $sess__ ; sess $ALL ;;
 p)          echo $p__ ;     p $ALL ;;
-exec)       echo $exec__ ;  execute $ALL ;;
+exec)       echo -e $exec__ ;  execute $ALL ;;
 activity)   echo $activity__; activity $ALL ;;
-locks)      echo $locks__ ;  locks $ALL ;;
+lock)        echo $lock__ ;  lock $ALL ;;
 vacuum)     echo $vacuum__ ; vacuum $ALL ;;
 topsql)     echo $topsql__  ; topsql $ALL ;;
 bloat)      echo $bloat__  ; bloat $ALL ;;
