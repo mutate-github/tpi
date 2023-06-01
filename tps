@@ -25,7 +25,7 @@ init_msg()
   topsql__="topsql - top 20 sql"
   bloat__="bloat - bloat tables"
   dead__="dead - tables with dead rows"
-  table__="table [table_name] - table oid"
+  table__="table [table_name] - table information"
   mastrep__="mastrep - master replication   pg_stat_replication  \  pg_replication_slots (watch on primary)"
   stblag__="stblag - standby lag (watch on standby)"
   log__="log [NUM] - show NUM (def 100) lines of logfile"
@@ -690,17 +690,21 @@ EOF
 table()
 {
 P1_=`echo $ALL | awk '{print $1}'`
-echo $P1_
+echo "table: " $P1_
 $psql_ <<EOF
 --\x ON
-\timing
+\timing off
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+\pset title "pg_catalog.pg_namespace pg_catalog.pg_class WHERE c.relname like '${P1_}'"
 SELECT c.oid,
   n.nspname,
   c.relname,
- pg_catalog.pg_table_is_visible(c.oid) pg_table_is_visible
+ pg_catalog.pg_table_is_visible(c.oid) pg_table_is_visible,
+ pg_relation_size(n.nspname||'.'||c.relname,'main') size_main,
+ pg_relation_size(n.nspname||'.'||c.relname,'fsm') size_fsm,
+ pg_relation_size(n.nspname||'.'||c.relname,'vm') size_vm
 FROM pg_catalog.pg_class c
      LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
 WHERE 
@@ -708,6 +712,29 @@ WHERE
   n.nspname NOT IN ('pg_catalog', 'information_schema') 
 -- AND pg_catalog.pg_table_is_visible(c.oid)
 ORDER BY 2, 3;
+
+\pset title "information_schema.tables where table_name like '${P1_}'"
+SELECT
+    table_name,
+    pg_size_pretty(table_size) AS table_size,
+    pg_size_pretty(indexes_size) AS indexes_size,
+    pg_size_pretty(total_size) AS total_size
+FROM (
+    SELECT
+        table_name,
+        pg_table_size(table_name) AS table_size,
+        pg_indexes_size(table_name) AS indexes_size,
+        pg_total_relation_size(table_name) AS total_size
+    FROM (
+        SELECT ('"' || table_schema || '"."' || table_name || '"') AS table_name
+        FROM information_schema.tables where table_name like '${P1_}'
+    ) AS all_tables
+    ORDER BY total_size DESC
+) AS pretty_sizes;
+
+SELECT ('"' || table_schema || '"."' || table_name || '"') AS table_name FROM information_schema.tables where table_name like '${P1_}'
+\gset
+\d+ :table_name
 EOF
 }
 
