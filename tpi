@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 24.05.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 07.06.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
@@ -1320,6 +1320,7 @@ column supplemental_log_data_min for a8 heading "SUPPLLOG"
 column FLASHBACK_ON for a9 heading "FLASHB_ON"
 column platform_name for a28
 $SQL_TEXT
+select banner from v\$version;
 EOF
 
 $SP <<END >> $LOGF
@@ -3578,7 +3579,7 @@ declare
  END DISPLAY_CLOB;
 begin
    DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
-   for i in (select owner,object_name,object_type from dba_objects where owner='$owner_' and object_name = '$object_' and object_type='$o_type_' order by object_name) loop
+   for i in (select owner,object_name,object_type from dba_objects where owner='$owner_' and object_name = '$object_' /*and object_type='$o_type_'*/ order by object_name) loop
      select dbms_metadata.get_ddl('$type_',i.object_name,'$owner_') into c from dual;
        DISPLAY_CLOB(c);
 --     DBMS_OUTPUT.PUT_LINE(c);
