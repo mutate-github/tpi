@@ -1285,8 +1285,9 @@ END
    ;;
    12|18|19) SQL_TEXT12="prompt
       prompt DBA_REGISTRY_SQLPATCH:
-      column DESCRIPTION for a120
-      select action_time, PATCH_ID, PATCH_UID, VERSION, STATUS, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"
+      column LOGFILE for a100
+      column DESCRIPTION for a40
+      select * from DBA_REGISTRY_SQLPATCH order by action_time;"
    ;;
   esac
 $SP <<EOF > $LOGF
