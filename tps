@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 11/05/2023 Talgat Mukhametshin  email: mutate@mail.ru
+# version 26/06/2023 Talgat Mukhametshin  email: mutate@mail.ru
 set -f
 
 shopt -s nocasematch
@@ -747,6 +747,7 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+select pg_current_wal_lsn();
 \pset title pg_stat_replication
 select * from pg_stat_replication;
 \pset title pg_replication_slots
@@ -765,7 +766,9 @@ $psql_ <<EOF
 \pset linestyle unicode
 SELECT pg_is_in_recovery();
 select now()-pg_last_xact_replay_timestamp() as replication_lag;
+select pg_last_wal_receive_lsn();
 \x ON
+\pset title pg_stat_wal_receiver
 select * from  pg_stat_wal_receiver; 
 EOF
 }
