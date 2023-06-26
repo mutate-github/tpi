@@ -69,9 +69,13 @@ echo $VALUE | tr -d '\r'
 
 execute()
 {
-echo -e "exec: "$ALL
+echo -e "before replace: "$ALL
+ALL2=$(echo $ALL | sed "s/\"/'/g" )
+echo -e "after replace: "$ALL2
+echo "ALL2: "$ALL2
 $psql_ <<EOF
-$ALL
+SET datestyle TO "SQL, DMY";
+$ALL2
 EOF
 }
 
@@ -749,6 +753,16 @@ $psql_ <<EOF
 \pset linestyle unicode
 \pset title pg_stat_replication
 select * from pg_stat_replication;
+\pset title "pg_stat_replication in Kbytes"
+SELECT                                                                       
+client_addr AS client, usename AS user, application_name AS name,            
+state, sync_state AS mode,                                                   
+(pg_wal_lsn_diff(pg_current_wal_lsn(),sent_lsn) / 1024)::int as pending,     
+(pg_wal_lsn_diff(sent_lsn,write_lsn) / 1024)::int as write,                  
+(pg_wal_lsn_diff(write_lsn,flush_lsn) / 1024)::int as flush,                 
+(pg_wal_lsn_diff(flush_lsn,replay_lsn) / 1024)::int as replay,               
+(pg_wal_lsn_diff(pg_current_wal_lsn(),replay_lsn))::int / 1024 as total_lag  
+FROM pg_stat_replication;                                                    
 \pset title pg_replication_slots
 select * from pg_replication_slots;
 EOF
@@ -765,7 +779,10 @@ $psql_ <<EOF
 \pset linestyle unicode
 SELECT pg_is_in_recovery();
 select now()-pg_last_xact_replay_timestamp() as replication_lag;
+\pset title pg_last_wal_receive_lsn
+select pg_last_wal_receive_lsn();
 \x ON
+\pset title pg_stat_wal_receiver
 select * from  pg_stat_wal_receiver; 
 EOF
 }
