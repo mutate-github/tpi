@@ -1,5 +1,6 @@
 #!/bin/bash
 # version 26/06/2023 Talgat Mukhametshin  email: mutate@mail.ru
+
 set -f
 
 shopt -s nocasematch
