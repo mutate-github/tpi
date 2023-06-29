@@ -29,6 +29,13 @@ msg=${msg%x}
 #printf %s "$msg"
 #echo "$msg"
 
+BASEDIR=`dirname $0`
+TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini telegram cmd`
+TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini telegram chat_id`
+$TLGRM_CMD mark0 $TLGRM_CHT "sender: $sender  
+\`$msg\`"
+#echo $msg | $TLGRM_CMD - "$TLGRM_CHT"
+
 if [ -z "$file" ]; then 
     #    --mail-rcpt $receiver \
     curl -s --url 'smtps://smtp.yandex.ru:465' --ssl-reqd \
@@ -40,6 +47,7 @@ To: ${receiver_}
 Subject: ${sub}
 
 ${msg}")
+echo "Mail sent."
 else
     # attachment exists condition
     # MIME type for multiple type of input file extensions
@@ -52,5 +60,6 @@ else
      -H "Subject: $sub" -H "From: $sender" -H "To: $receiver_" -F \
     '=(;type=multipart/mixed' -F "=$msg;type=text/plain" -F \
       "file=@$file;type=$MIMEType;encoder=base64" -F '=)'
+echo "Mail sent."
 fi
 

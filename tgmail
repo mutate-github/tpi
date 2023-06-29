@@ -30,6 +30,14 @@ msg=${msg%x}
 #printf %s "$msg"
 #echo "$msg"
 
+BASEDIR=`dirname $0`
+TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini telegram cmd`
+TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini telegram chat_id`
+$TLGRM_CMD mark0 $TLGRM_CHT "sender: $sender
+\`$msg\`"
+#echo $msg | $TLGRM_CMD - "$TLGRM_CHT"
+
+
 if [ -z "$file" ]; then 
     #    --mail-rcpt $receiver \
     curl -s --url 'smtps://smtp.gmail.com:465' --ssl-reqd \
