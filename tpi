@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 28.06.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 30.06.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 # echo "tpi:"$* 
 P0_=$1
 
