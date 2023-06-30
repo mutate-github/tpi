@@ -3847,7 +3847,7 @@ column PROGRAM for a21
 column MODULE for a20
 column ACTION for a16
 column MACHINE for a20
-column PMAM for a905 heading "PROGRAM \ MODULE \ ACTION \ MACHINE" truncated
+column PMAM for a90 heading "PROGRAM \ MODULE \ ACTION \ MACHINE" truncated
 # column PMAM for a77 heading "PROGRAM \ MODULE \ ACTION \ MACHINE"
 column CPU for 999999
 column WAIT for 999999
