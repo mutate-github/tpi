@@ -16,7 +16,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_db_${HOST}_${DB}.log
-    $WRTPI $HOST $DB db | sed -n '/v$instance:/,/DBA_REGISTRY/p'| grep -v DBA_REGISTRY | grep -v '\----' | sed '/^$/d' > $LOGF
+#    $WRTPI $HOST $DB db | sed -n '/v$instance:/,/DBA_REGISTRY/p'| grep -v DBA_REGISTRY | grep -v '\----' | sed '/^$/d' > $LOGF
+    $WRTPI $HOST $DB db | sed -n '/v$instance:/,/v$database:/p' | egrep -v '\----|v\$database:' | sed '/^$/d' > $LOGF
 
     LOGF_DB_DIFF=$LOGDIR/mon_db_${HOST}_${DB}_db_diff.log
     LOGF_DB_OLD=$LOGDIR/mon_db_${HOST}_${DB}_db_old.log
@@ -27,7 +28,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     diff $LOGF_DB_OLD $LOGF_DB > $LOGF_DB_DIFF
 
     if [ -s $LOGF_DB_DIFF ]; then
-	    ( cat $LOGF_DB_DIFF ; echo "Old_status:" ; cat $LOGF_DB_OLD ; echo "" ; echo  "Current_status:" ; cat $LOGF_DB ) | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
+#	    ( cat $LOGF_DB_DIFF ; echo "Old_status:" ; cat $LOGF_DB_OLD ; echo "" ; echo  "Current_status:" ; cat $LOGF_DB ) | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
+	    cat $LOGF_DB_DIFF | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
     fi
     cp $LOGF_DB $LOGF_DB_OLD
 #    rm  $LOGF_DB_DIFF $LOGF_DB
