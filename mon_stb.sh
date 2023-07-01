@@ -16,6 +16,7 @@ REPEAT_AT=`$BASEDIR/iniget.sh mon.ini standby repeat_at`
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
   DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  echo "DBS="$DBS
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOG_FILE=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_$$.log
