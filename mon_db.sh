@@ -3,12 +3,12 @@ set -f
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
@@ -28,8 +28,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     diff $LOGF_DB_OLD $LOGF_DB > $LOGF_DB_DIFF
 
     if [ -s $LOGF_DB_DIFF ]; then
-#	    ( cat $LOGF_DB_DIFF ; echo "Old_status:" ; cat $LOGF_DB_OLD ; echo "" ; echo  "Current_status:" ; cat $LOGF_DB ) | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
-	    cat $LOGF_DB_DIFF | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
+#        ( cat $LOGF_DB_DIFF ; echo "Old_status:" ; cat $LOGF_DB_OLD ; echo "" ; echo  "Current_status:" ; cat $LOGF_DB ) | $WMMAIL -s "$MPREFIX DATABASE status has been changed: (host: ${HOST} / db: ${DB})" $ADMINS
+        cat $LOGF_DB_DIFF | $BASEDIR/send_msg.sh $HOST $DB "DB status has been changed:"
     fi
     cp $LOGF_DB $LOGF_DB_OLD
 #    rm  $LOGF_DB_DIFF $LOGF_DB
