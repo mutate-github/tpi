@@ -4260,7 +4260,7 @@ column TABLESPACE for a20
 column OBJECT_NAME for a30
 column SUBOBJECT_NAME for a46
 column OBJECT_TYPE for a18
-column TABLESPACE for a20
+column TABLESPACE for a23
 BREAK ON REPORT
 COMPUTE SUM LABEL 'SUM' OF "Growth in MB" on report
 COMPUTE SUM LABEL 'SUM' OF "Total Size(GB)" on report
