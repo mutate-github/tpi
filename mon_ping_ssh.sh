@@ -2,11 +2,11 @@
 set -f
 
 BASEDIR=`dirname $0`
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   MSG=""
@@ -20,7 +20,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   else MSG="PING warning: "
   fi
   if [ -n "$MSG" ]; then
-    echo "" | $WMMAIL -s "$MPREFIX $MSG host $HOST - not responding" $ADMINS
+#    echo "" | $WMMAIL -s "$MPREFIX $MSG host $HOST - not responding" $ADMINS
+    echo "" | $BASEDIR/send_msg.sh $HOST $DB "$MSG host $HOST - not responding"
   fi
 done
 

@@ -2,12 +2,12 @@
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 PERCENT=90
@@ -35,7 +35,8 @@ EOF`
     echo $VALUE
 
     if [ "$VALUE" -gt "$PERCENT" ]; then
-      echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)" $ADMINS
+#      echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)" $ADMINS
+      echo "" | $BASEDIR/send_msg.sh $HOST $DB "db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)"
     fi
   done # DB
 done # HOST

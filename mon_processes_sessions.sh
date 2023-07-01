@@ -2,12 +2,12 @@
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 PERCENT=80
@@ -37,7 +37,8 @@ EOF`
 
     echo $VALUE | xargs -n4 echo | while read NAME_ CURRENT_ LIMIT_ PERCENT_ ; do
       if [ "$PERCENT_" -gt "$PERCENT" ]; then
-        echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - $NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )" $ADMINS
+#        echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - $NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )" $ADMINS
+        echo "" | $BASEDIR/send_msg.sh $HOST $DB "$NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )"
       fi
     done
 

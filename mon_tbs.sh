@@ -3,12 +3,12 @@ set -f
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 limPER=`$BASEDIR/iniget.sh mon.ini tbs limitPER`
 limGB=`$BASEDIR/iniget.sh mon.ini tbs limitGB`
 
@@ -32,13 +32,14 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
            echo "" >> $LOGF_TRG
            echo "Datafiles information:" >> $LOGF_TRG
            $WRTPI $HOST $DB df | awk '/TABLESPACE_NAME/,/Elapsed/' | sed '/^ *$/d' | egrep "^$a"  | uniq
-           echo "" >> $LOGF_TRG
-           echo "Growseg information last 3 hours:" >> $LOGF_TRG
-           $WRTPI $HOST $DB dhash growseg $a | awk '/OBJECT_NAME/,/Elapsed/' | egrep -v "Elapsed" | head -30 >>  $LOGF_TRG
-           echo "" >> $LOGF_TRG
+#           echo "" >> $LOGF_TRG
+#           echo "Growseg information last 3 hours:" >> $LOGF_TRG
+#           $WRTPI $HOST $DB dhash growseg $a | awk '/OBJECT_NAME/,/Elapsed/' | egrep -v "Elapsed" | head -30 >>  $LOGF_TRG
+#           echo "" >> $LOGF_TRG
        done  >>  $LOGF_TRG
 
-       cat $LOGF_HEAD $LOGF_TRG | $WMMAIL -s "$MPREFIX TBS usage warning: ${HOST} / ${DB} free space too low (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
+#       cat $LOGF_HEAD $LOGF_TRG | $WMMAIL -s "$MPREFIX TBS usage warning: ${HOST} / ${DB} free space too low (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
+       cat $LOGF_HEAD $LOGF_TRG  | $BASEDIR/send_msg.sh $HOST $DB "TBS usage warning: free space too low current: ${CUR_VAL}%, threshold: ${limPER}%"
        rm $LOGF $LOGF_TRG $LOGF_HEAD
     fi
   done # DB
