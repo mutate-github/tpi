@@ -3495,37 +3495,37 @@ esac
 case "$type_" in
 USER)
 $SP <<EOF >>$LOGF
-SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 180 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+SET LONG 10000000 LONGCHUNKSIZE 10000000 PAGESIZE 0 LINESIZE 180 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
 BEGIN
    DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
    DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'PRETTY', true);
 END;
 /
--- SELECT dbms_metadata.get_ddl('USER','$object_') FROM dual;
-prompt "SYSTEM_GRANTS:"
+SELECT dbms_metadata.get_ddl('USER','$object_') FROM dual;
+prompt prompt SYSTEM_GRANTS:
 SELECT DBMS_METADATA.GET_GRANTED_DDL('SYSTEM_GRANT','$object_') from dual;
-prompt "ROLE_GRANTS:"
+prompt prompt ROLE_GRANTS:
 SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT','$object_') from dual;
-prompt "OBJECT_GRANTS:"
+prompt prompt OBJECT_GRANTS:
 SELECT DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT','$object_') from dual;
 EOF
 ;;
 JOB)
 $SP <<EOF >>$LOGF
-SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+SET LONG 10000000 LONGCHUNKSIZE 10000000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
 SELECT dbms_metadata.get_ddl('PROCOBJ','$object_', '$owner_') from dual;
 EOF
 ;;
 TABLESPACE)
 $SP <<EOF >>$LOGF
-SET LONG 20000 LONGCHUNKSIZE 20000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
+SET LONG 10000000 LONGCHUNKSIZE 10000000 PAGESIZE 0 LINESIZE 230 FEEDBACK OFF VERIFY OFF TRIMSPOOL ON
 exec DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', true);
 select dbms_metadata.get_ddl('$type_','$object_') from dual;
 EOF
 ;;
 ROLE)
 $SP <<EOF >>$LOGF
-set long 1000000 longchunksize 20000 pagesize 0 linesize 1000 feedback off verify off trimspool on
+set long 1000000 longchunksize 200000 pagesize 0 linesize 1000 feedback off verify off trimspool on
 column ddl format a1000
 begin
    dbms_metadata.set_transform_param (dbms_metadata.session_transform, 'SQLTERMINATOR', true);
@@ -4260,7 +4260,7 @@ column TABLESPACE for a20
 column OBJECT_NAME for a30
 column SUBOBJECT_NAME for a46
 column OBJECT_TYPE for a18
-column TABLESPACE for a20
+column TABLESPACE for a22
 BREAK ON REPORT
 COMPUTE SUM LABEL 'SUM' OF "Growth in MB" on report
 COMPUTE SUM LABEL 'SUM' OF "Total Size(GB)" on report
