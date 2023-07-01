@@ -10,12 +10,12 @@ export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-WMMAIL="$BASEDIR/$MAILS"
+#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
+#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 LINES=`$BASEDIR/iniget.sh mon.ini alert lines`
 EXCLUDE=`$BASEDIR/iniget.sh mon.ini alert exclude`
 
@@ -112,7 +112,8 @@ if [ "$ERRCT" -gt 1 ]; then
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}'
  echo " " >> $LOGF_HEAD
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}' >> $LOGF_HEAD
- cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
+# cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
+ cat $LOGF_HEAD | $BASEDIR/send_msg.sh $HOST $DB "ALERT_LOG warning:"
 fi
 
 # rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
