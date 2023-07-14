@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 09.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 14.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -1371,6 +1371,18 @@ prompt
 prompt Sizes in v$sgastat:
 column bytes for 999999999999
 select * from v$sgastat where pool is null;
+select * from v$sgastat where pool = 'shared pool' and (name in ('free memory', 'sql area', 'library cache', 'miscellaneous', 'row cache', 'KGH: NO ACCESS') );
+
+prompt
+prompt Sizes in v$sga_resize_ops:
+COL COMPONENT FORMAT A25
+COL INITIAL_SIZE FORMAT A10
+COL FINAL_SIZE FORMAT A10
+SPOOL ASMM_RESIZE.TXT
+select START_TIME, component, oper_type, oper_mode, initial_size/1024/1024 "INITIAL_MB", FINAL_SIZE/1024/1024 "FINAL_MB", END_TIME
+from v$sga_resize_ops
+where component in ('DEFAULT buffer cache', 'shared pool') and status = 'COMPLETE'
+order by start_time, component;
 
 prompt
 prompt Shared pool details and autocalculate:
@@ -1435,7 +1447,7 @@ select 'Buffer pool ' || Name || ' hit ratio' Name,
             / (db_block_gets+consistent_gets)
         ) * 100,4) Ratio,
         'Must be about 99%' Remarks
-    from V$BUFFER_POOL_STATISTICS
+    from V$BUFFER_POOL_STATISTICS  where name in ('DEFAULT','KEEP')
 union all
 select 'Average buffers scanned' Name,
         round(1 + sum(decode(name,'free buffer inspected',value,0))
