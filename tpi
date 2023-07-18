@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 14.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 18.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -1279,16 +1279,14 @@ END
 ;;
 *)
  SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
- REL=$(db_version)
- case $REL in
-   9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;"
-   ;;
-   12|18|19) SQL_TEXT12="prompt
-      prompt DBA_REGISTRY_SQLPATCH:
+SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
       column LOGFILE for a100
       column DESCRIPTION for a40
 
-      col INSTALL_ID for 99 heading ID 
+      col BUNDLE_DATA  for a10
+      col POST_LOGFILE  for a10 noprint
+
+      col INSTALL_ID for 99 heading ID
       col action for a10
       col status for a9
       col flags for a2
@@ -1299,10 +1297,16 @@ END
       col PATCH_DIRECTORY for a10 noprint
       col SOURCE_BUILD_DESCRIPTION for a10
       col TARGET_BUILD_DESCRIPTION for a10
-      col SOURCE_BUILD_TIMESTAMP for a10
+      col SOURCE_BUILD_TIMESTAMP for a10  noprint
       col TARGET_BUILD_TIMESTAMP for a10
       select * from DBA_REGISTRY_SQLPATCH order by action_time;"
-   ;;
+ REL=$(db_version)
+ case $REL in
+   9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
+   10) : ;;
+   11) : ;;
+   12) SQL_TEXT12=$SQL_TEXT12_ ; VERSION="VERSION" ; BANNER="BANNER" ;;
+   18|19|21) SQL_TEXT12=$SQL_TEXT12_ ; VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
   esac
 $SP <<EOF > $LOGF
 set lines 230 timing off
@@ -1317,7 +1321,7 @@ column ARCHIVER for a10
 column LOGINS for a10
 column DATABASE_STATUS for a15
 column instance_role for a20
-select INSTANCE_NAME, HOST_NAME, VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from v\$instance;
+select INSTANCE_NAME, HOST_NAME, $VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from v\$instance;
 prompt
 prompt v\$database:
 column current_scn for 99999999999999
@@ -1335,10 +1339,9 @@ column supplemental_log_data_min for a8 heading "SUPPLLOG"
 column FLASHBACK_ON for a9 heading "FLASHB_ON"
 column platform_name for a28
 $SQL_TEXT
-col banner for a71
-col banner_full for a71
-col banner_legacy for a71
-select * from v\$version;
+col banner for a81
+col banner_full for a91
+select $BANNER from v\$version;
 EOF
 
 $SP <<END >> $LOGF
@@ -1348,13 +1351,14 @@ column COMP_ID for a10
 ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'DD/MM/YYYY HH24:MI:SS';
 column COMP_NAME for a40
 column VERSION  for a12
+column VERSION_FULL  for a12
 column STATUS for a12
 column MODIFIED for a20
 column SCHEMA for a15
 column procedure for a45
 prompt
 prompt DBA_REGISTRY:
-select comp_id, comp_name, version, status, modified, schema, procedure from dba_registry;
+select comp_id, comp_name, $VERSION, status, modified, schema, procedure from dba_registry;
 column action_time for a19
 column action for a15
 column namespace for a15
