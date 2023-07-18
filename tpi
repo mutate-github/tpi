@@ -1288,6 +1288,20 @@ END
       prompt DBA_REGISTRY_SQLPATCH:
       column LOGFILE for a100
       column DESCRIPTION for a40
+
+      col INSTALL_ID for 99 heading ID 
+      col action for a10
+      col status for a9
+      col flags for a2
+      col DESCRIPTION for a10
+      col LOGFILE    for a10
+      col RU_LOGFILE    for a10
+      col PATCH_DESCRIPTOR for a10
+      col PATCH_DIRECTORY for a10 noprint
+      col SOURCE_BUILD_DESCRIPTION for a10
+      col TARGET_BUILD_DESCRIPTION for a10
+      col SOURCE_BUILD_TIMESTAMP for a10
+      col TARGET_BUILD_TIMESTAMP for a10
       select * from DBA_REGISTRY_SQLPATCH order by action_time;"
    ;;
   esac
@@ -1322,7 +1336,10 @@ column supplemental_log_data_min for a8 heading "SUPPLLOG"
 column FLASHBACK_ON for a9 heading "FLASHB_ON"
 column platform_name for a28
 $SQL_TEXT
-select banner from v\$version;
+col banner for a71
+col banner_full for a71
+col banner_legacy for a71
+select * from v\$version;
 EOF
 
 $SP <<END >> $LOGF
