@@ -24,7 +24,7 @@ TGHOSTS=`$BASEDIR/iniget.sh mon.ini telegram host:db:set`
 NAME_PARENT=$(awk -F/ '{print $NF}' /proc/"$PPID"/cmdline)
 
 send_email()
-{ printf %s "$msg" | $WMMAIL -s "$MPREFIX ${HOST}/${DB} ${ALL}" $ADMINS }
+{ printf %s "$msg" | $WMMAIL -s "$MPREFIX ${HOST}/${DB} ${ALL}" $ADMINS ; }
 
 check_script_and_send_email()
 {
@@ -35,7 +35,7 @@ esac
 }
 
 send_tlgrm()
-{ printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} }
+{ printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} ; }
 
 check_script_and_send_tlgrm()
 {
@@ -53,6 +53,7 @@ for HDS in $(echo $MMHOSTS | xargs -n1 echo); do
   PDB=$(echo $HDS | awk -F: '{print $2}')
   SCRIPTS=$(echo $HDS | cut -d':' -f3-)
   SCRIPTS='+('$(echo $SCRIPTS | sed 's/:/|/g')')'
+shopt -s extglob
   case "$PHOST" in
      "$HOST")   case "$PDB" in
                    "$DB")  check_script_and_send_email ; break ;;
@@ -71,6 +72,7 @@ for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
   PDB=$(echo $HDS | awk -F: '{print $2}')
   SCRIPTS=$(echo $HDS | cut -d':' -f3-)
   SCRIPTS='+('$(echo $SCRIPTS | sed 's/:/|/g')')'
+shopt -s extglob
   case "$PHOST" in
      "$HOST")   case "$PDB" in
                    "$DB")  check_script_and_send_tlgrm ; break ;;
@@ -80,4 +82,5 @@ for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
      '%')       echo "TG ALL HOSTS! "; check_script_and_send_tlgrm ; break ;;
   esac
 done
+
 
