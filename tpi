@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 18.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 28.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -1301,11 +1301,10 @@ SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
       col TARGET_BUILD_TIMESTAMP for a10
       select * from DBA_REGISTRY_SQLPATCH order by action_time;"
  REL=$(db_version)
+ VERSION="VERSION" ; BANNER="BANNER"
  case $REL in
-   9) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
-   10) : ;;
-   11) : ;;
-   12) SQL_TEXT12=$SQL_TEXT12_ ; VERSION="VERSION" ; BANNER="BANNER" ;;
+   9|10|11) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
+   12) SQL_TEXT12=$SQL_TEXT12_ ;;
    18|19|21) SQL_TEXT12=$SQL_TEXT12_ ; VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
   esac
 $SP <<EOF > $LOGF
