@@ -18,7 +18,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   OS=`ssh $HOST "uname"`
   case "$OS" in
    Linux)
-          ssh "$HOST" "free | grep 'Swap' | awk '{t = \$2; u = \$3; printf (\"%3.0f\", u/(t/100))}'" > $LOGF
+          ssh "$HOST" "free | grep 'Swap' | awk '{t = \$2+1; u = \$3; printf (\"%3.0f\", u/(t/100))}'" > $LOGF
           PCT=$(head -1 $LOGF)
           ;;
    AIX)   ssh "$HOST" "lsps -s | tail +2  | cut -d% -f1 | awk '{printf \$2}'" > $LOGF
