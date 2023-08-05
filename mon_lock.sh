@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -f
 
 BASEDIR=`dirname $0`
@@ -18,7 +18,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_lock_${HOST}_${DB}.log
     $WRTPI $HOST $DB lock  > $LOGF
-    CUR_VAL=`egrep "HOLDER|Waiter" $LOGF | sort -nk 11 | head -1 | awk -v lim=$THRESHOLD '{if($NF+0>=lim) {print $NF}}'`
+    CUR_VAL=$(egrep "Waiter" $LOGF | awk '{print $NF}' | sort -n | awk -v lim=$THRESHOLD '{if($NF+0>=lim) {print $NF}}')
 
     if [ -n "$CUR_VAL" ]; then
 #       cat $LOGF | $WMMAIL -s "$MPREFIX Locks warning: ${HOST} / ${DB}  (current: $CUR_VAL min, threshold: $THRESHOLD min)" $ADMINS
