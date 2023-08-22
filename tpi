@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 28.07.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 22.08.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -347,7 +347,8 @@ case "$(db_version)" in
     CMD2_=$CODE9_2_ ;;
 *)  CMD1_=$CODE11_ 
     CMD2_=$CODE11_2_
-    CMD3_="select owner||'.'||object_name into STR_ from dba_objects where object_id=s.PLSQL_ENTRY_OBJECT_ID;" ;;
+    CMD3_="select owner||'.'||object_name into STR_ from dba_objects where object_id=s.PLSQL_ENTRY_OBJECT_ID;" 
+    CMD4_="select sql_id into  STR_ from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value and rownum=1;" ;;
 esac
 
 P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
@@ -467,7 +468,7 @@ $CMD2_
 
 ------------
   dbms_output.put_line(chr(126)||'Previous SQL statement:');
-  select sql_id into  STR_ from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value and rownum=1;
+  $CMD4_
   dbms_output.put_line(chr(126)||'sql_id: '||STR_);
   for c1 in ( select * from sys.v_\$sqltext
               where HASH_VALUE = s.prev_hash_value order by piece) loop
