@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 22.08.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 24.08.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -1698,13 +1698,13 @@ EOF
 ;;
   *)
 if [ $(is_number $P1_) -eq 0 ]; then 
-    SQL_="object_name like upper('$P1_')"
+    SQL_="object_name like upper('$P1_') and owner like upper('$P2_')"
 else
     SQL_="object_id = '$P1_'"
 fi
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 60
 ttitle left "Objects from dba_objects where $SQL_:"
 column object_name for a30
 column owner for a30
