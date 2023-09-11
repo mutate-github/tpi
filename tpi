@@ -2785,7 +2785,7 @@ case $(db_is_open) in
  OPEN) SQL_="select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
 select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;"
  ;;
- *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by dfh.tablespace_name,dfh.name;"
+ *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by CHECKPOINT_CHANGE# /* dfh.tablespace_name,dfh.name */;"
  ;;
 esac
 $SP <<EOF >$LOGF
