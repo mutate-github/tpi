@@ -122,12 +122,14 @@ fi
 
 cd /tmp
 
+
 logf()
 {
 cat $LOGF  | tr -d \~
 rm -f $LOGF
 #rm -f $LOGINSQL >/dev/null 2>&1
 }
+
 
 is_number()
 {
@@ -140,6 +142,7 @@ case "$1"  in
   *)         echo 1 ;;
 esac
 }
+
 
 db_version()
 {
