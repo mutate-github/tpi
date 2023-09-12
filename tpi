@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 22.08.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 11.09.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -122,12 +122,14 @@ fi
 
 cd /tmp
 
+
 logf()
 {
 cat $LOGF  | tr -d \~
 rm -f $LOGF
 #rm -f $LOGINSQL >/dev/null 2>&1
 }
+
 
 is_number()
 {
@@ -140,6 +142,7 @@ case "$1"  in
   *)         echo 1 ;;
 esac
 }
+
 
 db_version()
 {
@@ -537,7 +540,8 @@ ob.kglnaown||'.'||ob.kglnaobj "Object", p.kglpnmod "M", p.kglpnreq "R",
 s.username,substr(s.status,1,1) status,s.osuser,s.machine,s.program,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time
 FROM sys.x$kglpn p, sys.v_$session s, sys.v_$process pr, sys.x$kglob ob, sys.v_$session_wait sw
 WHERE p.kglpnuse=s.saddr and pr.addr = s.paddr and ob.kglhdadr=p.kglpnhdl
-and sw.event like 'lib%'
+--and (sw.event like 'lib%')
+and sw.event in ('library cache load lock','library cache lock','cursor: pin S wait on X','row cache lock')
 and sw.p1raw = ob.kglhdadr;
 END
 ;;
@@ -1698,13 +1702,13 @@ EOF
 ;;
   *)
 if [ $(is_number $P1_) -eq 0 ]; then 
-    SQL_="object_name like upper('$P1_')"
+    SQL_="object_name like upper('$P1_') and owner like upper(nvl('$P2_','%'))"
 else
     SQL_="object_id = '$P1_'"
 fi
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 60
 ttitle left "Objects from dba_objects where $SQL_:"
 column object_name for a30
 column owner for a30
@@ -2430,8 +2434,8 @@ column DB_size_MB format 999,999,999,999.00
 select round(sum(s),2) DB_size_MB from
 (select sum(bytes/(1024*1024)) s from dba_data_files
 union
-select sum(bytes/(1024*1024)) s from dba_temp_files
-union
+--select sum(bytes/(1024*1024)) s from dba_temp_files
+--union
 select sum(bytes/(1024*1024)) s from v\$log
 );
 ttitle off
@@ -2781,7 +2785,7 @@ case $(db_is_open) in
  OPEN) SQL_="select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
 select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;"
  ;;
- *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by dfh.tablespace_name,dfh.name;"
+ *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by CHECKPOINT_CHANGE# /* dfh.tablespace_name,dfh.name */;"
  ;;
 esac
 $SP <<EOF >$LOGF
@@ -5441,7 +5445,7 @@ report_sql_monitor)
 sql_id="$2"
 echo $name
 $SP <<EOF >$LOGF
-set lines 230 
+set lines 255
 set echo off feed on veri off tab off pages 400
 set long 1000000000 longc 1000000000
 --PROMPT DBMS_SQLTUNE.report_sql_monitor(sql_id=>'$sql_id', report_level=>'all')
