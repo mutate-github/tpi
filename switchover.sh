@@ -70,7 +70,7 @@ $set_env
 export ORACLE_SID=\$sid
 env | grep ORA
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 alter system switch logfile;
 EOS
 EOF_CREATE_SCP
@@ -86,7 +86,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set linesize 230 pages 70
+set linesize 230 pages 70 timing off
 col THREAD format 999
 col PRIMARY_SEQ format 9999999999
 col STANDBY_THREAD format 999
@@ -117,8 +117,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set linesize 230 pages 70
-set lines 230
+set linesize 230 pages 70 timing off
 set echo off feed off veri off tab off pages 50
 column member for a80
 select group#, member, type, status from v\$logfile where type='STANDBY' order by group#,member;
@@ -140,7 +139,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 startup restrict force
 EOS
 EOF_CREATE_SCP
@@ -156,7 +155,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 select name, open_mode, database_role,switchover_status from v\$database;
 EOS
 EOF_CREATE_SCP
@@ -173,7 +172,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 alter database commit to switchover to standby;
 EOS
 EOF_CREATE_SCP
@@ -190,7 +189,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 VALUE=\`sqlplus -S '/as sysdba' <<'EOS'
-set lines 220
+set lines 220 timing off
 set echo off feed off veri off tab off termout off pages 0
 col value new_value value
 col db_name new_value db_name noprint
@@ -211,7 +210,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 select name, open_mode, database_role,switchover_status from v\$database;
 EOS
 EOF_CREATE_SCP
@@ -228,7 +227,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 alter database commit to switchover to primary with session shutdown;
 EOS
 EOF_CREATE_SCP
@@ -244,7 +243,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 VALUE=\`sqlplus -S '/as sysdba' <<'EOS'
-set lines 220
+set lines 220 timing off
 set echo off feed off veri off tab off termout off pages 0
 col value new_value value
 col db_name new_value db_name noprint
@@ -265,7 +264,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 alter database open;
 EOS
 EOF_CREATE_SCP
@@ -281,7 +280,7 @@ sid=\$1
 $set_env
 export ORACLE_SID=\$sid
 sqlplus -S '/as sysdba' <<'EOS'
-set lines 250 pages 50
+set lines 250 pages 50 timing off
 startup
 recover managed standby database disconnect using current logfile;
 EOS
