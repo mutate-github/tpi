@@ -204,7 +204,7 @@ from V\$RMAN_BACKUP_JOB_DETAILS j
                    where s.input_file_scan_only = 'NO' and d.backup_type in ('D','I')
                    group by d.session_recid, d.session_stamp) x
     on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
-where j.start_time > trunc(sysdate)-30 and j.input_type='DB INCR'
+where j.start_time > trunc(sysdate)-10 and j.input_type='DB INCR'
 order by j.start_time;
 EOS
 EOF_CREATE_F1
