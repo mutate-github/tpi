@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 21.09.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 25.09.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -75,7 +75,7 @@ init_msg()
   kill__="kill SID SERIAL - Kill session"
   exec__="exec - execute \"SQL Commands\"  Note: Must be escaped with \\ characters: * ; ' ! ( ) "
   alert__="alert [num] - tail -num alert_[sid].log, default num = 100"
-  report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
+  report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat SQL_ID] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [MIN - def 1440] [ event [all] (EventName) | sess (SID SERIAL# [all|nosqlid] | SQL_ID) | where [FIELD CONDITION] | sql (SQL_ID|SQL_TEXT) | plan SQL_ID [format display plan] | sqlstat SQL_ID | temp [sizeMb] ] - Top Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last 'MIN' minutes"
@@ -5652,6 +5652,11 @@ TXT_=`echo $ALL | awk '{print $2}'`
 DAY_=`echo $ALL | awk '{print $3}'`
 HH1_=`echo $ALL | awk '{print $4}'`
 HH2_=`echo $ALL | awk '{print $5}'`
+
+DAY2_=`echo $ALL | awk '{print $6}'`
+HH21_=`echo $ALL | awk '{print $7}'`
+HH22_=`echo $ALL | awk '{print $8}'`
+
 SQL_ID_=`echo $ALL | awk '{print $6}'`
 # DB_VER_=$(db_version)
 
@@ -5676,6 +5681,25 @@ case "$type_" in
         define end_snap=&&max_snap_id
         define report_name='/tmp/awrrpt.$EXT_'
         @?/rdbms/admin/awrrpt.sql" ;;
+ awrdd)  RPT_="define report_type='$TXT_';
+        define num_days=7;
+        define num_days2=7;
+        col min_snap_id new_value min_snap_id
+        col max_snap_id new_value max_snap_id
+        select min(snap_id) min_snap_id, max(snap_id) max_snap_id from DBA_HIST_SNAPSHOT where trunc(end_interval_time) = to_date('$DAY_', 'dd/mm/yyyy') and to_number(to_char(end_interval_time,'HH24')) between $HH1_ and $HH2_ order by 1;
+        define begin_snap=&&min_snap_id
+        define end_snap=&&max_snap_id
+	select min(snap_id) min_snap_id, max(snap_id) max_snap_id from DBA_HIST_SNAPSHOT where trunc(end_interval_time) = to_date('$DAY2_', 'dd/mm/yyyy') and to_number(to_char(end_interval_time,'HH24')) between $HH21_ and $HH22_ order by 1;
+        define begin_snap2=&&min_snap_id
+        define end_snap2=&&max_snap_id
+	define report_name='/tmp/awrrpt.$EXT_'
+        column dbid new_value dbid noprint
+        select dbid from v\$database;
+        define dbid2 = &dbid 
+        column instance_number new_value inst_num noprint
+        select instance_number from v\$instance;
+        define inst_num2 = &inst_num
+        @?/rdbms/admin/awrddrpi.sql" ;;
  awrsql)  RPT_="define report_type='$TXT_';
         define num_days=7;
         col min_snap_id new_value min_snap_id
