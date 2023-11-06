@@ -39,7 +39,12 @@ case "$P1_" in
     cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
  jet)
-    cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/sh -s $args"
+	 UNAME=`uname | awk -F_ '{print $1}'`
+	 if [ "$UNAME" = "CYGWIN" ]; then 
+             cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/sh -s $args"
+	 else
+             cat $wtpi | ssh oracle@$P1_ "/bin/sh -s $args"
+	 fi
  ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
