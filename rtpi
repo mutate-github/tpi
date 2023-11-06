@@ -38,6 +38,9 @@ case "$P1_" in
 #   cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
     cat $wtpi | ssh $P1_ "/bin/sh -s $args"
    ;;
+ jet)
+    cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/sh -s $args"
+ ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
     #if [ "$rc" -eq 0 ]; then
