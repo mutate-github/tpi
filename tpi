@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 14.11.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 24.11.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -2334,32 +2334,11 @@ if [ -z "$CNT" ]; then
  CNT=7
 fi
 $SP <<EOF >$LOGF
-set lines 180
-set echo off feed off veri off tab off pages 40
---size by hour
-set numw 15 pages 50
-column sum_mb format 999,999,999,999
-col date_by_hours for a20
-BREAK ON REPORT
-COMPUTE AVG SUM LABEL 'SUM' OF sum_Mb  on report
-ttitle left "Archive logs size information by last $CNT hours:"
-select to_char(first_time,'dd/mm/yyyy HH24') date_by_hours, round(sum(blocks*block_size)/1024/1024) sum_Mb from v\$archived_log
-where dest_id=(select dest_id from V\$ARCHIVE_DEST where status='VALID' and archiver='ARCH' and valid_type in ('ONLINE_LOGFILE','ALL_LOGFILES')) and first_time>sysdate-($CNT/24) group by to_char(first_time,'dd/mm/yyyy HH24') order by 1;
-ttitle off
-
---size by day and avg size
-set numw 15 pages 50
-column sum_mb format 999,999,999,999
-BREAK ON REPORT
-COMPUTE AVG SUM LABEL 'SUM' OF sum_Mb  on report
-ttitle left "Archive logs size information by last $CNT days:"
-select trunc(first_time) date_, round(sum(blocks*block_size)/1024/1024) sum_Mb from v\$archived_log
-where dest_id=(select dest_id from V\$ARCHIVE_DEST where status='VALID' and archiver='ARCH' and valid_type in ('ONLINE_LOGFILE','ALL_LOGFILES')) and first_time>sysdate-$CNT group by trunc(first_time) order by 1;
-ttitle off
+set echo off feed off veri off tab off pages 60 timing off
 
 ttitle left "Archived logs Switches information and SizeGb from v\$arhived_log by last $CNT days:"
 alter session set nls_date_format='dd/mm/yy';
-set pages 999 lines 400
+set pages 999 lines 230
 col Day for a3
 col thread# for 999
 col TotalSwitch for 9999 heading "Total|Switch"
@@ -2432,13 +2411,24 @@ select dest_name, status, destination from v\$archive_dest where status<>'INACTI
 column Db_size_Gb format 999,999,999,999
 ttitle left "Overall database size:"
 column DB_size_MB format 999,999,999,999.00
-select round(sum(s),2) DB_size_MB from
-(select sum(bytes/(1024*1024)) s from dba_data_files
-union
+column tablespace_name format a35
+
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF DB_size_MB on report
+select tablespace_name, sum(bytes/(1024*1024)) DB_size_MB from dba_data_files
+group by tablespace_name order by tablespace_name;
+ttitle off
+
+select tablespace_name, sum(bytes/(1024*1024)) DB_size_MB from dba_temp_files
+group by tablespace_name order by tablespace_name;
+
+--select round(sum(s),2) DB_size_MB from
+--(select sum(bytes/(1024*1024)) s from dba_data_files
+--union
 --select sum(bytes/(1024*1024)) s from dba_temp_files
 --union
-select sum(bytes/(1024*1024)) s from v\$log
-);
+--select sum(bytes/(1024*1024)) s from v\$log
+--);
 ttitle off
 EOF
 logf
