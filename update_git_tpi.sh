@@ -6,16 +6,19 @@
 #scp README.md 172.16.249.1:~/tal/
 
 #askona
-#scp tpi 192.168.1.53:tal/
-#scp tpi 192.168.1.178:tal/
+scp tpi 192.168.1.53:tal/
+scp tpi 192.168.1.178:tal/
 
 #dixy
-#scp tpi 10.0.7.21:tal/
-#scp tpi 10.0.17.21:tal/
+scp tpi 10.0.7.21:tal/
+scp tpi 10.0.17.21:tal/
 
-# git add *
+#as
+scp tpi p260unc2:tal/
+
+git add $*
 DT=`date`
 git commit -m "$DT"
-#git push
-git push -f origin main
+git push
+#git push -f origin main
 
