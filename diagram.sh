@@ -13,7 +13,7 @@ else
 fi
 
 if [ -p /dev/stdin ]; then
-  file="$$_tmp.tmp"
+  file="/tmp/$$_tmp.tmp"
   stdin=$(cat)
   echo "$stdin" > $file
   date="^[0-9][0-9]\/.*"
@@ -33,6 +33,7 @@ scale=$(awk "BEGIN{print $limit/100}")
 
 tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
 egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
+rm ${file}
 file=${file}.tmp
 
 get_cols()
@@ -54,14 +55,14 @@ cat $file | awk '!/---/{print $'$col1'" "$'$col2'}' | xargs -n2 echo | while rea
 done
 }
 
-awk '{print $1}' ${file} > 0.tmp
+awk '{print $1}' ${file} > /tmp/0.tmp
 
 for i in $(echo "$all_par" | xargs -n1 echo); do
-  get_cols $i | awk '{printf $2" "$3"\n"}' > ${i}.tmp
-  j=$j" "${i}.tmp
+  get_cols $i | awk '{printf $2" "$3"\n"}' > /tmp/${i}.tmp
+  j=$j" "/tmp/${i}.tmp
 done
 
-paste 0.tmp $j |  column -t
+paste /tmp/0.tmp $j | column -t
 
-rm $file 0.tmp $j
+rm $file /tmp/0.tmp $j
 
