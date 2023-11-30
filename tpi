@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 24.11.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 30.11.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -5520,7 +5520,43 @@ column "Trace File" for a150
 $CMD1_
 EOF
 else
-  echo "Not enough parameters...  SID: "$SID_"  SERIAL: "$SERIAL_"  LEVEL: "$LEVEL_
+$SP <<EOF >$LOGF
+set lines 250 pages 1000
+set echo off feed off veri off tab off timing off
+col spid for a8
+col sid for 99999
+col serial# for 999999
+col username for a20 truncated
+col osuser for a17 truncated
+col machine for a17 truncated
+col pma for a60 heading "PROGRAM / MODULE / ACTION" truncated
+col pgau for 99999
+col logon_time for a11 heading "LOGON"
+col last_call_et for 999999 heading "LAST"
+col status for a1 heading "S" truncated
+col command_name for a6 heading "CMD" truncated
+col sql_id for a13
+col event for a27 truncated
+col sw for 999999
+col oot for a40 heading "ACCESS OBJECT" truncated
+ttitle left "SQL_TRACE is ENABLED for following sessions:"
+SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
+       p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
+       s.osuser,
+       replace(s.machine,CHR(0),'') machine,
+       s.program||' / '||s.module||' / '||  s.action  pma,
+       trunc(p.pga_used_mem/1024/1024) pgau, c.command_name, DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id,
+       w.event /*,w.p1text,w.p1,w.p2text,w.p2*/,
+       case when w.seconds_in_wait>8640000 then w.seconds_in_wait/60/60/24*-1 else w.seconds_in_wait/60/60 end sw,
+       to_char(s.logon_time,'dd/mm hh24:mi') logon_time,
+       case when s.last_call_et>864000 then s.last_call_et/60/60/24*-1 else s.last_call_et end last_call_et, s.status
+   FROM v\$session s, v\$process p, v\$session_wait w , v\$sqlcommand c
+   WHERE p.addr = s.paddr and s.command = c.command_type
+       AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL
+       AND (s.status = 'ACTIVE' or nvl('a',' ') = 'a') and s.SQL_TRACE='ENABLED'
+   order by to_char(s.last_call_et,'0000000.00') desc, s.osuser,w.event, to_char(s.logon_time,'hh24:mi') ;
+SELECT * FROM dba_enabled_traces;
+EOF
 fi
 ;;
 esac
