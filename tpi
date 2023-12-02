@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 01.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 02.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -4289,7 +4289,8 @@ column cpu_time_delta for 999,999.9999 heading 'CPU_TIME\EX'
 column elapsed_time_delta for 999,999.9999 heading 'ELA_TIME\EX'
 column iowait_delta for 999,999,999 heading 'IOWAIT\EX'
 "
-if [ "$LEN_" -eq 13 ]; then
+case "$LEN_" in 
+ 13)
  $SP <<EOF >$LOGF
  PROMPT "SQLStats from DBA_HIST_SQL_PLAN  for sql_id: $SQL_ID_ by last: $HHE_ hours  $xrange"
  $SQL_SQLSTAT
@@ -4310,7 +4311,8 @@ if [ "$LEN_" -eq 13 ]; then
  and executions_delta > 0
  order by snap_id, end_interval_time;
 EOF
-else
+;;
+ *)
  case "$SQL_ID_" in
    pio*) S1_="PIO_PER_EXEC desc" ;;
    lio*) S1_="LIO_PER_EXEC desc" ;;
@@ -4345,7 +4347,8 @@ else
  order by $S1_ 
  ) where rownum <= 40;
 EOF
-fi
+;;
+esac
 ;;
 growseg)
 TBS=`echo $* | awk '{print $2}'`
@@ -4841,7 +4844,6 @@ select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>
 EOF
 ;;
 sqlstat)
-if [ -n "$P1_" ]; then LEN_=`expr length $P1_`; fi
 SQL_SQLSTAT="
 set lines 250 pages 50 feedback off timing off
 col sql_id for a15
@@ -4858,7 +4860,9 @@ col cpu_time for 999,999.9999 heading 'CPU_TIME\EX'
 col elapsed_time for 999,999.9999 heading 'ELA_TIME\EX'
 col iowait for 999999999 heading 'IOWAIT\EX'
 "
-if [ "$LEN_" -eq 13 ]; then
+if [ -n "$P1_" ]; then LEN_=`expr length $P1_` ; fi
+case "$LEN_" in
+  13)
 $SP <<EOF >$LOGF
 PROMPT
 PROMPT "After change plan do not forget purge the old statistics:"
@@ -4891,7 +4895,8 @@ decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/EXECUTI
 sharable_mem
 FROM V\$SQLSTATS WHERE sql_id = '$P1_';
 EOF
-else
+;;
+  *)
  case "$P1_" in
    pio*) S1_="PIO_PER_EXEC" ;;
    lio*) S1_="LIO_PER_EXEC" ;;
@@ -4925,7 +4930,8 @@ sharable_mem
 FROM V\$SQLSTATS order by $S1_ desc
 ) where rownum <=40;
 EOF
-fi
+;;
+esac
 ;;
 temp) awr_tempusage v\$active_session_history $P1_
 ;;
