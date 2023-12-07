@@ -29,6 +29,7 @@ else
   shift
   shift
   if [[ "$#" -ne 0 ]]; then  all_par="$@"; fi
+  if [[ "$#" -eq 0 ]]; then  exit; fi
   # col1="$3"
   # col2="$4"
 fi
