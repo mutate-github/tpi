@@ -6,6 +6,10 @@ echo "usage: tpi ... oratop h | diagramm.sh  3 11 15 17 19 20 22 23 24"
 echo "          1           2     3      4    5    6    7      8      9    10    11    12    13    14    15    16     17       18       19     20      21     22         23      24      25     26     27"
 echo " BEGIN_TIME        NCPU HCPUB CPUUPS LOAD DCTR DWTR   SPFR   TPGA   SCT   AAS   AST ASCPU  ASIO  ASWA  ASPQ   UTPS     UCPS     SSRT   MBPS    IOPS   IORL       LOGR    PHYR    PHYW   TEMP   DBTM"
 echo ""
+echo "usage: tpi ... ash chart | diagramm.sh  2 3 5 6 7 8 9 12 15"
+echo "         1               2        3        4        5        6        7        8        9       10       11       12       13       14       15"
+echo "BEGIN_TIME             CPU     BCPU   SHEDUL      UIO      SIO   CONCUR     APPL   COMMIT   CONFIG    ADMIN      NET    QUEUE    CLUST    OTHER"
+echo ""
 
 case "$#" in
 0|2) all_par="3 11 15 17 19 20 22 23 24" 
@@ -30,7 +34,7 @@ else
 fi
 
 col1="1"
-limit=30
+limit=15
 histo="|======================================================================+"
 scale=$(awk "BEGIN{print $limit/100}")
 
@@ -43,7 +47,9 @@ get_cols()
 {
 col2="$1"
 max=`awk '/^[0-9].*/{if ($'${col2}'>x) x=$'${col2}'};END{print x}' $file`
-if [[ -z "$max" || "$max" -eq 0 ]]; then max=1; fi
+# if [[ -z "$max" || "$max" -eq 0 ]]; then max=1; fi
+rc=$(echo "$max"'=='0 | bc -l 2>/dev/null)
+if [[ -z "$max" || "$rc" -eq 1 ]]; then max=1; fi
 
 cat $file | awk '!/---/{print $'$col1'" "$'$col2'}' | xargs -n2 echo | while read datewd value ; do
    printf "%-20s" $datewd
