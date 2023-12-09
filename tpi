@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 07.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 09.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -78,8 +78,8 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] ] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [MIN - def 1440] [ event [top|all] [EventName] | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | chart ] - Top SQL, Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last 'MIN' minutes"
-  dhash__="dhash [dd/mm/yyyy+HH24+hours - def3h] [ event [top|all] [EventName] | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] ] - Top SQL, Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  ash__="ash [dd/mm/yyyy+HH24+hours - def1h] [ event [top|all] [EventName] | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | chart ] - Top SQL, Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY in last 'MIN' minutes"
+  dhash__="dhash [dd/mm/yyyy+HH24+hours - def1h] [ event [top|all] [EventName] | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] ] - Top SQL, Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -3795,23 +3795,15 @@ limit_=1024
 if [ -z "$allocated_" ]; then
   allocated_=$limit_
 fi
-if [ -z "$HHE_" ]; then
-  HHE_=3
-  DD_=`date +%d/%m/%Y`
-  HHB_=`date +%H`
-  HHB_=`expr $HHB_ - 3`
-fi
 if [ "$view_" = "dba_hist_active_sess_history" ]; then
-  COND_="and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
-  PROMPT_="PROMPT  AWR_tempusage from $view_ for limit >= $allocated_ Mb and last hours $HHE_  $xrange"
+  COND_="and $INTERVAL_"
 else
-  COND_="and sample_time >= sysdate - interval '$TIME_' minute"
-  PROMPT_="PROMPT  ASH_tempusage from $view_ for limit >= $allocated_ Mb and last time: $TIME_ minutes"
+  COND_="and $INTERVAL_"
 fi
 
 $SP <<EOF >$LOGF
 set lines 230  pages 80
-$PROMPT_
+PROMPT "AWR_tempusage from $view_ for temp_diff >= $allocated_ Mb and $INTERVAL_"
 set timing on
 col SAMPLE_TIME for a15
 col SQL_ID  for a15
@@ -3832,6 +3824,7 @@ select session_id,session_serial#, t.sample_time, t.sql_id, /*t.temp_mb,*/ t.tem
  order by sample_time, temp_diff desc;
 EOF
 }
+
 
 
 dhash()
@@ -3863,23 +3856,25 @@ EOF
 
 else
 
+sysdate=$(date +%d/%m/%Y\ %H:%M:%S)
 if [ $(is_number `echo $* | awk -F+ '{print $2}'`)  -eq 0 ]; then
  DD_=`date +%d/%m/%Y`
  HHB_=`date +%H`
- HHB_=`expr $HHB_ - 3`
- HHE_=3
+ HHE_=1
+ INTERVAL_="sample_time >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
+ INTERVAL_BT_="begin_time >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
+ INTERVAL_SQL_="sql_exec_start >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
+ INTERVAL_BI_="begin_interval_time >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
 else
  DD_=`echo $* | awk -F+ '{print $1}'`
  HHB_=`echo $* | awk -F+ '{print $2}'`
  HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
+ INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
+ INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and begin_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
+ INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sql_exec_start <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
+ INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
  shift
 fi
-
-xrange=`$SP <<END
-set pagesize 0 feedback off verify off heading off echo off timing off
-select  'in   ' || to_char(to_date('$DD_ $HHB_','dd/mm/yyyy hh24'),'dd/mm/yyyy hh24:mi:ss') ||'  -  ' || to_char(to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute , 'dd/mm/yyyy hh24:mi:ss')||'  period' from dual;
-END`
-# echo $xrange | tr -d '\r'
 
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
 
@@ -3924,9 +3919,9 @@ case "$P1_" in
    $SP <<EOF >$LOGF
    $SET_COL
    PROMPT
-   PROMPT "Top 20 events from DBA_HIST_ACTIVE_SESS_HISTORY by last $HHE_ hours " $xrange
+   PROMPT "Top 20 events from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_"
    select * from ( select nvl(EVENT, 'ON CPU') EVENT, round(100*count(*)/ sum(count(1)) over(), 2) "%ACTIVITY" from DBA_HIST_ACTIVE_SESS_HISTORY
-   where sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute  and dbid=(select dbid from v\$database) group by EVENT order by 2 desc ) where rownum<21;
+   where $INTERVAL_ and dbid=(select dbid from v\$database) group by EVENT order by 2 desc ) where rownum<21;
 EOF
  ;;
  all)
@@ -3934,15 +3929,14 @@ EOF
    shift
    EVENT_="$*"
    $SP <<EOF >$LOGF
-   PROMPT "Events from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HHE_ " $xrange ", Event: $EVENT_"
+   PROMPT "Events from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_  Event: $EVENT_"
    PROMPT
    $SET_COL
    column PMAM for a77 heading "PROGRAM \ MODULE \ ACTION \ MACHINE"
    select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,event,"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
    blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action,machine*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM
-   from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id and dbid=(select dbid from v\$database) and
-  sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
-  and event like '%$EVENT_%' order by sample_time;
+   from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id and dbid=(select dbid from v\$database) and $INTERVAL_
+   and event like '%$EVENT_%' order by sample_time;
 EOF
  ;;
  *)
@@ -3959,7 +3953,7 @@ EOF
 $SP <<EOF >$LOGF
 $SET_COL
 PROMPT
-PROMPT "Top 30 SQL TIME_WATED from DBA_HIST_ACTIVE_SESS_HISTORY by last $HHE_ hours " $xrange
+PROMPT "Top 30 SQL TIME_WATED in second from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_"
 select * from (
 select  x.sql_id, x.sql_plan_hash_value, x.sql_opname, e.object_name || decode(e.object_name,'','','.') || e.procedure_name entry_name, $S0_  x.time_waited,x.cpu,x.wait,x.io, x.activity
 from      dba_procedures    e, dba_procedures    p,
@@ -3976,7 +3970,7 @@ from      dba_procedures    e, dba_procedures    p,
                       sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
                       round(100*count(*)/ sum(count(1)) over(), 2) activity
             from      dba_hist_active_sess_history
-where     sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+where     $INTERVAL_
 and       $S2_
             group by  plsql_entry_object_id,
                       plsql_entry_subprogram_id,
@@ -4001,17 +3995,17 @@ P2_=`echo $* | awk '{print $3}'`
 P3_=`echo $* | awk '{print $4}'`
 if [ -n "$P1_"  -a -n "$P2_" -a "$P3_" = "all" ]; then
 $SP <<EOF >$LOGF
-PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HHE_  $xrange  for SID: $P1_  SERIAL: $P2_"
+PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_  for SID: $P1_  SERIAL: $P2_"
 $SET_COL
 select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
 blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action,machine*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id 
-and dbid=(select dbid from v\$database) and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute  and  session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_' order by sample_time;
+and dbid=(select dbid from v\$database) and $INTERVAL_ and  session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_' order by sample_time;
 EOF
 elif [ -n "$P1_" -a -n "$P2_" ]; then
 if [ "$P3_" != "nosqlid" ]; then   S1_="sql_id,sql_plan_hash_value,"; fi
 $SP <<EOF >$LOGF
-PROMPT "Top 30 Waits from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HHE_  $xrange  for sid = '$P1_' and serial = '$P2_'"
+PROMPT "Top 30 Waits from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_ for sid = '$P1_' and serial = '$P2_'"
 $SET_COL
 select * from (
 select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU') event, program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4021,7 +4015,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU'
    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id
-and dbid=(select dbid from v\$database) and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+and dbid=(select dbid from v\$database) and $INTERVAL_
 --and  sql_id is not null
 and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_'
 group by session_id,"SESSION_SERIAL#",username, $S1_  event, program,module,action,machine
@@ -4030,16 +4024,16 @@ order by activity desc
 EOF
 elif [ -n "$P1_" ]; then
 $SP <<EOF >$LOGF
-PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HHE_  $xrange  for SQL_ID: $P1_ "
+PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_ for SQL_ID: $P1_ "
 $SET_COL
 select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
 blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action,machine*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id
-and dbid=(select dbid from v\$database) and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute and sql_id = '$P1_' order by sample_time;
+and dbid=(select dbid from v\$database) and $INTERVAL_ and sql_id = '$P1_' order by sample_time;
 EOF
 else
 $SP <<EOF >$LOGF
-PROMPT "Top 30 ACTIVE sessions in seconds from DBA_HIST_ACTIVE_SESS_HISTORY by filter: Last hours: $HHE_  $xrange"
+PROMPT "Top 30 ACTIVE sessions in seconds from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_"
 $SET_COL
 select * from (
 select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4049,7 +4043,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_v
    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id 
-and dbid=(select dbid from v\$database) and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+and dbid=(select dbid from v\$database) and $INTERVAL_
 --and  sql_id is not null
 group by session_id,"SESSION_SERIAL#",username,/*sql_id,sql_plan_hash_value,event,*/program,module,action,machine
 order by activity desc
@@ -4063,7 +4057,7 @@ if [ -z "$FIELD_" ]; then FIELD_="program"; fi
 PRG_=`echo $* | awk '{print $3}'`
 COND_="and $FIELD_ like '%$PRG_%'"
 $SP <<EOF >$LOGF
-PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY for last hours: $HHE_  $xrange for condition: $COND_"
+PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_  for condition: $COND_"
 $SET_COL
 select * from (
 select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */   program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4073,7 +4067,7 @@ select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,sql_plan_has
    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id
-and dbid=(select dbid from v\$database) and sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+and dbid=(select dbid from v\$database) and $INTERVAL_
 --and  sql_id is not null 
 $COND_
 --and program like '%$PRG_%'
@@ -4087,7 +4081,7 @@ SQL_ID_=`echo $* | awk '{print $2}'`
 SQL_TEXT_=`shift; echo $* | tr '[:lower:]' '[:upper:]'`
 if [ -z "$SQL_ID_" ]; then
 $SP <<EOF >$LOGF
-PROMPT "Top 10 SQL from DBA_HIST_ACTIVE_SESS_HISTORY by last $HHE_ hours  $xrange"
+PROMPT "Top 10 SQL from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_"
 $SET_COL
 select /*+ LEADING(H_TXT) */ s.*, h_txt.sql_text from (
 select * from (
@@ -4101,7 +4095,7 @@ from dba_hist_active_sess_history ash,
      audit_actions aud
 where ash.SQL_ID is not NULL
    and ash.sql_opcode=aud.action
-    and ash.sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and ash.sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+    and $INTERVAL_
      and dbid=(select dbid from v\$database)
 group by ash.sql_id, SQL_PLAN_HASH_VALUE   , aud.name
  order by activity  desc
@@ -4113,15 +4107,15 @@ LEN_=`expr length $SQL_ID_`
 SQL_ID__=`echo $SQL_ID_ | tr -d '[:digit:][:lower:]'`
 if [ -z "$SQL_ID__" -a $LEN_ -eq 13 ] ; then
 # SQL_="select sql_id,sql_text from DBA_HIST_SQLTEXT where dbid=(select dbid from v\$database) and sql_id='$SQL_ID_';"
- SQL_="select cast(h.sample_time as date) sample_time, s.sql_id, sql_plan_hash_value, s.sql_text from DBA_HIST_SQLTEXT s, dba_hist_active_sess_history h where s.sql_id=h.sql_id and s.dbid=(select dbid from v\$database) and s.sql_id = '$SQL_ID_' and h.sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and h.sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute and rownum<21 order by sample_time;"
+ SQL_="select cast(h.sample_time as date) sample_time, s.sql_id, sql_plan_hash_value, s.sql_text from DBA_HIST_SQLTEXT s, dba_hist_active_sess_history h where s.sql_id=h.sql_id and s.dbid=(select dbid from v\$database) and s.sql_id = '$SQL_ID_' and $INTERVAL_ and rownum<21 order by sample_time;"
  PROMPT_="20 SQL_ID = $SQL_ID_"
 else
 # SQL_="select sql_id,sql_text from DBA_HIST_SQLTEXT where dbid=(select dbid from v\$database) and upper(sql_text) like '%$SQL_TEXT_%';"
- SQL_="select cast(h.sample_time as date) sample_time, s.sql_id, sql_plan_hash_value, s.sql_text from DBA_HIST_SQLTEXT s, dba_hist_active_sess_history h where s.sql_id=h.sql_id and s.dbid=(select dbid from v\$database) and upper(s.sql_text) like '%$SQL_TEXT_%' and h.sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and h.sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute and rownum<21 order by sample_time;"
+ SQL_="select cast(h.sample_time as date) sample_time, s.sql_id, sql_plan_hash_value, s.sql_text from DBA_HIST_SQLTEXT s, dba_hist_active_sess_history h where s.sql_id=h.sql_id and s.dbid=(select dbid from v\$database) and upper(s.sql_text) like '%$SQL_TEXT_%' and $INTERVAL_ and rownum<21 order by sample_time;"
  PROMPT_="20 SQL_TEXT like $SQL_TEXT_"
 fi
 $SP <<EOF >$LOGF
-PROMPT "SQL from DBA_HIST_SQLTEXT by $PROMPT_  $xrange"
+PROMPT "SQL from DBA_HIST_SQLTEXT by $PROMPT_ in $INTERVAL_"
 set lines 250 pages 50
 set long 1000000000 longc 1000000000
 column sample_time for a10 heading "sample_time"
@@ -4136,15 +4130,13 @@ plan)
 SQL_ID_=`echo $* | awk '{print $2}'`
 FMT_=`echo $* | awk '{print $3}'`
 $SP <<EOF >$LOGF
-PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history by last $HHE_ hours  $xrange  for sql_id: $SQL_ID_ :"
+PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history in $INTERVAL_BT_ for sql_id: $SQL_ID_ :"
 set lines 250 pages 60 feedback off
 col SQL_EXEC_START for a15
 select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history 
-where dbid=(select dbid from v\$database) and snap_id > (select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where 
-begin_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute )
+where dbid=(select dbid from v\$database) and snap_id > (select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where $INTERVAL_BT_ )
 and sql_id='$SQL_ID_'
-and sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sql_exec_start <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
---and sql_exec_start>sysdate-25 
+and $INTERVAL_SQL_
 group by to_char(SQL_EXEC_START,'dd/mm/yyyy'),sql_id,sql_plan_hash_value order by  min(snap_id);
 
 PROMPT
@@ -4159,14 +4151,10 @@ column OBJECT_NAME for a30
 column OBJECT_TYPE for a20
 column cost for 9999999
 column plan_hash_value for 9999999999
---select unique timestamp,sql_id,plan_hash_value from DBA_HIST_SQL_PLAN where sql_id = '$SQL_ID_'  ;
 select unique p.timestamp,p.sql_id,p.plan_hash_value, s.snap_id from DBA_HIST_SQL_PLAN p, DBA_HIST_SNAPSHOT s
 where p.sql_id = '$SQL_ID_' and p.timestamp between s.begin_interval_time and s.end_interval_time order by p.timestamp;
 
 set pages 0
-/* select plan_hash_value,id,operation,options,object_owner,object_name,object_type,cost,cardinality,bytes
-from DBA_HIST_SQL_PLAN where sql_id = '$SQL_ID_' order by plan_hash_value, id; */
-
 --select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '-predicate +outline'));
 select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '$FMT_'));
 EOF
@@ -4198,7 +4186,7 @@ column iowait_delta for 999,999,999 heading 'IOWAIT\EX'
 case "$LEN_" in 
  13)
  $SP <<EOF >$LOGF
- PROMPT "SQLStats from DBA_HIST_SQL_PLAN  for sql_id: $SQL_ID_ by last: $HHE_ hours  $xrange"
+ PROMPT "SQLStats from dba_hist_sqlstat  for sql_id: $SQL_ID_ in $INTERVAL_BI_"
  $SQL_SQLSTAT
  select hs.snap_id,to_char(hs.end_interval_time,'dd/mm/yy hh24:mi:ss') end_interval_time, sql_id,plan_hash_value,optimizer_cost,module,action, parsing_schema_name,
  trunc(fetches_delta / decode(executions_delta, 0, 1, executions_delta)) fetches_delta,
@@ -4212,7 +4200,7 @@ case "$LEN_" in
  decode(EXECUTIONS_delta, 0, iowait_delta/1000000, round(iowait_delta/EXECUTIONS_delta/1000000, 4)) iowait_delta
  from dba_hist_sqlstat st, dba_hist_snapshot hs
  where st.snap_id=hs.snap_id and sql_id = '$SQL_ID_' and st.instance_number = hs.instance_number and
- hs.snap_id in (select snap_id from DBA_HIST_SNAPSHOT where begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute )
+ hs.snap_id in (select snap_id from DBA_HIST_SNAPSHOT where $INTERVAL_BI_ )
  and hs.dbid = (select dbid from v\$database)
  and executions_delta > 0
  order by snap_id, end_interval_time;
@@ -4233,7 +4221,7 @@ EOF
  esac
  if [ -z "$P2_" ]; then P2_=1; fi
  $SP <<EOF >$LOGF
- PROMPT "TOP 40 SQLStats from DBA_HIST_SQL_PLAN  by last: $HHE_ hours  $xrange   order by $S1_ "
+ PROMPT "TOP 40 SQLStats from dba_hist_sqlstat in $INTERVAL_BI_ order by $S1_ "
  $SQL_SQLSTAT
  select * from (
  select hs.snap_id,to_char(hs.end_interval_time,'dd/mm/yy hh24:mi:ss') end_interval_time, sql_id,plan_hash_value,
@@ -4248,7 +4236,7 @@ EOF
  decode(EXECUTIONS_delta, 0, iowait_delta/1000000, round(iowait_delta/EXECUTIONS_delta/1000000, 4)) iowait_delta
  from dba_hist_sqlstat st, dba_hist_snapshot hs
  where st.snap_id=hs.snap_id and st.instance_number = hs.instance_number and
- hs.snap_id in (select snap_id from DBA_HIST_SNAPSHOT where begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute )
+ hs.snap_id in (select snap_id from DBA_HIST_SNAPSHOT where $INTERVAL_BI_ )
  and hs.dbid = (select dbid from v\$database)
  and executions_delta >= $P2_
  order by $S1_ 
@@ -4262,7 +4250,7 @@ TBS=`echo $* | awk '{print $2}'`
 SEG=`echo $* | awk '{print $3}'`
 if [ -z "$SEG" ]; then
 $SP <<EOF >$LOGF
-PROMPT "DBA_HIST_SEG_STAT: Most segments growth in the last: $HHE_ hours  $xrange"
+PROMPT "DBA_HIST_SEG_STAT: Most segments growth in $INTERVAL_BI_"
 set lines 250 pages 80
 column owner for a20
 column TABLESPACE for a20
@@ -4281,7 +4269,7 @@ select * from (SELECT o.OWNER , o.OBJECT_NAME , o.SUBOBJECT_NAME , o.OBJECT_TYPE
 FROM DBA_OBJECTS o,
     ( SELECT TS#,OBJ#,
         SUM(SPACE_ALLOCATED_DELTA) growth
-   FROM DBA_HIST_SEG_STAT where snap_id in (select snap_id from DBA_HIST_SNAPSHOT where begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute )
+   FROM DBA_HIST_SEG_STAT where snap_id in (select snap_id from DBA_HIST_SNAPSHOT where $INTERVAL_BI_ )
     GROUP BY TS#,OBJ#
     HAVING SUM(SPACE_ALLOCATED_DELTA) > 0
     ORDER BY 2 DESC ) s,
@@ -4292,7 +4280,7 @@ ORDER BY 6 DESC) where rownum<=6000;
 EOF
 else
 $SP <<EOF >$LOGF
-PROMPT "DBA_HIST_SEG_STAT: $SEG segment growth in the last: $HHE_ hours  $xrange"
+PROMPT "DBA_HIST_SEG_STAT: $SEG segment growth in $INTERVAL_BI_"
 set lines 250 pages 80
 column owner for a20
 column SEGMENT_NAME for a30
@@ -4300,15 +4288,15 @@ column TABLESPACE for a20
 column SUBOBJECT_NAME for a46
 column end_interval_time for a13 heading "end_interval_time"
 column space_used_delta for 999999999 heading "Space grows (MB)"
-column usage for 999.99 heading "% of total Disk Usage"
+column usage for 9999990.99 heading "% of Grows"
 BREAK ON REPORT
 COMPUTE SUM LABEL 'SUM' OF space_used_delta on report
 select * from (select to_char(end_interval_time, 'DD/MM/YYYY HH24') end_interval_time, c.owner, c.segment_name, b.SUBOBJECT_NAME, c.tablespace_name,
 round(sum(space_used_delta) / 1024 / 1024, 2) space_used_delta,
 trunc(sum(c.bytes) / 1024 / 1024) "Total Object Size (MB)",
-round(sum(space_used_delta) / sum(c.bytes) * 100, 2) usage
+round((sum(space_used_delta) / sum(c.bytes)) * 100, 2) usage
 from dba_hist_snapshot sn, dba_hist_seg_stat a, dba_objects b, dba_segments c
-where begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and end_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+where $INTERVAL_BI_
 and sn.snap_id = a.snap_id
 and b.object_id = a.obj#
 and b.owner = c.owner
@@ -4324,7 +4312,7 @@ segstat)
 OBJ_=`echo $* | awk '{print $2}'`
 OWN_=`echo $* | awk '{print $3}'`
 $SP <<EOF >$LOGF
-PROMPT "Segment statistics for OBJECTS with max BLOCK_CHANGED from AWR for last hours: $HHE_  $xrange" for SEGMENT: $OBJ_ OWNER: $OWN_ 
+PROMPT "Segment statistics for OBJECTS with max BLOCK_CHANGED from AWR in $INTERVAL_BI_ for SEGMENT: $OBJ_ OWNER: $OWN_ 
 $SET_COL
 set lines 230 pages 90 numw 9
 col owner for a20
@@ -4361,7 +4349,7 @@ SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
            AND dhs.instance_number = dhss.instance_number
            AND dhss.obj# = dhso.obj#
            AND dhss.dataobj# = dhso.dataobj#
-	   AND begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute
+	   AND $INTERVAL_BI_
 	   and object_name like nvl(trim('$OBJ_'),'%')
 	   and owner like nvl(trim('$OWN_'),'%')
 GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.owner, dhso.object_name, dhso.object_type
@@ -4401,12 +4389,22 @@ EOF
 
 else
 
-P1_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
-TIME_='1440'
-if [ $(is_number $P1_) -ne 0 ]; then
- TIME_=$P1_
+sysdate=$(date +%d/%m/%Y\ %H:%M:%S)
+if [ $(is_number `echo $* | awk -F+ '{print $2}'`)  -eq 0 ]; then
+ DD_=`date +%d/%m/%Y`
+ HHB_=`date +%H`
+ HHE_=1
+ INTERVAL_="sample_time >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
+ INTERVAL_LA_="last_active_time >= to_date('$sysdate','dd/mm/yyyy hh24:mi:ss') - interval '$HHE_' hour"
+else
+ DD_=`echo $* | awk -F+ '{print $1}'`
+ HHB_=`echo $* | awk -F+ '{print $2}'`
+ HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
+ INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yyyy hh24') + interval '$HHE_' hour + interval '1' minute"
+ INTERVAL_LA_="last_active_time >= to_date('$DD_ $HHB_','dd/mm/yyyy hh24')"
  shift
 fi
+
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
 P1_=`echo $* | awk '{print $2}'`
 P2_=`echo $* | awk '{print $3}'`
@@ -4451,9 +4449,9 @@ case "$P1_" in
  top)
    $SP <<EOF >$LOGF
    $SET_COL
-   PROMPT "Top 20 events from V\$ACTIVE_SESSION_HISTORY by last: $TIME_ minutes"
+   PROMPT "Top 20 events from V\$ACTIVE_SESSION_HISTORY  in  $INTERVAL_"
    select * from ( select nvl(EVENT, 'ON CPU') EVENT, round(100*count(*)/ sum(count(1)) over(), 2) "%ACTIVITY" from V\$ACTIVE_SESSION_HISTORY
-   where sample_time >= sysdate - interval '$TIME_' minute group by EVENT order by 2 desc ) where rownum<21;
+   where $INTERVAL_ group by EVENT order by 2 desc ) where rownum<21;
 EOF
  ;;
  all)
@@ -4462,12 +4460,12 @@ EOF
    PP_="$*"
    $SP <<EOF >$LOGF
    PROMPT
-   PROMPT "Events from V\$ACTIVE_SESSION_HISTORY by filter: $PP_ and in last: $TIME_ minutes"
+   PROMPT "Events from V\$ACTIVE_SESSION_HISTORY by filter: $PP_ and $INTERVAL_"
    $SET_COL
    column PMAM for a77 heading "PROGRAM \ MODULE \ ACTION \ MACHINE"
    select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
    blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
-   from v\$active_session_history h, dba_users u where h.user_id=u.user_id and h.sample_time >= sysdate - interval '$TIME_' minute and event like '%$PP_%' order by sample_time;
+   from v\$active_session_history h, dba_users u where h.user_id=u.user_id and $INTERVAL_ and event like '%$PP_%' order by sample_time;
 EOF
 ;;
  *)
@@ -4483,7 +4481,7 @@ else
 fi
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Top 30 SQL TIME_WAITED in second from V\$ACTIVE_SESSION_HISTORY by last: $TIME_ minutes for event like '%$PP_%'"
+PROMPT "Top 30 SQL TIME_WAITED in second from V\$ACTIVE_SESSION_HISTORY in $INTERVAL_ for event like '%$PP_%'"
 $SET_COL
 select * from (
 select  x.sql_id, x.sql_plan_hash_value,sql_opname, e.object_name || decode(e.object_name,'','','.') || e.procedure_name entry_name, $S0_ x.time_waited,x.cpu,x.wait,x.io, /* x.cnt,*/ x.activity
@@ -4501,7 +4499,7 @@ from      dba_procedures    e, dba_procedures    p,
                       sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
                       round(100*count(*)/ sum(count(1)) over(), 2) activity
             from      v\$active_session_history
-where     sample_time >= sysdate - interval '$TIME_' minute
+where     $INTERVAL_
 and       $S2_
             group by  plsql_entry_object_id,
                       plsql_entry_subprogram_id,
@@ -4524,19 +4522,19 @@ sess)
 if [ -n "$P1_"  -a -n "$P2_" -a "$P3_" = "all" ]; then
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SID: $P1_  SERIAL: $P2_ and last: $TIME_ minutes"
+PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SID: $P1_  SERIAL: $P2_ and $INTERVAL_"
 $SET_COL
 select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
 blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
-and h.sample_time >= sysdate - interval '$TIME_' minute
+and $INTERVAL_
 and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_' order by sample_time;
 EOF
 elif [ -n "$P1_" -a -n "$P2_" ]; then
 if [ "$P3_" != "nosqlid" ]; then   S1_="sql_id,sql_plan_hash_value,"; fi
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Top 30 Waits in seconds  from V\$ACTIVE_SESSION_HISTORY for sid = '$P1_' and serial = '$P2_' and last: $TIME_ minutes"
+PROMPT "Top 30 Waits in seconds  from V\$ACTIVE_SESSION_HISTORY for sid = '$P1_' and serial = '$P2_' and $INTERVAL_"
 $SET_COL
 select * from (
 select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU') event, program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4547,7 +4545,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU'
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
 --and sql_id is not null
-and h.sample_time >= sysdate - interval '$TIME_' minute
+and $INTERVAL_
 and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_'
 group by session_id,"SESSION_SERIAL#",username, $S1_ event,program,module,action,machine
 order by activity desc
@@ -4556,17 +4554,17 @@ EOF
 elif [ -n "$P1_" ]; then 
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SQL_ID: $P1_ and last: $TIME_ minutes"
+PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SQL_ID: $P1_ and $INTERVAL_"
 $SET_COL
 select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
 blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
-and h.sample_time >= sysdate - interval '$TIME_' minute and sql_id = '$P1_' order by sample_time;
+and $INTERVAL_ and sql_id = '$P1_' order by sample_time;
 EOF
 else
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Top 30 ACTIVE Sessions in seconds from V\$ACTIVE_SESSION_HISTORY  by last: $TIME_ minutes"
+PROMPT "Top 30 ACTIVE Sessions in seconds from V\$ACTIVE_SESSION_HISTORY in $INTERVAL_"
 $SET_COL
 select * from (
 select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ /* session_state,*/ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4577,7 +4575,7 @@ select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_v
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
 and sql_id is not null
-and h.sample_time >= sysdate - interval '$TIME_' minute
+and $INTERVAL_
 group by session_id,"SESSION_SERIAL#",username,/*sql_id,sql_plan_hash_value,event,session_state,*/program,module,action,machine
 order by activity desc
 ) where rownum<31;
@@ -4591,7 +4589,7 @@ PRG_=`echo $* | awk '{print $3}'`
 COND_="and $FIELD_ like '%$PRG_%'"
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Stat top 30 session_state from V\$ACTIVE_SESSION_HISTORY for condition: $COND_  in last time: $TIME_ minutes"
+PROMPT "Stat top 30 session_state from V\$ACTIVE_SESSION_HISTORY for condition: $COND_ and $INTERVAL_"
 $SET_COL
 select * from (
 select /*session_id sid,"SESSION_SERIAL#" serial,*/username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */   /* program, session_state, */ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
@@ -4602,7 +4600,7 @@ select /*session_id sid,"SESSION_SERIAL#" serial,*/username,sql_id,sql_plan_hash
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
 --and sql_id is not null 
-and h.sample_time >= sysdate - interval '$TIME_' minute
+and $INTERVAL_
 $COND_
 --and program like '%$PRG_%'
 --and module like '%$PRG_%'
@@ -4620,7 +4618,7 @@ if [ -z "$SQL_ID_" ]; then
 $SP <<EOF >$LOGF
 $SET_COL
 PROMPT
-PROMPT "Top 20 SQL, CALL from V\$ACTIVE_SESSION_HISTORY by last time: $TIME_ minutes"
+PROMPT "Top 20 SQL, CALL from V\$ACTIVE_SESSION_HISTORY in $INTERVAL_"
 BREAK ON SQL_ID ON PLAN_HASH ON TYPE ON TIME_WAITED ON CPU ON WAIT ON IO ON activity SKIP 1 NODUPLICATES
 select /*+ LEADING(H_TXT) */ s.*, h_txt.sql_text from (
 select * from (
@@ -4634,7 +4632,7 @@ from V\$ACTIVE_SESSION_HISTORY ash,
      audit_actions aud
 where ash.SQL_ID is not NULL
    and ash.sql_opcode=aud.action
-    and ash.sample_time >= sysdate - interval '$TIME_' minute
+    and $INTERVAL_
 group by ash.sql_id, SQL_PLAN_HASH_VALUE   , aud.name
 order by activity desc
 ) where rownum < 11) s, V\$SQLTEXT h_txt where s.sql_id=h_txt.sql_id order by activity desc, s.SQL_ID, s.Plan_hash, h_txt.piece
@@ -4644,15 +4642,15 @@ else
 LEN_=`expr length $P1_`
 P1__=`echo $P1_ | tr -d '[:digit:][:lower:]'`
 if [ -z "$P1__" -a $LEN_ -eq 13 ] ; then
- SQL_="SELECT ash.sql_id, a.plan_hash_value, a.sql_text,a.executions,round(a.disk_reads/decode(a.executions, 0, 1, a.executions),0) pio_per_exec,round(a.buffer_gets /decode(a.executions, 0, 1, a.executions),0) lio_per_exec, round(decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)),4) cpu_time, round(((elapsed_time / decode(executions, 0, 1, executions)) / 1000000),4) elapsed_time, decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/decode(executions, 0, 1, executions)/1000000, 4)) iowait FROM v\$active_session_history ash, v\$sqlarea a WHERE ash.sql_id = a.sql_id and ash.sample_time >= sysdate - interval '$TIME_' minute and ash.sql_plan_hash_value=a.plan_hash_value AND ash.sql_id = '$P1_' AND rownum=1;"
+ SQL_="SELECT ash.sql_id, a.plan_hash_value, a.sql_text,a.executions,round(a.disk_reads/decode(a.executions, 0, 1, a.executions),0) pio_per_exec,round(a.buffer_gets /decode(a.executions, 0, 1, a.executions),0) lio_per_exec, round(decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)),4) cpu_time, round(((elapsed_time / decode(executions, 0, 1, executions)) / 1000000),4) elapsed_time, decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/decode(executions, 0, 1, executions)/1000000, 4)) iowait FROM v\$active_session_history ash, v\$sqlarea a WHERE ash.sql_id = a.sql_id and $INTERVAL_ and ash.sql_plan_hash_value=a.plan_hash_value AND ash.sql_id = '$P1_' AND rownum=1;"
  PROMPT_="SQL_ID = $SQL_ID_"
 else
- SQL_="SELECT ash.sql_id, a.plan_hash_value, a.sql_text,a.executions,round(a.disk_reads/decode(a.executions, 0, 1, a.executions),0) pio_per_exec,round(a.buffer_gets /decode(a.executions, 0, 1, a.executions),0) lio_per_exec, round(decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)),4) cpu_time, round(((elapsed_time / decode(executions, 0, 1, executions)) / 1000000),4) elapsed_time, decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/decode(executions, 0, 1, executions)/1000000, 4)) iowait FROM v\$active_session_history ash, v\$sqlarea a WHERE ash.sql_id = a.sql_id and ash.sample_time >= sysdate - interval '$TIME_' minute and ash.sql_plan_hash_value=a.plan_hash_value AND upper(a.sql_text) like '%$SQL_TEXT_%' AND rownum=1;"
+ SQL_="SELECT ash.sql_id, a.plan_hash_value, a.sql_text,a.executions,round(a.disk_reads/decode(a.executions, 0, 1, a.executions),0) pio_per_exec,round(a.buffer_gets /decode(a.executions, 0, 1, a.executions),0) lio_per_exec, round(decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)),4) cpu_time, round(((elapsed_time / decode(executions, 0, 1, executions)) / 1000000),4) elapsed_time, decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/decode(executions, 0, 1, executions)/1000000, 4)) iowait FROM v\$active_session_history ash, v\$sqlarea a WHERE ash.sql_id = a.sql_id and $INTERVAL_ and ash.sql_plan_hash_value=a.plan_hash_value AND upper(a.sql_text) like '%$SQL_TEXT_%' AND rownum=1;"
  PROMPT_="SQL_TEXT like $SQL_TEXT_"
 fi
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "SQL from V\$ACTIVE_SESSION_HISTORY by $PROMPT_ in last time: $TIME_ minutes"
+PROMPT "SQL from V\$ACTIVE_SESSION_HISTORY by $PROMPT_ in $INTERVAL_"
 PROMPT
 set lines 250 pages 50
 set long 1000000000 longc 1000000000
@@ -4670,7 +4668,7 @@ fi
 plan)
 $SP <<EOF >$LOGF
 PROMPT
-PROMPT "Current Plan from V\$SQL_PLAN and V\$ACTIVE_SESSION_HISTORY (dbms_xplan.display_cursor) for sql_id: $P1_"
+PROMPT "Current Plan from V\$SQL_PLAN and V\$ACTIVE_SESSION_HISTORY (dbms_xplan.display_cursor) for sql_id: $P1_ "
 PROMPT
 set lines 250 pages 0 feedback off
 column plan_hash_value for 9999999999
@@ -4753,7 +4751,7 @@ EOF
  if [ -z "$P2_" ]; then P2_=1; fi
 $SP <<EOF >$LOGF
 $SQL_SQLSTAT
-PROMPT "TOP 40 SQLStats from V\$SQLSTATS  order by $S1_ desc"
+PROMPT "TOP 40 SQLStats from V\$SQLSTATS in $INTERVAL_LA_  order by $S1_ desc"
 select * from (
 select sql_id,plan_hash_value,last_active_time,parse_calls,invalidations,
 trunc(fetches / decode(executions, 0, 1, executions)) fetches,
@@ -4766,7 +4764,7 @@ decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)) c
 (elapsed_time / decode(nvl(executions, 0), 0, 1, executions)) / 1000000 elapsed_time,
 decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/EXECUTIONS/1000000, 4)) iowait,
 sharable_mem
-FROM V\$SQLSTATS where last_active_time>sysdate - interval '$TIME_' minute and  executions >= $P2_
+FROM V\$SQLSTATS where  executions >= $P2_ and $INTERVAL_LA_
 order by $S1_ desc
 ) where rownum <=40;
 EOF
@@ -4791,7 +4789,7 @@ col network for 9990.99 heading "NET"
 col queueing for 9990.99 heading "QUEUE"
 col clust for 9990.99
 col other for 9990.99
-PROMPT "Average active sessions from v\$active_session_history  in last time: $TIME_ minutes"
+PROMPT "Average active sessions from v\$active_session_history in $INTERVAL_"
 SELECT
   to_char(sample_time,'dd/mm/yy-hh24:mi:ss') as begin_time,
   cpu,
@@ -4826,8 +4824,7 @@ FROM
      SUM(DECODE(wait_class,'Cluster',1,0))/60 AS clust,
      SUM(DECODE(wait_class,'Other',1,0))/60 AS other
    FROM v\$active_session_history
-   WHERE sample_time > sysdate - interval '$TIME_' minute
-   AND sample_time<=TRUNC(SYSDATE,'MI')
+   WHERE $INTERVAL_
    GROUP BY TRUNC(sample_time,'MI')) ash
 ORDER BY begin_time;
 EOF
