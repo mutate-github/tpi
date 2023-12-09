@@ -78,8 +78,8 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] ] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [dd/mm/yyyy+HH24+hours - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | chart ] - Top SQL, Event, Sessions, SQL V\$ACTIVE_SESSION_HISTORY"
-  dhash__="dhash [dd/mm/yyyy+HH24+hours - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] ] - Top SQL, Events, Sessions, SQL from DBA_HIST_ACTIVE_SESS_HISTORY"
+  ash__="ash [dd/mm/yy+HH:MI+HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
+  dhash__="dhash [dd/mm/yy+HH:MI+HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -3860,11 +3860,20 @@ else
  DD_=`echo $* | awk -F+ '{print $1}'`
  HHB_=`echo $* | awk -F+ '{print $2}'`
  HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
- INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
- INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
- INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
- INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
- shift
+ HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
+ if [ -n "$HHR_" ]; then
+   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '1' minute"
+   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
+   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
+   shift
+ else
+   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
+   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
+   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
+   shift
+ fi
 fi
 
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
@@ -3891,11 +3900,11 @@ column MODULE for a20
 column ACTION for a16
 column MACHINE for a20
 column PMAM for a70 heading "PROGRAM \ MODULE \ ACTION \ MACHINE" truncated
-column TIME_WAITED for 99990.99
-column CPU for 9990.99
-column WAIT for 9990.99
-column IO for 9990.99
-column activity for 9990.99 heading "%ACTIVITY"
+column TIME_WAITED for 999990.99
+column CPU for 99990.99
+column WAIT for 99990.99
+column IO for 99990.99
+column activity for 99990.99 heading "%ACTIVITY"
 col sql_opname for a15
 col entry_name for a45
 column owner for a30
@@ -4157,26 +4166,25 @@ sqlstat)
  column end_interval_time for a17 heading 'END_TIME'
  column sql_id for a13
  column plan_hash_value for 9999999999 heading 'PLAN_HASH_V'
- column optimizer_cost for 999999999999 heading 'COST'
- column module for a17
- column action for a10
- column parsing_schema_name for a15 heading 'SCHEMA'
+ column optimizer_cost for 99999999 heading 'COST'
+ column module for a32 truncate
+ column parsing_schema_name for a20 heading 'SCHEMA'
  column fetches_delta for 999,999 heading 'FCH\EX'
  column sorts_delta for 999,999 heading 'SORT\EX'
  column executions_delta for 999,999,999 heading 'EXEC'
  column pio_per_exec for 999,999,999 heading 'PIO\EX'
  column lio_per_exec for 99,999,999,999 heading 'LIO\EX'
- column rows_processed_delta for 999,999,999 heading 'ROWS_PR\EX'
- column cpu_time_delta for 999,999.9999 heading 'CPU_TIME\EX'
- column elapsed_time_delta for 999,999.9999 heading 'ELA_TIME\EX'
- column iowait_delta for 999,999,999 heading 'IOWAIT\EX'
+ column rows_processed_delta for 99,999,999 heading 'ROWS_PR\EX'
+ column cpu_time_delta for 99,999.9999 heading 'CPU_TIME\EX'
+ column elapsed_time_delta for 99,999.9999 heading 'ELA_TIME\EX'
+ column iowait_delta for 999,999 heading 'IOWAIT\EX'
 "
 case "$LEN_" in 
  13)
  $SP <<EOF >$LOGF
  PROMPT "SQLStats from dba_hist_sqlstat  for sql_id: $SQL_ID_ in $INTERVAL_BI_"
  $SQL_SQLSTAT
- select hs.snap_id,to_char(hs.end_interval_time,'dd/mm/yy hh24:mi:ss') end_interval_time, sql_id,plan_hash_value,optimizer_cost,module,action, parsing_schema_name,
+ select hs.snap_id,to_char(hs.end_interval_time,'dd/mm/yy hh24:mi:ss') end_interval_time, sql_id,plan_hash_value,optimizer_cost,module, parsing_schema_name,
  trunc(fetches_delta / decode(executions_delta, 0, 1, executions_delta)) fetches_delta,
  trunc(sorts_delta / decode(executions_delta, 0, 1, executions_delta)) sorts_delta,
  executions_delta,
@@ -4385,9 +4393,15 @@ else
    DD_=`echo $* | awk -F+ '{print $1}'`
    HHB_=`echo $* | awk -F+ '{print $2}'`
    HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
-   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi')"
+   HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
+   if [ -n "$HHR_" ]; then
+     INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour"
+     shift
+   else
+     INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi')"
+     shift
+   fi
    INTERVAL_LA_="last_active_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi')"
-   shift
  fi
 
 echo $INTERVAL_
@@ -4420,11 +4434,11 @@ column MODULE for a20
 column ACTION for a16
 column MACHINE for a20
 column PMAM for a70 heading "PROGRAM \ MODULE \ ACTION \ MACHINE" truncated
-column TIME_WAITED for 99990.99
-column CPU for 9990.99
-column WAIT for 9990.99
-column IO for 9990.99
-column activity for 9990.99 heading "%ACTIVITY"
+column TIME_WAITED for 999990.99
+column CPU for 99990.99
+column WAIT for 99990.99
+column IO for 99990.99
+column activity for 99990.99 heading "%ACTIVITY"
 col sql_opname for a15
 col entry_name for a45
 
