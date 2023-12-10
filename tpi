@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 09.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 10.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -78,8 +78,8 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] ] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [dd/mm/yy+HH:MI+HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
-  dhash__="dhash [dd/mm/yy+HH:MI+HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] | chart ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
+  ash__="ash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | tchart | chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
+  dhash__="dhash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] | tchart | chart ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
   spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
 }
 
@@ -3813,9 +3813,127 @@ EOF
 }
 
 
+
+awr_tchart()
+{
+view_=$1
+if [ "$view_" = "dba_hist_active_sess_history" ]; then
+        S1_="*10"
+fi
+$SP <<EOF >$LOGF
+set lines 250 pages 200 verify off echo off timing off feedback off
+column xxx new_value cpu noprint
+select value xxx from v\$parameter where name='cpu_count';
+
+Def v_secs=60 --  bucket size
+Def v_graph=150
+Def v_bars=(&v_graph/sqrt(&cpu))/(sqrt(&cpu)*(22/sqrt(&cpu)))  -- size of one AAS in characters
+
+col begin_time for a14
+col graph format a160
+col aas format 9999
+col pct1 format 999
+col pct2 format 999
+col pct3 format 999
+col first format  a15 truncate
+col second format  a27 truncate
+--col third format  a27 truncate
+PROMPT "Top activity chart from $view_ in $INTERVAL_"
+select to_char(start_time,'dd/mm/yy-hh24:mi') begin_time,
+       --samples,
+       --total,
+       --waits,
+       --cpu,
+       round((total/&v_secs)) aas,
+       --round(fpct * (total/&v_secs),2) aas1,
+       fpct*100  pct1,
+       decode(fpct,null,null,first) first,
+       --round(spct * (total/&v_secs),2) aas2,
+       spct*100 pct2,
+       decode(spct,null,null,second) second,
+--       tpct*100 pct3,
+--       decode(tpct,null,null,third) third,
+        substr(
+       substr(
+         rpad('c',round((cpu*&v_bars)/&v_secs),'c') ||
+             rpad('I',round((io*&v_bars)/&v_secs),'I')  ||
+             rpad('w',round((waits*&v_bars)/&v_secs),'w')  ||
+             rpad(' ',&cpu * &v_bars,' '),0,( &cpu * &v_bars )) ||
+        &cpu
+         ||  substr(
+         rpad('c',round((cpu*&v_bars)/&v_secs),'c') ||
+             rpad('I',round((io*&v_bars)/&v_secs),'I')  ||
+             rpad('w',round((waits*&v_bars)/&v_secs),'w')  ||
+             rpad(' ',&cpu * &v_bars,' '),(&cpu * &v_bars),( &v_graph-&v_bars*&cpu) )
+        ,0,&v_graph)
+        graph
+from (
+select start_time
+     , max(samples) samples
+     , sum(top.total) $S1_ total
+     , round(max(decode(top.seq,1,pct,null)),2) fpct
+     , substr(max(decode(top.seq,1,decode(top.event,'ON CPU','CPU',event),null)),0,27) first
+     , round(max(decode(top.seq,2,pct,null)),2) spct
+     , substr(max(decode(top.seq,2,decode(top.event,'ON CPU','CPU',event),null)),0,27) second
+     , round(max(decode(top.seq,3,pct,null)),2) tpct
+     , substr(max(decode(top.seq,3,decode(top.event,'ON CPU','CPU',event),null)),0,27) third
+     , sum(waits) $S1_ waits
+     , sum(io) $S1_ io
+     , sum(cpu) $S1_ cpu
+from (
+  select
+       to_date(tday||' '||tmod*&v_secs,'YYMMDD SSSSS') start_time
+     , event
+     , total
+     , row_number() over ( partition by id order by total desc ) seq
+     , ratio_to_report( sum(total)) over ( partition by id ) pct
+     , max(samples) samples
+     , sum(decode(event,'ON CPU',total,0))    cpu
+     , sum(decode(event,'ON CPU',0,
+                        'db file sequential read',0,
+                        'db file scattered read',0,
+                        'db file parallel read',0,
+                        'direct path read',0,
+                        'direct path read temp',0,
+                        'direct path write',0,
+                        'direct path write temp',0, total)) waits
+     , sum(decode(event,'db file sequential read',total,
+                                  'db file scattered read',total,
+                                  'db file parallel read',total,
+                                  'direct path read',total,
+                                  'direct path read temp',total,
+                                  'direct path write',total,
+                                  'direct path write temp',total, 0)) io
+  from (
+    select
+         to_char(sample_time,'YYMMDD')                      tday
+       , trunc(to_char(sample_time,'SSSSS')/&v_secs)          tmod
+       , to_char(sample_time,'YYMMDD')||trunc(to_char(sample_time,'SSSSS')/&v_secs) id
+       , decode(ash.session_state,'ON CPU','ON CPU',ash.event)     event
+       , sum(decode(session_state,'ON CPU',1,decode(session_type,'BACKGROUND',0,1))) total
+       , (max(sample_id)-min(sample_id)+1)                    samples
+     from $view_  ash
+       where $INTERVAL_
+     group by  trunc(to_char(sample_time,'SSSSS')/&v_secs)
+            ,  to_char(sample_time,'YYMMDD')
+            ,  decode(ash.session_state,'ON CPU','ON CPU',ash.event)
+  )  chunks
+  group by id, tday, tmod, event, total
+) top
+group by start_time
+) aveact
+order by start_time
+/
+EOF
+}
+
+
 awr_chart()
 {
 view_=$1
+if [ "$view_" = "dba_hist_active_sess_history" ]; then
+        S1_="*10"
+fi
 $SP <<EOF >$LOGF
 set lines 250 pages 100
 col begin_time for a17
@@ -3833,7 +3951,7 @@ col network for 9990.99 heading "NET"
 col queueing for 9990.99 heading "QUEUE"
 col clust for 9990.99
 col other for 9990.99
-PROMPT "Average active sessions from $view_ in $INTERVAL_"
+PROMPT "Data for chart: Average active/waiting sessions from $view_ in $INTERVAL_"
 SELECT
   to_char(sample_time,'dd/mm/yy-hh24:mi:ss') as begin_time,
   cpu,
@@ -3853,26 +3971,27 @@ SELECT
 FROM
   (SELECT
      TRUNC(sample_time,'MI') AS sample_time,
-     SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',0,1),0))/60 AS cpu,
-     SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',1,0),0))/60 AS bcpu,
-     SUM(DECODE(wait_class,'Scheduler',1,0))/60 AS scheduler,
-     SUM(DECODE(wait_class,'User I/O',1,0))/60 AS uio,
-     SUM(DECODE(wait_class,'System I/O',1,0))/60 AS sio,
-     SUM(DECODE(wait_class,'Concurrency',1,0))/60 AS concurrency,
-     SUM(DECODE(wait_class,'Application',1,0))/60 AS application,
-     SUM(DECODE(wait_class,'Commit',1,0))/60 AS COMMIT,
-     SUM(DECODE(wait_class,'Configuration',1,0))/60 AS configuration,
-     SUM(DECODE(wait_class,'Administrative',1,0))/60 AS administrative,
-     SUM(DECODE(wait_class,'Network',1,0))/60 AS network,
-     SUM(DECODE(wait_class,'Queueing',1,0))/60 AS queueing,
-     SUM(DECODE(wait_class,'Cluster',1,0))/60 AS clust,
-     SUM(DECODE(wait_class,'Other',1,0))/60 AS other
+     SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',0,1),0))/60 $S1_ AS cpu,
+     SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',1,0),0))/60 $S1_ AS bcpu,
+     SUM(DECODE(wait_class,'Scheduler',1,0))/60 $S1_ AS scheduler,
+     SUM(DECODE(wait_class,'User I/O',1,0))/60 $S1_ AS uio,
+     SUM(DECODE(wait_class,'System I/O',1,0))/60 $S1_ AS sio,
+     SUM(DECODE(wait_class,'Concurrency',1,0))/60 $S1_ AS concurrency,
+     SUM(DECODE(wait_class,'Application',1,0))/60 $S1_ AS application,
+     SUM(DECODE(wait_class,'Commit',1,0))/60 $S1_ AS COMMIT,
+     SUM(DECODE(wait_class,'Configuration',1,0))/60 $S1_ AS configuration,
+     SUM(DECODE(wait_class,'Administrative',1,0))/60 $S1_ AS administrative,
+     SUM(DECODE(wait_class,'Network',1,0))/60 $S1_ AS network,
+     SUM(DECODE(wait_class,'Queueing',1,0))/60 $S1_ AS queueing,
+     SUM(DECODE(wait_class,'Cluster',1,0))/60 $S1_ AS clust,
+     SUM(DECODE(wait_class,'Other',1,0))/60 $S1_ AS other
    FROM $view_
    WHERE $INTERVAL_
    GROUP BY TRUNC(sample_time,'MI')) ash
 ORDER BY begin_time;
 EOF
 }
+
 
 
 dhash()
@@ -3914,9 +4033,9 @@ if [ $(is_number $(echo $* | awk -F"/" '{print $1}'))  -eq 0 ]; then
  INTERVAL_SQL_="sql_exec_start >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  INTERVAL_BI_="begin_interval_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
 else
- DD_=`echo $* | awk -F+ '{print $1}'`
- HHB_=`echo $* | awk -F+ '{print $2}'`
- HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
+ DD_=`echo $* | awk -F- '{print $1}'`
+ HHB_=`echo $* | awk -F- '{print $2}'`
+ HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
  HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
  if [ -n "$HHR_" ]; then
    INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '1' minute"
@@ -4407,6 +4526,8 @@ segstat)
   ORDER BY   snap_time;
 EOF
 ;;
+tchart) awr_tchart dba_hist_active_sess_history
+;;
 chart) awr_chart dba_hist_active_sess_history
 ;;
 temp)
@@ -4449,9 +4570,9 @@ else
    INTERVAL_="sample_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
    INTERVAL_LA_="last_active_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  else
-   DD_=`echo $* | awk -F+ '{print $1}'`
-   HHB_=`echo $* | awk -F+ '{print $2}'`
-   HHE_=`echo $* | awk -F+ '{print $3}' | cut -d' ' -f1`
+   DD_=`echo $* | awk -F- '{print $1}'`
+   HHB_=`echo $* | awk -F- '{print $2}'`
+   HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
    HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
    if [ -n "$HHR_" ]; then
      INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour"
@@ -4827,6 +4948,8 @@ order by $S1_ desc
 EOF
 ;;
 esac
+;;
+tchart) awr_tchart v\$active_session_history
 ;;
 chart) awr_chart v\$active_session_history
 ;;
