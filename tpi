@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 10.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 11.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -80,7 +80,7 @@ init_msg()
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] ] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
   ash__="ash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | tchart | chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
   dhash__="dhash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] | tchart | chart ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
-  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
+  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE|% (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | blevolve SQL_HANDLE PLAN_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
 }
 
 init_msg
@@ -1392,23 +1392,27 @@ sga()
 {
 $SP <<'EOF' >$LOGF
 set lines 230 numw 15
-set echo off feed off veri off tab off pages 40
-column component for a40
+set echo off feed off veri off tab off pages 60
+col component for a40
 prompt Size of v$sga_dynamic_components :
 select COMPONENT,CURRENT_SIZE,MIN_SIZE,MAX_SIZE from v$sga_dynamic_components;
 
 prompt Size of db_cache_size:
-column name for a20
+col name for a20
+col resize_state for a20
 select name,block_size,resize_state,current_size,buffers,target_size,target_buffers,prev_size,prev_buffers from V$BUFFER_POOL;
 
 prompt 
 prompt Sizes in v$sgastat:
-column bytes for 999999999999
+col bytes for 999999999999
+col pool for a20
 select * from v$sgastat where pool is null;
 select * from v$sgastat where pool = 'shared pool' and (name in ('free memory', 'sql area', 'library cache', 'miscellaneous', 'row cache', 'KGH: NO ACCESS') );
 
 prompt
 prompt Sizes in v$sga_resize_ops:
+col oper_type for a20
+col oper_mode for a20
 COL COMPONENT FORMAT A25
 COL INITIAL_SIZE FORMAT A10
 COL FINAL_SIZE FORMAT A10
@@ -2259,6 +2263,7 @@ col used_ublk for 999999999
 col undo for 9999,999 heading "Undo Mb"
 col extent_id for 99999 heading "ExtCNT"
 col pma for a65 heading "PROGRAM \ MODULE \ ACTION"
+col flag for a1
 col status for a10
 col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
@@ -2289,7 +2294,8 @@ col osuser for a20
 col module for a50
 col action for a30
 col name for a70
-col value for 999999999999999'
+col CLASS for a10
+col value for 999999999999999999'
 
 case "$P1_" in
 list)
@@ -2450,8 +2456,9 @@ if [ -z "$CNT" ]; then
  CNT=7
 fi
 $SP <<EOF >$LOGF
-set lines 180
-set echo off feed off veri off tab off pages 50
+set lines 230 pages 60
+set echo off feed off veri off tab off 
+col Month for a10
 PROMPT Database grows size information from v\$datafile by last year:
 select to_char(creation_time, 'RRRR MM') "Month",
 trunc(sum(bytes)/1024/1024/1024) "Growth in Gb"
@@ -2512,8 +2519,8 @@ P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
 case "$P1_" in
 FREE)
 $SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 40
+set lines 230 pages 60
+set echo off feed off veri off tab off 
 select a.tablespace_name as "Tablespace Name",
        round(maxbytes/1024 / 1024) "Max. Bytes (MB)",
        round(a.bytes_alloc / 1024 / 1024) "Allocated (MB)",
@@ -2579,8 +2586,8 @@ EOF
 ;;
 *)
 $SP <<EOF >$LOGF
-set lines 230
-column TABLESPACE_NAME for a30
+set lines 230 pages 60
+column TABLESPACE_NAME for a30 
 column BLOCK_SIZE for 99999
 column status for a10
 column contents for a10
@@ -3277,13 +3284,13 @@ end;
 /
 EOF
 else
-$SP <<'EOF' >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 40
-column name for a40
-select name,pipe_size from sys.V_$DB_PIPES
-where name not like '%LOCK%'
-order by pipe_size desc;
+  $SP <<'EOF' >$LOGF
+  set lines 230
+  set echo off feed off veri off tab off pages 40
+  column name for a40
+  select name,pipe_size from sys.V_$DB_PIPES
+  where name not like '%LOCK%'
+  order by pipe_size desc;
 EOF
 fi
 logf
@@ -3347,12 +3354,11 @@ and vrbjd.start_time >= (select max(start_time) from v\$rman_status where status
 EOF
 ;;
 *)
-MESSAGE_=`echo $* | awk '{print $2}'`
-case "$(is_number $MESSAGE_)" in
-0) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$MESSAGE_%'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
-1) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and a.sid = $MESSAGE_ and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
-esac
-
+  MESSAGE_=`echo $* | awk '{print $2}'`
+  case "$(is_number $MESSAGE_)" in
+    0) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$MESSAGE_%'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+    1) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and a.sid = $MESSAGE_ and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+  esac
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -3447,8 +3453,6 @@ set echo off feed off veri off tab off pages 60
 set lines 230
 col owner for a15
 col job_name for a30
---col PROGRAM_OWNER for a10
---col PROGRAM_NAME for a30
 col PROGRAM for a18
 col JOB_ACTION for a100
 col ENABLED for a7
@@ -3464,7 +3468,6 @@ prompt "View: dba_scheduler_running_jobs"
 col elapsed_time for a16
 col cpu_used for a16
 col job_action for a50
---select owner,job_name,session_id,slave_os_process_id,elapsed_time,cpu_used from dba_scheduler_running_jobs;
 select r.owner,r.job_name,r.session_id,r.slave_os_process_id,r.elapsed_time,r.cpu_used,s.job_action
 from dba_scheduler_running_jobs r, dba_scheduler_jobs s
 where s.owner=r.owner and s.job_name=r.job_name;
@@ -3728,37 +3731,35 @@ P1_=`echo $ALL | awk '{print $1}'`
 P2_=`echo $ALL | awk '{print $2}'`
 P3_=`echo $ALL | awk '{print $3}'`
 case "$P1_" in
-sqlstat)
-ash sqlstat $P2_ $P3_
-return
-;;
-plan)
-echo "v\$sql_plan where sql_id = "$P2_
-$SP <<EOF >$LOGF
-set lines 220
-set pages 200
-column id noprint
-column plan for a130
-BREAK ON timestamp ON sql_id ON plan_hash_value ON child_number SKIP 1 NODUPLICATES
-SELECT  distinct sql_id,plan_hash_value, child_number, cost, cardinality, bytes, id, lpad(id,3,'0') ||' '|| lpad (' ', depth) || operation ||' '|| options ||' '|| object_name plan
-from v\$sql_plan where  sql_id = '$P2_'
-order by sql_id,plan_hash_value,child_number,id;
+  sqlstat)
+    ash sqlstat $P2_ $P3_
+    return
+  ;;
+  plan)
+    echo "v\$sql_plan where sql_id = "$P2_
+    $SP <<EOF >$LOGF
+    set lines 230 pages 200
+    column id noprint
+    column plan for a130
+    BREAK ON timestamp ON sql_id ON plan_hash_value ON child_number SKIP 1 NODUPLICATES
+    SELECT  distinct sql_id,plan_hash_value, child_number, cost, cardinality, bytes, id, lpad(id,3,'0') ||' '|| lpad (' ', depth) || operation ||' '|| options ||' '|| object_name plan
+    from v\$sql_plan where  sql_id = '$P2_'
+    order by sql_id,plan_hash_value,child_number,id;
 EOF
-;;
-*)
-LEN_=`expr length $P1_`
-SQL_ID__=`echo $P1_ | tr -d '[:digit:][:lower:]'`
-if [ -z "$SQL_ID__" -a $LEN_ -eq 13 ] ; then
-SQL_="SELECT sql_id||' '|| plan_hash_value SQL_ID_PHV, child_number CN, SQL_FULLTEXT, module||' / '|| action MA, SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME FROM v\$sql where sql_id = '$P1_';"
-echo " v\$sql where sql_id = "$P1_
-else
-SQL_="SELECT sql_id||' '|| plan_hash_value SQL_ID_PHV, child_number CN, SQL_FULLTEXT, module||' / '|| action MA,SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME  FROM v\$sql where lower(sql_text) like '%$TEXT_%';"
-echo "v\$sql where lower(sql_text) like "$TEXT_
-fi
+  ;;
+  *)
+    LEN_=`expr length $P1_`
+    SQL_ID__=`echo $P1_ | tr -d '[:digit:][:lower:]'`
+    if [ -z "$SQL_ID__" -a $LEN_ -eq 13 ] ; then
+      SQL_="SELECT sql_id||' '|| plan_hash_value SQL_ID_PHV, child_number CN, SQL_FULLTEXT, module||' / '|| action MA, SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME FROM v\$sql where sql_id = '$P1_';"
+      echo " v\$sql where sql_id = "$P1_
+    else
+      SQL_="SELECT sql_id||' '|| plan_hash_value SQL_ID_PHV, child_number CN, SQL_FULLTEXT, module||' / '|| action MA,SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME  FROM v\$sql where lower(sql_text) like '%$TEXT_%';"
+      echo "v\$sql where lower(sql_text) like "$TEXT_
+    fi
 $SP <<EOF >$LOGF
-set lines 230
+set lines 230 pages 90
 set long 1000000000 longc 1000000000
-set pages 90
 column sql_id for a13
 column SQL_ID_PHV for a13 heading "SQL_ID / PHV"
 column SQL_FULLTEXT for a100
@@ -4554,14 +4555,15 @@ if [ -z "$*" ]; then
   $SP <<EOF >$LOGF
   set echo off
   set feedback off
-  set lines 180 
+  set lines 230
+  col MIN_SAMPLE_TIME for a25
+  col MAX_SAMPLE_TIME for a25
   PROMPT
   PROMPT "Avilable period at V\$ACTIVE_SESSION_HISTORY:"
   select to_char(min(sample_time),'dd/mm/yyyy hh24:mi:ss') min_sample_time, to_char(max(sample_time),'dd/mm/yyyy hh24:mi:ss') max_sample_time from V\$ACTIVE_SESSION_HISTORY;
 EOF
 
 else
-
  sysdate=$(date +%d/%m/%y\ %H:%M:%S)
  if [ $(is_number $(echo $* | awk -F"/" '{print $1}'))  -eq 0 ]; then
    DD_=`date +%d/%m/%Y`
@@ -4583,8 +4585,6 @@ else
    fi
    INTERVAL_LA_="last_active_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi')"
  fi
-
-echo $INTERVAL_
 
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
 P1_=`echo $* | awk '{print $2}'`
@@ -4636,65 +4636,65 @@ EOF
 ;;
 sess)
 if [ -n "$P1_"  -a -n "$P2_" -a "$P3_" = "all" ]; then
-$SP <<EOF >$LOGF
-PROMPT
-PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SID: $P1_  SERIAL: $P2_ and $INTERVAL_"
-$SET_COL
-select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
-blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
-from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
-and $INTERVAL_
-and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_' order by sample_time;
+  $SP <<EOF >$LOGF
+ PROMPT
+  PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SID: $P1_  SERIAL: $P2_ and $INTERVAL_"
+  $SET_COL
+  select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
+  blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
+  from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
+  and $INTERVAL_
+  and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_' order by sample_time;
 EOF
 elif [ -n "$P1_" -a -n "$P2_" ]; then
-if [ "$P3_" != "nosqlid" ]; then   S1_="sql_id,sql_plan_hash_value,"; fi
-$SP <<EOF >$LOGF
-PROMPT
-PROMPT "Top 30 Waits in seconds  from V\$ACTIVE_SESSION_HISTORY for sid = '$P1_' and serial = '$P2_' and $INTERVAL_"
-$SET_COL
-select * from (
-select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU') event, program||' \ '||module||' \ '||action||' \ '||machine PMAM,
-   sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
-   sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
-   (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
-   sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
-   round(100*count(*)/ sum(count(1)) over(), 2) activity
-from v\$active_session_history h, dba_users u where h.user_id=u.user_id
---and sql_id is not null
-and $INTERVAL_
-and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_'
-group by session_id,"SESSION_SERIAL#",username, $S1_ event,program,module,action,machine
-order by activity desc
-) where rownum < 31;
+  if [ "$P3_" != "nosqlid" ]; then   S1_="sql_id,sql_plan_hash_value,"; fi
+  $SP <<EOF >$LOGF
+  PROMPT
+  PROMPT "Top 30 Waits in seconds  from V\$ACTIVE_SESSION_HISTORY for sid = '$P1_' and serial = '$P2_' and $INTERVAL_"
+  $SET_COL
+  select * from (
+  select session_id sid,"SESSION_SERIAL#" serial,username, $S1_ nvl(event,'ON CPU') event, program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+    sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
+    sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
+    (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
+    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
+    round(100*count(*)/ sum(count(1)) over(), 2) activity
+  from v\$active_session_history h, dba_users u where h.user_id=u.user_id
+  --and sql_id is not null
+  and $INTERVAL_
+  and session_id = '$P1_' and "SESSION_SERIAL#" = '$P2_'
+  group by session_id,"SESSION_SERIAL#",username, $S1_ event,program,module,action,machine
+  order by activity desc
+  ) where rownum < 31;
 EOF
 elif [ -n "$P1_" ]; then 
-$SP <<EOF >$LOGF
-PROMPT
-PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SQL_ID: $P1_ and $INTERVAL_"
-$SET_COL
-select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
-blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
-from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
-and $INTERVAL_ and sql_id = '$P1_' order by sample_time;
+  $SP <<EOF >$LOGF
+  PROMPT
+  PROMPT "Session from V\$ACTIVE_SESSION_HISTORY by filter: SQL_ID: $P1_ and $INTERVAL_"
+  $SET_COL
+  select to_char(sample_time,'DD/MM/YY HH24:MI:SS')time,session_id sid,"SESSION_SERIAL#" serial,username,sql_id,nvl(event,'ON CPU') event,/*session_state,*/"CURRENT_OBJ#" OBJ#,"CURRENT_FILE#" FILE#,"CURRENT_BLOCK#" BLOCK#,
+  blocking_session_status BLSTATUS,blocking_session BLSID,"BLOCKING_SESSION_SERIAL#" BLSERIAL,/*program,module,action, $MACHINE_ */ program||' \ '||module||' \ '||action||' \ '|| $MACHINE_ PMAM
+  from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
+  and $INTERVAL_ and sql_id = '$P1_' order by sample_time;
 EOF
 else
-$SP <<EOF >$LOGF
-PROMPT
-PROMPT "Top 30 ACTIVE Sessions in seconds from V\$ACTIVE_SESSION_HISTORY in $INTERVAL_"
-$SET_COL
-select * from (
-select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ /* session_state,*/ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
-   sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
-   sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
-   (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
-   sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
-   round(100*count(*)/ sum(count(1)) over(), 2) activity
-from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
-and sql_id is not null
-and $INTERVAL_
-group by session_id,"SESSION_SERIAL#",username,/*sql_id,sql_plan_hash_value,event,session_state,*/program,module,action,machine
-order by activity desc
-) where rownum<31;
+  $SP <<EOF >$LOGF
+  PROMPT
+  PROMPT "Top 30 ACTIVE Sessions in seconds from V\$ACTIVE_SESSION_HISTORY in $INTERVAL_"
+  $SET_COL
+  select * from (
+  select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ /* session_state,*/ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+    sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
+    sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
+    (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
+    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
+    round(100*count(*)/ sum(count(1)) over(), 2) activity
+  from v\$active_session_history h, dba_users u where h.user_id=u.user_id 
+  and sql_id is not null
+  and $INTERVAL_
+  group by session_id,"SESSION_SERIAL#",username,/*sql_id,sql_plan_hash_value,event,session_state,*/program,module,action,machine
+  order by activity desc
+  ) where rownum<31;
 EOF
 fi
 ;;
@@ -4958,7 +4958,6 @@ temp) awr_tempusage v\$active_session_history $P1_
 *) echo "Nothing..." ;;
 esac
 fi
-
 logf
 }
 
@@ -5052,67 +5051,67 @@ EOF
 
 case $type_ in
 blplan)
-sql_handle="$2"
-plan_name="$3"
-if [ "$sql_handle" = null ]; then sql_handle=""; fi
-$SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 400
-ttitle left "DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'):"
-select * from table(DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'));
+  sql_handle="$2"
+  plan_name="$3"
+  if [ "$sql_handle" = "%" ]; then sql_handle=""; fi
+    $SP <<EOF >$LOGF
+    set lines 230
+    set echo off feed off veri off tab off pages 400
+    ttitle left "DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'):"
+    select * from table(DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle',plan_name=>'$plan_name',format=>'-predicate +outline'));
 EOF
 ;;
 blexec)
-param=$2
-$SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 400
-column SQL_HANDLE for a20
-column PLAN_NAME for a30
-column PARSING_SCHEMA_NAME for a20
-column optimizer_cost for 999999 heading COST
-column origin for a20
-column created for a10
-column last_exec for a10
-column last_executed for a11 heading "LAST_EXEC"
-column executions for 999999999
-ttitle left "Join views v\$sql, dba_sql_plan_baselines where baselines.executions >= nvl('$param',1) :"
-select distinct s.sql_id, s.plan_hash_value, b.sql_handle, b.plan_name, b.parsing_schema_name, b.optimizer_cost, b.origin, b.enabled, b.accepted, b.fixed, b.autopurge,
-cast(b.created as date) created,cast(b.last_executed as date) last_exec, b.executions
-from v\$sql s, dba_sql_plan_baselines b where s.exact_matching_signature = b.signature and b.executions >= nvl('$param',1)
-order by created, last_exec;
+  param=$2
+  $SP <<EOF >$LOGF
+  set lines 230
+  set echo off feed off veri off tab off pages 400
+  column SQL_HANDLE for a20
+  column PLAN_NAME for a30
+  column PARSING_SCHEMA_NAME for a20
+  column optimizer_cost for 999999 heading COST
+  column origin for a20
+  column created for a10
+  column last_exec for a10
+  column last_executed for a11 heading "LAST_EXEC"
+  column executions for 999999999
+  ttitle left "Join views v\$sql, dba_sql_plan_baselines where baselines.executions >= nvl('$param',1) :"
+  select distinct s.sql_id, s.plan_hash_value, b.sql_handle, b.plan_name, b.parsing_schema_name, b.optimizer_cost, b.origin, b.enabled, b.accepted, b.fixed, b.autopurge,
+  cast(b.created as date) created,cast(b.last_executed as date) last_exec, b.executions
+  from v\$sql s, dba_sql_plan_baselines b where s.exact_matching_signature = b.signature and b.executions >= nvl('$param',1)
+  order by created, last_exec;
 EOF
 ;;
 bllpfcc)
-sql_id="$2"
-plan_hash_value="$3"
-sql_handle="$4"
-if [ -n "$sql_handle" ]; then
- SQL_=", fixed => 'YES', sql_handle => '$sql_handle'"
-fi
-$SP <<EOF >$LOGF
-set lines 200
-set echo off feed off veri off tab off pages 400
-PROMPT Load the sql_id into the SQL Basesile: DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE( sql_id => '$sql_id', PLAN_HASH_VALUE => '$plan_hash_value', sql_handle => '$sql_handle');
-DECLARE
- my_plans pls_integer;
-BEGIN
- my_plans := DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE(
- sql_id => '$sql_id',
- PLAN_HASH_VALUE => '$plan_hash_value'
- $SQL_ ); 
-dbms_output.put_line('Value is '||my_plans);
-END;
+  sql_id="$2"
+  plan_hash_value="$3"
+  sql_handle="$4"
+  if [ -n "$sql_handle" ]; then
+    SQL_=", fixed => 'YES', sql_handle => '$sql_handle'"
+  fi
+  $SP <<EOF >$LOGF
+  set lines 200
+  set echo off feed off veri off tab off pages 400
+  PROMPT Load the sql_id into the SQL Basesile: DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE( sql_id => '$sql_id', PLAN_HASH_VALUE => '$plan_hash_value', sql_handle => '$sql_handle');
+  DECLARE
+    my_plans pls_integer;
+  BEGIN
+    my_plans := DBMS_SPM.LOAD_PLANS_FROM_CURSOR_CACHE(
+    sql_id => '$sql_id',
+    PLAN_HASH_VALUE => '$plan_hash_value'
+    $SQL_ ); 
+  dbms_output.put_line('Value is '||my_plans);
+  END;
 /
 EOF
 ;;
 bllpfawr)
-sql_id="$2"
-plan_hash_value="$3"
-begin_snap="$4"
-end_snap="$5"
-sqlset="tpi-$sql_id-`date +%d-%m-%Y`"
-echo "sqlset="$sqlset
+  sql_id="$2"
+  plan_hash_value="$3"
+  begin_snap="$4"
+  end_snap="$5"
+  sqlset="tpi-$sql_id-`date +%d-%m-%Y`"
+  echo "sqlset="$sqlset
 $SP <<EOF >$LOGF
 set lines 230
 exec DBMS_SQLTUNE.CREATE_SQLSET(sqlset_name=>'$sqlset');
@@ -5158,10 +5157,10 @@ end;
 EOF
 ;;
 blchattr)
-sql_handle="$2"
-plan_name="$3"
-attr_name="$4"
-attr_value="$5"
+  sql_handle="$2"
+  plan_name="$3"
+  attr_name="$4"
+  attr_value="$5"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5183,9 +5182,9 @@ end;
 EOF
 ;;
 blchplan)
-sql_id="$2"
-plan_hash_value="$3"
-sql_handle="$4"
+  sql_id="$2"
+  plan_hash_value="$3"
+  sql_handle="$4"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5198,17 +5197,33 @@ end;
 /
 EOF
 ;;
+blevolve)
+  sql_handle="$2"
+  plan_name="$3"
+$SP <<EOF >$LOGF
+set lines 230 pages 400
+set long 1000000000 longc 1000000000
+set echo off feed off veri off tab off 
+set serveroutput on
+DECLARE
+  report clob;
+BEGIN
+  report := DBMS_SPM.EVOLVE_SQL_PLAN_BASELINE(sql_handle=>'$sql_handle', plan_name=>'$plan_name', verify=>'YES', commit=>'YES', time_limit=>360);
+  DBMS_OUTPUT.PUT_LINE(report);
+END;
+/
+EOF
+;;
 sqlset_list)
-sqlset_name="$2"
-sqlset_owner="$3"
-echo "sqlset_name="$sqlset_name
-echo "sqlset_owner="$sqlset_owner
+  sqlset_name="$2"
+  sqlset_owner="$3"
+  echo "sqlset_name="$sqlset_name
+  echo "sqlset_owner="$sqlset_owner
 $SP <<EOF >$LOGF
 set echo off feed off veri off tab off pages 200
 set lines 230 
 set long 1000
 SET SERVEROUTPUT ON
-set feed off
 
 column name for a30
 column owner for a30
@@ -5234,16 +5249,16 @@ FROM TABLE( DBMS_SQLTUNE.SELECT_SQLSET( sqlset_name => '$sqlset_name',  sqlset_o
 EOF
 ;;
 sqlset_plan)
-sqlset_name="$2"
-sqlset_sql_id="$3"
-sqlset_phv="$4"
+  sqlset_name="$2"
+  sqlset_sql_id="$3"
+  sqlset_phv="$4"
 $SP <<EOF >$LOGF
 set lines 230 echo off feed off veri off tab off pages 200
 SELECT * FROM table(DBMS_XPLAN.DISPLAY_SQLSET(sqlset_name=>'$sqlset_name',sql_id=>'$sqlset_sql_id',plan_hash_value=>'$sqlset_phv',format => 'typical'));
 EOF
 ;;
 sqlset_drop)
-sqlset_name="$2"
+  sqlset_name="$2"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5253,12 +5268,10 @@ column owner for a30
 ttitle left "View dba_sqlset before drop DBMS_SQLTUNE.DROP_SQLSET:"
 SELECT NAME,OWNER,CREATED,STATEMENT_COUNT FROM DBA_SQLSET;
 ttitle off
-
 begin
   DBMS_SQLTUNE.DROP_SQLSET ( sqlset_name=>'$sqlset_name' );
 end;
 /
-
 column name for a30
 column owner for a30
 ttitle left "View dba_sqlset after drop DBMS_SQLTUNE.DROP_SQLSET:"
@@ -5267,8 +5280,8 @@ ttitle off
 EOF
 ;;
 bldrop)
-sql_handle="$2"
-plan_name="$3"
+  sql_handle="$2"
+  plan_name="$3"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 400
@@ -5286,12 +5299,12 @@ END;
 EOF
 ;;
 sqltune)
-case "$2" in
-awr|AWR) 
-sql_id="$3"
-begin_snap="$4"
-end_snap="$5"
-task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
+  case "$2" in
+   awr|AWR) 
+     sql_id="$3"
+     begin_snap="$4"
+     end_snap="$5"
+     task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
 SQL_="
 PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id begin_snap=$begin_snap end_snap=$end_snap task_name=$task_name from the AWR
 SET SERVEROUTPUT ON SIZE UNLIMITED;
@@ -5310,11 +5323,11 @@ BEGIN
 END;
 /
 "
-;;
-*)
-sql_id="$2"
-task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
- SQL_="
+   ;;
+   *)
+     sql_id="$2"
+     task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
+SQL_="
 PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id task_name=$task_name from the cursor cache
 SET SERVEROUTPUT ON SIZE UNLIMITED;
 DECLARE
@@ -5326,9 +5339,8 @@ BEGIN
 END;
 /
 "
-;;
-esac
-
+   ;;
+   esac
 $SP <<EOF >$LOGF
 set lines 230
 --set echo off feed off veri off tab off pages 400
@@ -5367,8 +5379,8 @@ EOF
 echo "Use: spm sqltune_accept for accept profile with FORCE_MATCHING"
 ;;
 sqltune_report)
-task_name="$2"
-echo $task_name
+  task_name="$2"
+  echo $task_name
 $SP <<EOF >$LOGF
 set lines 200
 PROMPT Executing DBMS_SQLTUNE.REPORT_TUNING_TASK for task_name=$task_name
@@ -5401,8 +5413,8 @@ END;
 EOF
 ;;
 sqltune_accept)
-task_name="$2"
-echo $task_name
+  task_name="$2"
+  echo $task_name
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5412,23 +5424,22 @@ exec dbms_sqltune.accept_sql_profile(task_name => '$task_name', task_owner => 'S
 EOF
 ;;
 sqltune_create_plan_bl)
-task_name="$2"
-owner="$3"
-plan_hash_value="$4"
-echo "task_name="$task_name" owner="$owner" plan_hash_value="$plan_hash_value
+  task_name="$2"
+  owner="$3"
+  plan_hash_value="$4"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
-PROMPT Accepting sql_profile by  dbms_sqltune.accept_sql_profile
+PROMPT Create dbms_sqltune.create_sql_plan_baseline for task_name='$task_name' owner='$owner' plan_hash_value='$plan_hash_value'
 exec dbms_sqltune.create_sql_plan_baseline(task_name => '$task_name', owner_name => '$owner', plan_hash_value => $plan_hash_value);
 EOF
 ;;
 sqltune_list)
-task_name="$2"
-cnt="$3"
-if [ -z "$cnt" ]; then
- cnt=30
-fi
+  task_name="$2"
+  cnt="$3"
+  if [ -z "$cnt" ]; then
+    cnt=30
+  fi
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 400
@@ -5446,8 +5457,8 @@ select * from ( SELECT owner, task_id,task_name, created,last_modified,execution
 EOF
 ;;
 sqltune_drop)
-task_name="$2"
-echo $task_name
+  task_name="$2"
+  echo $task_name
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5480,9 +5491,9 @@ order by created,sql_id,plan_hash_value;
 EOF
 ;;
 sql_profile_chattr)
-name="$2"
-attribute_name="$3"
-value="$4"
+  name="$2"
+  attribute_name="$3"
+  value="$4"
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5491,8 +5502,8 @@ exec DBMS_SQLTUNE.ALTER_SQL_PROFILE ( name=>'$name', attribute_name=>'$attribute
 EOF
 ;;
 sql_profile_drop)
-name="$2"
-echo $name
+  name="$2"
+  echo $name
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed on veri off tab off pages 400
@@ -5501,14 +5512,14 @@ exec DBMS_SQLTUNE.DROP_SQL_PROFILE(name=>'$name');
 EOF
 ;;
 hints)
-P2_="$2"
-P3_="$3"
-echo $P2_"="$P3_
-case "$P2_" in
- profile)  method=1 ;;
- baseline) method=2 ;;
- patch)    method=3 ;;
-esac
+  P2_="$2"
+  P3_="$3"
+  echo $P2_"="$P3_
+  case "$P2_" in
+    profile)  method=1 ;;
+    baseline) method=2 ;;
+    patch)    method=3 ;;
+  esac
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed on veri off tab off pages 400
@@ -5530,8 +5541,8 @@ select substr(extractvalue(value(d), '/hint'), 1, 32760) as outline_hints, rownu
 EOF
 ;;
 report_sql_monitor)
-sql_id="$2"
-echo $name
+  sql_id="$2"
+  echo $name
 $SP <<EOF >$LOGF
 set lines 255
 set echo off feed on veri off tab off pages 400
@@ -5542,7 +5553,6 @@ EOF
 ;;
 *) :  ;;
 esac
-
 logf
 }
 
