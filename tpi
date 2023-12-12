@@ -3822,16 +3822,25 @@ if [ "$view_" = "dba_hist_active_sess_history" ]; then
         S1_="*10"
 fi
 $SP <<EOF >$LOGF
-set lines 250 pages 200 verify off echo off timing off feedback off
+set lines 350 pages 200 verify off echo off timing off feedback off
 column xxx new_value cpu noprint
 select value xxx from v\$parameter where name='cpu_count';
-
 Def v_secs=60 --  bucket size
 Def v_graph=150
+Def v_gadd=+48
 Def v_bars=(&v_graph/sqrt(&cpu))/(sqrt(&cpu)*(22/sqrt(&cpu)))  -- size of one AAS in characters
+def B=chr(27)||'[37m'||chr(27)||'[1;'||to_char(29)||'m'||
+def c=chr(27)||'[37m'||chr(27)||'[1;'||to_char(32)||'m'||
+def I=chr(27)||'[37m'||chr(27)||'[1;'||to_char(34)||'m'||
+def w=chr(27)||'[37m'||chr(27)||'[1;'||to_char(33)||'m'||
+--def B=''
+--def c=''
+--def I=''
+--def w=''
+--Def v_gadd=+0
 
 col begin_time for a14
-col graph format a160
+col graph format a196 truncate heading "CHART"
 col aas format 9999
 col pct1 format 999
 col pct2 format 999
@@ -3854,20 +3863,18 @@ select to_char(start_time,'dd/mm/yy-hh24:mi') begin_time,
        decode(spct,null,null,second) second,
 --       tpct*100 pct3,
 --       decode(tpct,null,null,third) third,
-        substr(
        substr(
-         rpad('c',round((cpu*&v_bars)/&v_secs),'c') ||
-             rpad('I',round((io*&v_bars)/&v_secs),'I')  ||
-             rpad('w',round((waits*&v_bars)/&v_secs),'w')  ||
-             rpad(' ',&cpu * &v_bars,' '),0,( &cpu * &v_bars )) ||
-        &cpu
-         ||  substr(
-         rpad('c',round((cpu*&v_bars)/&v_secs),'c') ||
-             rpad('I',round((io*&v_bars)/&v_secs),'I')  ||
-             rpad('w',round((waits*&v_bars)/&v_secs),'w')  ||
-             rpad(' ',&cpu * &v_bars,' '),(&cpu * &v_bars),( &v_graph-&v_bars*&cpu) )
-        ,0,&v_graph)
-        graph
+         substr(
+           &c  rpad('U',round((cpu*&v_bars)/&v_secs),'U') ||
+           &I  rpad('O',round((io*&v_bars)/&v_secs),'O')  ||
+           &w  rpad('W',round((waits*&v_bars)/&v_secs),'W')  ||
+           &B  rpad(' ',&cpu * &v_bars,' '),0,( &cpu * &v_bars ) &v_gadd) ||
+         &cpu || substr(
+              &c  rpad('U',round((cpu*&v_bars)/&v_secs),'U') ||
+              &I  rpad('O',round((io*&v_bars)/&v_secs),'O')  ||
+              &w  rpad('W',round((waits*&v_bars)/&v_secs),'W')  ||
+              &B  rpad(' ',&cpu * &v_bars,' '),(&cpu * &v_bars) &v_gadd,(&v_graph-&v_bars*&cpu) &v_gadd )
+       ,0,&v_graph &v_gadd) graph
 from (
 select start_time
      , max(samples) samples
