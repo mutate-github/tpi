@@ -1245,7 +1245,7 @@ column isdefault for a9
 column ISMODIFIED for a10
 column value for a50
 column Description for a70
-select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$parameter where name like '%$P2_%';
+select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$system_parameter where name like '%$P2_%';
 -- show parameter $P2_
 EOF
 ;;
