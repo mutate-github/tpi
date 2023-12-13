@@ -4724,6 +4724,7 @@ select /*session_id sid,"SESSION_SERIAL#" serial,*/username,sql_id,sql_plan_hash
    round(100*count(*)/ sum(count(1)) over(), 2) activity
 from v\$active_session_history h, dba_users u where h.user_id=u.user_id
 --and sql_id is not null 
+--and sql_plan_hash_value<>0
 and $INTERVAL_
 $COND_
 --and program like '%$PRG_%'
@@ -4785,6 +4786,7 @@ EOF
             from      v\$active_session_history
    where     $INTERVAL_
    and       $S2_
+--   and sql_plan_hash_value <> 0
             group by  plsql_entry_object_id,
                       plsql_entry_subprogram_id,
                       plsql_object_id,
