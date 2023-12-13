@@ -158,7 +158,7 @@ db_is_pdb()
 {
 VALUE=`$SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
-select value from v$parameter where name ='enable_pluggable_database';
+select value from v$system_parameter where name ='enable_pluggable_database';
 END`
 echo $VALUE | tr -d '\r'
 }
@@ -1435,16 +1435,16 @@ select /*+ rule */ to_number(value) shared_pool_size,
                (select sum(sharable_mem) sum_sql_size
           from v$sqlarea),
                (select sum(250 * users_opening) sum_user_size
-          from v$sqlarea), v$parameter
+          from v$sqlarea), v$system_parameter
  where name = 'shared_pool_size';
 
 prompt
 prompt Pools of "free memory" size and free percent in v$sgastat:
-select to_number(v$parameter.value) value, v$sgastat.pool, v$sgastat.bytes,
-case when v$parameter.value<>0 then round((v$sgastat.bytes/v$parameter.value)*100,2) else round(to_number(v$parameter.value),2) end "Percent Free"
-from v$sgastat, v$parameter
+select to_number(p.value) value, v$sgastat.pool, v$sgastat.bytes,
+case when p.value<>0 then round((v$sgastat.bytes/p.value)*100,2) else round(to_number(p.value),2) end "Percent Free"
+from v$sgastat, v$system_parameter p
 where v$sgastat.name = 'free memory'
-and v$parameter.name = 'shared_pool_size';
+and p.name = 'shared_pool_size';
 
 prompt 
 prompt Shared pool usage:
@@ -2188,7 +2188,7 @@ col changes for 999,999,999 heading "Changes Mb"
 select * from (
 --SELECT s.sid, s.serial#, s.username, s.osuser, REGEXP_REPLACE(CONVERT(s.program||' \ '||s.module||' \ '||s.action, 'AL32UTF8', 'CL8MSWIN1251'), '[^[:print:]]', '') pma, i.block_changes, round(i.block_changes * TO_NUMBER(x.value)/(1024*1024),0) changes
 SELECT s.sid, s.serial#, s.username, s.osuser, s.program||' \ '||s.module||' \ '||s.action pma, i.block_changes, round(i.block_changes * TO_NUMBER(x.value)/(1024*1024),0) changes
-FROM v$session s, v$sess_io i, sys.v_$parameter x
+FROM v$session s, v$sess_io i, sys.v_$system_parameter x
 WHERE s.sid = i.sid and BLOCK_CHANGES > 0 and s.serial#<>'1' and s.type <> 'BACKGROUND' and x.name  = 'db_block_size' and s.status='ACTIVE'
 ORDER BY i.block_changes desc, 1, 2, 3, 4
 ) where rownum < 26;
@@ -2237,7 +2237,7 @@ select usn, state, xid, pid, rcvservers,
 --undoblockstotal "TotalBlk", undoblocksdone "DoneBlk", undoblockstotal-undoblocksdone "ToDoBlk",
 round(undoblockstotal * TO_NUMBER(x.value)/(1024*1024),2) "Total Mb", round(undoblocksdone * TO_NUMBER(x.value)/(1024*1024),2) "Done Mb", round((undoblockstotal-undoblocksdone) * TO_NUMBER(x.value)/(1024*1024),2) "ToDo Mb",
 decode(cputime,0,'unknown',sysdate+(((undoblockstotal-undoblocksdone) / (undoblocksdone / cputime)) / 86400)) estimated, sysdate
-from v\$fast_start_transactions, sys.v_\$parameter x where x.name  = 'db_block_size' and state='RECOVERING' order by undoblockstotal desc;
+from v\$fast_start_transactions, sys.v_\$system_parameter x where x.name  = 'db_block_size' and state='RECOVERING' order by undoblockstotal desc;
 
 prompt
 prompt If v\$fast_start_transactions not work then x\$ktuxe:
@@ -2269,7 +2269,7 @@ col last_call_et for a25
 SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_char(t.flag,'0000000X'),length(to_char(t.flag,'0000000X'))-1,1) flag, count(u.extent_id) extent_id, t.used_ublk,
 round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2) undo, s.program||' \ '||s.module||' \ '||s.action pma, u.status,
 to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || ltrim(to_char(s.last_call_et/60, '9999990.0')) || ' min' last_call_et
-FROM v\$session s, v\$transaction t, dba_undo_extents u, sys.v_\$parameter x
+FROM v\$session s, v\$transaction t, dba_undo_extents u, sys.v_\$system_parameter x
 WHERE s.taddr = t.addr and u.segment_name like '_SYSSMU'||t.xidusn||'_%$' and u.status = 'ACTIVE' and x.name  = 'db_block_size'
 GROUP BY s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.xid, to_char(t.flag,'0000000X'), t.used_ublk, round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2), s.program||' \ '||s.module||' \ '||s.action, u.status, s.last_call_et
 ORDER BY t.used_ublk desc, s.sid, s.serial#, s.username;
@@ -2634,7 +2634,7 @@ SELECT b.tablespace,
 FROM gv$session a,
      v$process p,
      gv$sort_usage b,
-     gv$parameter p
+     gv$system_parameter p
 WHERE p.addr(+) = a.paddr
 AND a.type <> 'BACKGROUND'
 AND p.name  = 'db_block_size'
@@ -2759,7 +2759,7 @@ break on report
 compute sum of savings on report
 
 column value for a10 new_val blksize
-select value from v\$parameter where name = 'db_block_size'
+select value from v\$system_parameter where name = 'db_block_size'
 /
 
 select a.file_id, file_name, ceil( (nvl(hwm,1)*&&blksize)/1024/1024 ) smallest, ceil( blocks*&&blksize/1024/1024) currsize,
@@ -3824,7 +3824,7 @@ fi
 $SP <<EOF >$LOGF
 set lines 350 pages 200 verify off echo off timing off feedback off
 column xxx new_value cpu noprint
-select value xxx from v\$parameter where name='cpu_count';
+select value xxx from v\$system_parameter where name='cpu_count';
 Def v_secs=60 --  bucket size
 Def v_graph=150
 Def v_gadd=+48
@@ -5604,7 +5604,7 @@ if [ -n "$SID_" -a -n "$SERIAL_" -a -n "$LEVEL_" ]; then
  DB_VER_=$(db_version)
 
  case $DB_VER_ in
-  8|9|10)       CMD1_="select u_dump.value || '/' || db_name.value || '_ora_' || v\$process.spid||nvl2(v\$process.traceid, '_' || v\$process.traceid, null )||'.trc' \"Trace File\" from v\$parameter u_dump cross join   v\$parameter db_name cross join v\$process join v\$session on v\$process.addr = v\$session.paddr where u_dump.name in ('user_dump_dest','background_dump_dest') and  db_name.name = 'db_name' and v\$session.sid=$SID_;"  ;;
+  8|9|10)       CMD1_="select u_dump.value || '/' || db_name.value || '_ora_' || v\$process.spid||nvl2(v\$process.traceid, '_' || v\$process.traceid, null )||'.trc' \"Trace File\" from v\$system_parameter u_dump cross join   v\$system_parameter db_name cross join v\$process join v\$session on v\$process.addr = v\$session.paddr where u_dump.name in ('user_dump_dest','background_dump_dest') and  db_name.name = 'db_name' and v\$session.sid=$SID_;"  ;;
   *)  #CMD1_="SELECT VALUE||'/'||'$ORACLE_SID'||'_ora_'||&&SPID||'.trc' \"Trace File\" FROM V\$DIAG_INFO WHERE NAME = 'Diag Trace';" 
       CMD1_="select tracefile from v\$process where spid=&&SPID;" ;;
  esac
@@ -5701,12 +5701,12 @@ DB_VER_=$(db_version)
 case $VALUEP in
   Microsoft*) slash='\'
       case $DB_VER_ in
-        8|9|10)  CMD1_="select value from v\$parameter where name='background_dump_dest';" ;;
+        8|9|10)  CMD1_="select value from v\$system_parameter where name='background_dump_dest';" ;;
         *)       CMD1_="select value from V\$DIAG_INFO where name='Diag Trace';" ;;
       esac ;;
   *)          slash='/'
       case $DB_VER_ in
-         8|9|10)  CMD1_="select value||'$slash'||'alert_$ORACLE_SID.log' from v\$parameter where name='background_dump_dest';" ;;
+         8|9|10)  CMD1_="select value||'$slash'||'alert_$ORACLE_SID.log' from v\$system_parameter where name='background_dump_dest';" ;;
          *)       CMD1_="select value||'$slash'||'alert_$ORACLE_SID.log' from V\$DIAG_INFO where name='Diag Trace';" ;;
       esac ;;
 esac
