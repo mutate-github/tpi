@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 12.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 14.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -1126,7 +1126,7 @@ column pma for a60   HEADING "PROGRAM / MODULE / ACTION"
 column PGAU for 9999 HEADING "PGA"
 column OPN for a6    HEADING "CMD"
 column SQID for a13  HEADING "SQLID"
-column PLSQL_ENTRY for a30  HEADING "PLSQL_ENTRY"
+column PLSQL_ENTRY for a32  HEADING "PLSQL_ENTRY" truncate
 column ST4 for a1
 column SU4 for a3    HEADING "STE"
 column EV4 for a24   HEADING "EVENT/*LATCH"
@@ -4222,7 +4222,7 @@ EOF
    S2_="event like '%$EVENT_%'"
    S3_=",event"
   else
-   S2_="sql_id is not null"
+   S2_="and sql_id is not null"
   fi
   $SP <<EOF >$LOGF
   $SET_COL
@@ -4244,8 +4244,7 @@ EOF
                       sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
                       round(100*count(*)/ sum(count(1)) over(), 2) activity
             from      dba_hist_active_sess_history
-  where     $INTERVAL_
-  and       $S2_
+  where     $INTERVAL_  $S2_
             group by  plsql_entry_object_id,
                       plsql_entry_subprogram_id,
                       plsql_object_id,
@@ -4761,8 +4760,8 @@ EOF
      S1_="nvl(event,'ON CPU') event,"
      S2_="event like '%$EVENT_%'"
      S3_=",event"
-   else
-     S2_="sql_id is not null"
+   else 
+     S2_="and sql_id is not null"
    fi
    $SP <<EOF >$LOGF
    PROMPT
@@ -4784,8 +4783,7 @@ EOF
                       sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
                       round(100*count(*)/ sum(count(1)) over(), 2) activity
             from      v\$active_session_history
-   where     $INTERVAL_
-   and       $S2_
+   where     $INTERVAL_ $S2_
 --   and sql_plan_hash_value <> 0
             group by  plsql_entry_object_id,
                       plsql_entry_subprogram_id,
