@@ -76,6 +76,7 @@ END
 
 echo "purge audit logs for \$VALUE :"
 find \$VALUE  -type f -mtime +\$audit -name "*.aud" -exec rm {} \;
+# find \$VALUE  -type f -mtime +\$audit -name "*.aud" | xargs -i -P20 rm {}
 EOFF
 
 chmod u+x $SCRIPT_NAME
