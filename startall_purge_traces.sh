@@ -29,8 +29,9 @@ sid=\$1
 # 5760  - 4 days
 # 10080 - 7 days
 
-age=1440  # min
-audit=7   # days
+age=1440         # min
+audit=7          # days
+size_lim=256M    # size limit for lsn.log
 
 $SET_ENV
 
@@ -49,11 +50,21 @@ for trc_ in \$(echo \$trc | xargs); do
   adrci exec="set home \$trc_ ; purge -age \$age -type INCIDENT"
 done
 
+VALUE=\$(sqlplus -s '/as sysdba' <<'EOS'
+set lines 250  heading off feedback off pagesize 0 trimspool on
+select value from v\$system_parameter where name='diagnostic_dest';
+EOS
+)
+
+echo "diagnostic_dest: "\$VALUE
+
 for tns3_ in \$(echo \$tns3 | xargs); do
   echo "purge listener ALERT TRACE: "\$tns3_
   adrci exec="set home \$tns3_ ; migrate schema"
   adrci exec="set home \$tns3_ ; purge -age \$age -type ALERT"
   adrci exec="set home \$tns3_ ; purge -age \$age -type TRACE"
+  find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim
+  find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim -exec /bin/bash -c 'echo > {}' \;
 done
 
 VALUE=\$(sqlplus -S '/ as sysdba' <<'END'
