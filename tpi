@@ -3762,19 +3762,30 @@ select value xxx from v\$system_parameter where name='cpu_count';
 Def v_secs=60 --  bucket size
 Def v_graph=150
 Def v_gadd=+48
-Def v_bars=(&v_graph/sqrt(&cpu))/(sqrt(&cpu)*(22/sqrt(&cpu)))  -- size of one AAS in characters
+Def v_bars440=(&v_graph/sqrt(&cpu))/(sqrt(&cpu)*(22/sqrt(&cpu)))  -- 440 size of one AAS in characters
+Def v_bars4=(&v_graph/(50/sqrt(&cpu))) -- 4
+Def v_bars128=(&v_graph/(&cpu*11.5/sqrt(&cpu))) -- 4 - 128
+Def v_bars=(&v_graph/(&cpu*11.5/sqrt(&cpu))) -- 4 - 128
+--column v_bars new_value v_bars noprint
+--select case when &cpu > 128 then &v_bars440 else &v_bars128  end  v_bars from dual;
+
 def B=chr(27)||'[37m'||chr(27)||'[1;'||to_char(29)||'m'||
-def c=chr(27)||'[37m'||chr(27)||'[1;'||to_char(32)||'m'||
-def I=chr(27)||'[37m'||chr(27)||'[1;'||to_char(34)||'m'||
-def w=chr(27)||'[37m'||chr(27)||'[1;'||to_char(33)||'m'||
+def cc=chr(27)||'[37m'||chr(27)||'[1;'||to_char(32)||'m'||
+def ii=chr(27)||'[37m'||chr(27)||'[1;'||to_char(34)||'m'||
+def ww=chr(27)||'[37m'||chr(27)||'[1;'||to_char(33)||'m'||
 --def B=''
---def c=''
---def I=''
---def w=''
+--def cc=''
+--def ii=''
+--def ww=''
+Def v_gadd=+48
 --Def v_gadd=+0
+def C=*
+def I=#
+def W=+
 
 col begin_time for a14
-col graph format a196 truncate heading "CHART"
+col graph format a198 truncate heading "CHART  &C&C&C-CPU-&C&C&C, &I&I&I-IO-&I&I&I, &W&W&W-WAIT-&W&W&W,  cpu_count: &cpu"
+--col graph format a150 truncate heading "CHART  &C&C&C-CPU-&C&C&C, &I&I&I-IO-&I&I&I, &W&W&W-WAIT-&W&W&W,  cpu_count: &cpu"
 col aas format 9999
 col pct1 format 999
 col pct2 format 999
@@ -3799,16 +3810,16 @@ select to_char(start_time,'dd/mm/yy-hh24:mi') begin_time,
 --       decode(tpct,null,null,third) third,
        substr(
          substr(
-           &c  rpad('U',round((cpu*&v_bars)/&v_secs),'U') ||
-           &I  rpad('O',round((io*&v_bars)/&v_secs),'O')  ||
-           &w  rpad('W',round((waits*&v_bars)/&v_secs),'W')  ||
+           &cc  rpad('&C',round((cpu*&v_bars)/&v_secs),'&C') ||
+           &ii  rpad('&I',round((io*&v_bars)/&v_secs),'&I')  ||
+           &ww  rpad('&W',round((waits*&v_bars)/&v_secs),'&W')  ||
            &B  rpad(' ',&cpu * &v_bars,' '),0,( &cpu * &v_bars ) &v_gadd) ||
-         &cpu || substr(
-              &c  rpad('U',round((cpu*&v_bars)/&v_secs),'U') ||
-              &I  rpad('O',round((io*&v_bars)/&v_secs),'O')  ||
-              &w  rpad('W',round((waits*&v_bars)/&v_secs),'W')  ||
+        &cpu || substr(
+              &cc  rpad('&C',round((cpu*&v_bars)/&v_secs),'&C') ||
+              &ii  rpad('&I',round((io*&v_bars)/&v_secs),'&I')  ||
+              &ww  rpad('&W',round((waits*&v_bars)/&v_secs),'&W')  ||
               &B  rpad(' ',&cpu * &v_bars,' '),(&cpu * &v_bars) &v_gadd,(&v_graph-&v_bars*&cpu) &v_gadd )
-       ,0,&v_graph &v_gadd) graph
+       ,0,&v_graph &v_gadd) graph 
 from (
 select start_time
      , max(samples) samples
