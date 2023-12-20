@@ -1,6 +1,6 @@
 #!/bin/sh
 set -f
-# version 18.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 20.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -68,7 +68,7 @@ init_msg()
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
-  scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
+  scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
@@ -2673,14 +2673,13 @@ column owner for a15
 column FILE_ID for 9999
 column segment_name for a33
 column segment_type for a20
-column partition_name for a15
+column partition_name for a33
 column tablespace_name for a22
 select /*+ R ULE */ * from dba_extents eo where (eo.file_id, eo.block_id) in (select e.file_id, max(BLOCK_ID) from dba_extents e
 where e.tablespace_name like upper('$P2_')
 and e.file_id in (select f.file_id from dba_data_files f where f.tablespace_name like upper('$P2_') )
 group by e.file_id)
-order by eo.file_id
-/
+order by eo.file_id;
 
 prompt
 prompt Smallest used position in datafiles:
@@ -2693,8 +2692,7 @@ break on report
 compute sum of savings on report
 
 column value for a10 new_val blksize
-select value from v\$system_parameter where name = 'db_block_size'
-/
+select value from v\$system_parameter where name = 'db_block_size';
 
 select a.file_id, file_name, ceil( (nvl(hwm,1)*&&blksize)/1024/1024 ) smallest, ceil( blocks*&&blksize/1024/1024) currsize,
        ceil( blocks*&&blksize/1024/1024) - ceil( (nvl(hwm,1)*&&blksize)/1024/1024 ) savings
@@ -2702,8 +2700,7 @@ from dba_data_files a,
      ( select file_id, max(block_id+blocks-1) hwm
          from dba_extents
         group by file_id ) b
-where a.file_id = b.file_id(+) and a.tablespace_name like upper('$P2_')
-/
+where a.file_id = b.file_id(+) and a.tablespace_name like upper('$P2_');
 
 column cmd format a150 word_wrapped
 prompt
@@ -2716,8 +2713,7 @@ from dba_data_files a,
         group by file_id ) b
 where a.file_id = b.file_id(+)
   and ceil( blocks*&&blksize/1024/1024) - ceil( (nvl(hwm,1)*&&blksize)/1024/1024 ) > 0
-  and a.tablespace_name like upper('$P2_')
-/
+  and a.tablespace_name like upper('$P2_');
 EOF
 ;;
 *)
