@@ -22,7 +22,7 @@ egais*|GOLD506*)            . ~/.bashrc ;;
 unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
 # opndb)                      . ~/BRSKDB_setenv.sh ; login_str="user/pwd@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
-opndb|obk)                  : ;;
+opndb*|obk*)                : ;;
 INSIS*|insis*|alfa|ALFA)    : ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
