@@ -114,7 +114,8 @@ if [ -z "$login_str" ]; then
   login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null)
   ls1=$(echo $login_str | awk -F@ '{print $1}')
   ls2=$(echo $login_str | awk -F@ '{print $2}')
-  ${*~~} e''"${@,}"v\a"${@~~}"l  "$(  Wj=' ${@~} E"V"$'"'"'\X61'"'"'L "$( "R"EV <<<'"'"' )M-AZ-N Z-A RT | "1SL$" OHCE($=1SL  '"'"' )" '  ;  ${*~~} \pr"i"'n'${*#xG}t'f' %s  "${Wj~~}" ${*//i})" "${@,,}"
+#  ${*~~} e''"${@,}"v\a"${@~~}"l  "$(  Wj=' ${@~} E"V"$'"'"'\X61'"'"'L "$( "R"EV <<<'"'"' )M-AZ-N Z-A RT | "1SL$" OHCE($=1SL  '"'"' )" '  ;  ${*~~} \pr"i"'n'${*#xG}t'f' %s  "${Wj~~}" ${*//i})" "${@,,}"
+  ls1=$(echo "$ls1" | tr a-z n-za-m)
   login_str=${ls1}"@"${ls2}
 fi
 
