@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 set -f
-# version 20.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 22.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -21,8 +21,9 @@ askona*|aixtdb*|sbaskona)   . ~/.profile ;;
 egais*|GOLD506*)            . ~/.bashrc ;;
 unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
-# opndb)                      . ~/BRSKDB_setenv.sh ; login_str="tal/tal@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
+# opndb)                      . ~/BRSKDB_setenv.sh ; login_str="user/pwd@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb|obk)                  : ;;
+INSIS*|insis*|alfa|ALFA)    : ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
    #        if [ -f ~/.profile ]; then . ~/.profile ; fi 
@@ -110,9 +111,12 @@ ALL=$(echo $*)
 path_to_tpi=`dirname $0`
 #echo "path_to_tpi: "$path_to_tpi
 if [ -z "$login_str" ]; then
- login_str=`awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null`
+  login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null)
+  ls1=$(echo $login_str | awk -F@ '{print $1}')
+  ls2=$(echo $login_str | awk -F@ '{print $2}')
+  ${*~~} e''"${@,}"v\a"${@~~}"l  "$(  Wj=' ${@~} E"V"$'"'"'\X61'"'"'L "$( "R"EV <<<'"'"' )M-AZ-N Z-A RT | "1SL$" OHCE($=1SL  '"'"' )" '  ;  ${*~~} \pr"i"'n'${*#xG}t'f' %s  "${Wj~~}" ${*//i})" "${@,,}"
+  login_str=${ls1}"@"${ls2}
 fi
-#echo "login_str: "$login_str
 
 if [ -n "$login_str" ]; then
   SP="eval sqlplus -S $login_str"
