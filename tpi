@@ -2,7 +2,7 @@
 set -f
 # version 23.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
-# echo "tpi:"$* 
+# echo "tpi: "$* 
 P0_=$1
 
 PDB=`echo "$P0_" | awk -F/ '{print $2}'`
@@ -129,7 +129,9 @@ xor()
 #for tnsnames connection through .tpi_login file
 #format .tpi_login file: sid encusername/encpassword@tns_alias
 path_to_tpi=`dirname $0`
-#echo "path_to_tpi: "$path_to_tpi
+if [ "$path_to_tpi" = "/bin" ]; then
+  path_to_tpi=`find . -type f -name .tpi_login -exec dirname {} \;`
+fi
 if [ -z "$login_str" ]; then
   login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null)
   chmod 600 $path_to_tpi/.tpi_login 2>/dev/null
@@ -148,7 +150,6 @@ else
 fi
 
 cd /tmp
-
 
 logf()
 {
