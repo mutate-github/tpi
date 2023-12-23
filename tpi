@@ -316,6 +316,7 @@ case "$(db_version)" in
     SQLCMD1_="c.command_name, "
     SQLCMD2_=", v\$sqlcommand c "
     SQLCMD3_="and s.command = c.command_type "
+    SQLCMD4_='alter session set "_optimizer_cartesian_enabled"=false;'
     ;;
 esac
 
@@ -323,7 +324,7 @@ init_sql_sess
 
 $SP <<EOF >$LOGF
 set timing off
-alter session set "_optimizer_cartesian_enabled"=false;
+$SQLCMD4_
 $SQL_SESS
 EOF
 logf
