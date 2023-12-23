@@ -37,7 +37,7 @@ case "$P1_" in
   [z]14-*|kem-ora01)                                                                     cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   z11-00341-otbd|opndb|SMOK-ORA01|obk|obkt|p750alife|alfa)                               cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   INSIS*)                                                                                cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
-  aisutf*|unit*)                                                                         cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
+  ais*|unit*|alpha|beta)                                                                 cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
   jet|ja)                                                                                cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
   cft*|kik*|bd*|prov*)                                                                   cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
   EPS*|creditc)                                                                          cat $wtpi | ssh oracle@$P1_ ". ~/db12.env; /bin/bash -s $sid $args" ;;
