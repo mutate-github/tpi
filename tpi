@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -f
 # version 23.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
@@ -106,6 +106,26 @@ ID="$1"
 ALL=$(echo $*)
 # echo "tpi ALL: "$ALL
 
+dec2ascii()
+{
+  RES=""
+  for i in `echo $* | sed 's|/| |g'`; do
+    RES="$RES`printf \\\\$(printf '%03o' $i)`"
+  done
+  echo $RES
+}
+
+xor()
+{
+  KEY=$1
+  shift
+  RES=""
+  for i in `echo $* | sed 's|/| |g'`; do
+    RES="$RES/$(($i ^$KEY))"
+  done
+  echo $RES
+}
+
 #for tnsnames connection through .tpi_login file
 #format .tpi_login file: sid encusername/encpassword@tns_alias
 path_to_tpi=`dirname $0`
@@ -119,12 +139,8 @@ if [ -n "$login_str" ]; then
   ls1=$(echo $login_str | awk -F@ '{print $1}')
   ls2=$(echo $login_str | awk -F@ '{print $2}')
 #  ls1=$(echo "$ls1" | tr a-z n-za-m)
-  for ((i=0; i < ${#ls1}; i++)); do
-    char_code=$(printf '%d' "'${ls1:$i:1}")
-    d_char=$((char_code ^ 9))
-    d_text="${d_text}$(printf \\$(printf '%03o' "$d_char"))"
-  done
-  ls1="${d_text}"
+  ls1=`xor 127 $ls1`
+  ls1=`dec2ascii $ls1`
   login_str=${ls1}"@"${ls2}
   SP="eval sqlplus -S $login_str"
 else
