@@ -61,14 +61,16 @@ case "$P1_" in
  INSIS*)
          cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args"
  ;;
- jet)
-         UNAME=`uname | awk -F_ '{print $1}'`
+ jet|ja) UNAME=`uname | awk -F_ '{print $1}'`
          if [ "$UNAME" = "CYGWIN" ]; then
-             cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/bash -s $sid $args"
+             cat $wtpi | ssh -J amazon1 oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args"
          else
-             cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $sid $args"
+             cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args"
          fi
  ;;
+ cft*|kik*|bd*|prov*) cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
+ EPS*|creditc) cat $wtpi | ssh oracle@$P1_ ". ~/db12.env; /bin/bash -s $sid $args" ;;
+ KIKOPDR) cat $wtpi | ssh oracle@$P1_ ". ~/db11.env; /bin/bash -s $sid $args" ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
     #if [ "$rc" -eq 0 ]; then
