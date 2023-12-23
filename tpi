@@ -1,15 +1,24 @@
-#!/bin/sh
+#!/bin/bash
 set -f
 # version 23.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
-P0_=$1
+_P1_=$1
 
-PDB=`echo "$P0_" | awk -F/ '{print $2}'`
-sid=`echo "$P0_" | awk -F/ '{print $1}'`
+PDB=`echo "$_P1_" | awk -F/ '{print $2}'`
+sid=`echo "$_P1_" | awk -F/ '{print $1}'`
 if [ -n "$PDB" ]; then
   SET_PDB_="alter session set container=$PDB;"
 fi
+
+_P2_="$2"
+if [[ "$_P2_" =~ "@" ]]; then
+  login_str="$_P2_"
+  shift
+fi
+#echo "tpi_P1_: "$_P1_
+#echo "tpi_P2_: "$_P2_
+#echo "tpi_@: "$@
 
 case "$sid" in
 cft*|kik*|bd*|prov*)        . ~/db12kik.env ;;
@@ -126,28 +135,18 @@ xor()
   echo $RES
 }
 
-#for tnsnames connection through .tpi_login file
-#format .tpi_login file: sid encusername/encpassword@tns_alias
-path_to_tpi=`dirname $0`
-if [ "$path_to_tpi" = "/bin" ]; then
-  path_to_tpi=`find . -type f -name .tpi_login -exec dirname {} \;`
-fi
-if [ -z "$login_str" ]; then
-  login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null)
-  chmod 600 $path_to_tpi/.tpi_login 2>/dev/null
-fi
-
 if [ -n "$login_str" ]; then
   ls1=$(echo $login_str | awk -F@ '{print $1}')
   ls2=$(echo $login_str | awk -F@ '{print $2}')
-#  ls1=$(echo "$ls1" | tr a-z n-za-m)
   ls1=`xor 127 $ls1`
   ls1=`dec2ascii $ls1`
-  login_str=${ls1}"@"${ls2}
+  login_str=${ls1}"@"\'${ls2}\'
   SP="eval sqlplus -S $login_str"
 else
   SP="eval sqlplus -S '/ as sysdba'"
 fi
+
+# echo "tpi_SP: "$SP
 
 cd /tmp
 
@@ -5926,8 +5925,8 @@ logf
 export TERM=xterm
 U=`uname | awk -F_ '{print $1}'`
 case "$U" in
- CYGWIN)  echo -n "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   " ;;
- AIX)     echo "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   " \\c ;;
+ CYGWIN)  echo -n "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   " ;;
+ AIX)     echo -n "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   " ;;
  *)
  red=`tput setaf 1`
  green=`tput setaf 2`
@@ -5936,7 +5935,7 @@ case "$U" in
  magneta=`tput setaf 5`
  cyan=`tput setaf 6`
  reset=`tput sgr0`
- echo -n ${green}"DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "
+ echo -n ${green}"DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   "
  ;;
 esac
 

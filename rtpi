@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #export PROMPT_COMMAND='PS1=`echo "\n\[\e[0;33m\][\D{%d.%m.%Y %H:%M:%S}] \[\e[01;31m\]\u@\h:\$ORACLE_SID \[\e[1;34m\]\w\n\$ \[\e[0;32m\]\[\e[0m\]"`'
 
 #aliases=/etc/profile.d/00-dbs-aliases.sh
@@ -7,54 +6,75 @@
 #  . /etc/profile.d/00-dbs-aliases.sh
 #fi
 
-P1_=$1
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 [SERVER] ORACLE_SID"
+  exit
+fi
+
+P1_="$1"
+sid="$2"
+if [ -z "$sid" ]; then sid="$P1_"; fi
 shift
-args=$*
-# args=`echo $args | tr '$' '~'`
+shift
+args="$@"
 args=$(echo $args | sed  's|\$|\\$|g')
 BASEDIR=`dirname $0`
 wtpi="$BASEDIR/tpi"
 
 # echo "host: "$P1_
+# echo "sid: "$sid
 # echo "args: "$args
 # alias | grep "$P1_"
+
+#for tnsnames connection through .tpi_login file
+#format .tpi_login file: sid encusername/encpassword@tns_alias
+BASEDIR=`dirname $0`
+if [ "$BASEDIR" = "/bin" ]; then
+  BASEDIR=`find . -type f -name .tpi_login -exec dirname {} \;`
+fi
+login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $BASEDIR/.tpi_login | head -1 2>/dev/null)
+chmod 600 $BASEDIR/.tpi_login 2>/dev/null
+# echo "rtpi_login_str: "$login_str
+
 shopt -s nocasematch
 case "$P1_" in
  s-dtln-wmsdb*|db06.wms.korablik.ru)
-#   cat $wtpi | eval $P1_ "sudo -i -u oracle /bin/sh -s $args"
-   cat $wtpi | ssh  $P1_ "sudo -i -u oracle /bin/bash -s $args"
+   cat $wtpi | ssh  $P1_ "sudo -i -u oracle /bin/bash -s $sid $args"
    ;;
  storgco|ikb)
-   $wtpi $P1_ $args
+   $wtpi $sid $login_str $args
    ;;
  [0-9]*)
-   cat $wtpi | ssh $P1_ "/bin/bash -s $args"
+   cat $wtpi | ssh $P1_ "/bin/bash -s $sid $args"
    ;;
  [z]14-*|p260unc*|10.35.17.5)
 #        echo "args:"$args
-         args2=$(echo "$args" | sed  's|\$|\\\\$|g')
+#         args2=$(echo "$args" | sed  's|\$|\\\\$|g')
 #        echo "args2:"$args2
-#   cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/sh -s $args"
-#   cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/sh -s $args2'
-    cat $wtpi | ssh $P1_ "/bin/bash -s $args"
+#   cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/bash -s $args"
+#   cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/bash -s $args2'
+    cat $wtpi | ssh $P1_ "/bin/bash -s $sid $args"
    ;;
- jet)
-	 UNAME=`uname | awk -F_ '{print $1}'`
-	 if [ "$UNAME" = "CYGWIN" ]; then 
-             cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/bash -s $args"
-	 else
-             cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $args"
-	 fi
- ;;
  172.16.104.36|opndb|0.35.11.4|SMOK-ORA01|obk|10.35.17.231|obkt|p750alife|alfa)
-         cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
+         cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args"
+ ;;
+ INSIS*)
+         cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args"
+ ;;
+ jet)
+         UNAME=`uname | awk -F_ '{print $1}'`
+         if [ "$UNAME" = "CYGWIN" ]; then
+             cat $wtpi | ssh -J amazon1 oracle@$P1_ "/bin/bash -s $sid $args"
+         else
+             cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $sid $args"
+         fi
  ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
     #if [ "$rc" -eq 0 ]; then
     #  cat $wtpi | eval $P1_ '/bin/sh -s $args'
     #else
-      cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $args"
+      cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $sid $args"
     #fi
    ;;
 esac
@@ -77,7 +97,7 @@ case $host in
   *) username=oracle ;;
 esac
 
-cat ~/tal/tpi | ssh $username@$HST "/bin/sh -s $args"
+cat ~/tal/tpi | ssh $username@$HST "/bin/bash -s $args"
 
 exit
 
