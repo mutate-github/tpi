@@ -13,7 +13,7 @@ fi
 
 P1_="$1"
 sid="$2"
-if [ -z "$sid" ]; then sid="$P1_"; fi
+# if [ -z "$sid" ]; then sid="$P1_"; fi
 shift
 shift
 args="$@"
