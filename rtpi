@@ -47,12 +47,7 @@ case "$P1_" in
 	 fi
  ;;
  172.16.104.36|opndb|0.35.11.4|SMOK-ORA01|obk|10.35.17.231|obkt|p750alife|alfa)
-         UNAME=`uname | awk -F_ '{print $1}'`
-         if [ "$UNAME" = "CYGWIN" ]; then
-             cat $wtpi | ssh -J amazon1,dcb oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
-         else
-             cat $wtpi | ssh  oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
-         fi
+         cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
  ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
