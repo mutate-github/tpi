@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #export PROMPT_COMMAND='PS1=`echo "\n\[\e[0;33m\][\D{%d.%m.%Y %H:%M:%S}] \[\e[01;31m\]\u@\h:\$ORACLE_SID \[\e[1;34m\]\w\n\$ \[\e[0;32m\]\[\e[0m\]"`'
 
@@ -18,7 +18,7 @@ wtpi="$BASEDIR/tpi"
 # echo "host: "$P1_
 # echo "args: "$args
 # alias | grep "$P1_"
-
+shopt -s nocasematch
 case "$P1_" in
  s-dtln-wmsdb*|db06.wms.korablik.ru)
 #   cat $wtpi | eval $P1_ "sudo -i -u oracle /bin/sh -s $args"
@@ -45,6 +45,14 @@ case "$P1_" in
 	 else
              cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $args"
 	 fi
+ ;;
+ 172.16.104.36|opndb|0.35.11.4|SMOK-ORA01|obk|10.35.17.231|obkt|p750alife|alfa)
+         UNAME=`uname | awk -F_ '{print $1}'`
+         if [ "$UNAME" = "CYGWIN" ]; then
+             cat $wtpi | ssh -J amazon1,dcb oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
+         else
+             cat $wtpi | ssh  oracle@p260unc2 ". ~/unc10g_setenv.sh; cd tal; /bin/bash -s $args"
+         fi
  ;;
  *) #alias $P1_ >/dev/null 2>&1
     #rc=$?
