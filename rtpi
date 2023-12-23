@@ -32,7 +32,7 @@ BASEDIR=`dirname $0`
 if [ "$BASEDIR" = "/bin" ]; then
   BASEDIR=`find . -type f -name .tpi_login -exec dirname {} \;`
 fi
-login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $BASEDIR/.tpi_login | head -1 2>/dev/null)
+login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $BASEDIR/.tpi_login 2>/dev/null | head -1)
 chmod 600 $BASEDIR/.tpi_login 2>/dev/null
 # echo "rtpi_login_str: "$login_str
 
