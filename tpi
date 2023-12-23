@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 22.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 23.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi:"$* 
 P0_=$1
@@ -21,7 +21,7 @@ askona*|aixtdb*|sbaskona)   . ~/.profile ;;
 egais*|GOLD506*)            . ~/.bashrc ;;
 unc*)                       . ~/${sid}_setenv.sh ;;
 goldwhs)                    . ~/.bash_profile ;;
-# opndb)                      . ~/BRSKDB_setenv.sh ; login_str="user/pwd@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
+# opndb)                      . ~/BRSKDB_setenv.sh ; login_str="encuser/encpwd@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb*|obk*)                : ;;
 INSIS*|insis*|alfa|ALFA)    : ;;
 *) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
@@ -107,21 +107,27 @@ ALL=$(echo $*)
 # echo "tpi ALL: "$ALL
 
 #for tnsnames connection through .tpi_login file
-#format .tpi_login file: sid username/password@tns_alias
+#format .tpi_login file: sid encusername/encpassword@tns_alias
 path_to_tpi=`dirname $0`
 #echo "path_to_tpi: "$path_to_tpi
 if [ -z "$login_str" ]; then
   login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $path_to_tpi/.tpi_login 2>/dev/null)
-  ls1=$(echo $login_str | awk -F@ '{print $1}')
-  ls2=$(echo $login_str | awk -F@ '{print $2}')
-#  ${*~~} e''"${@,}"v\a"${@~~}"l  "$(  Wj=' ${@~} E"V"$'"'"'\X61'"'"'L "$( "R"EV <<<'"'"' )M-AZ-N Z-A RT | "1SL$" OHCE($=1SL  '"'"' )" '  ;  ${*~~} \pr"i"'n'${*#xG}t'f' %s  "${Wj~~}" ${*//i})" "${@,,}"
-  ls1=$(echo "$ls1" | tr a-z n-za-m)
-  login_str=${ls1}"@"${ls2}
+  chmod 600 $path_to_tpi/.tpi_login 2>/dev/null
 fi
 
 if [ -n "$login_str" ]; then
+  ls1=$(echo $login_str | awk -F@ '{print $1}')
+  ls2=$(echo $login_str | awk -F@ '{print $2}')
+#  ls1=$(echo "$ls1" | tr a-z n-za-m)
+  for ((i=0; i < ${#ls1}; i++)); do
+    char_code=$(printf '%d' "'${ls1:$i:1}")
+    d_char=$((char_code ^ 7))
+    d_text="${d_text}$(printf \\$(printf '%03o' "$d_char"))"
+  done
+  ls1="${d_text}"
+  login_str=${ls1}"@"${ls2}
   SP="eval sqlplus -S $login_str"
-else 
+else
   SP="eval sqlplus -S '/ as sysdba'"
 fi
 
@@ -132,7 +138,7 @@ logf()
 {
 cat $LOGF  | tr -d \~
 rm -f $LOGF
-#rm -f $LOGINSQL >/dev/null 2>&1
+rm -f $LOGINSQL >/dev/null 2>&1
 }
 
 
@@ -238,7 +244,7 @@ init_sql_sess()
 {
 SQL_SESS="
 set lines 300 pages 1000
-set echo off feed off veri off tab off
+set echo off feed off veri off tab off timing on
 col spid for a8
 col sid for 99999
 col serial# for 999999
@@ -278,7 +284,7 @@ P1_=$1 #; echo "P1_: "$P1_
 P2_=$2 #; echo "P2_: "$P2_
 
 case "$P1_" in
- access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = '$P2_'" ; P1_="a" ;;
+	access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
  k)    SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
  i)    SQL_STATUS="AND s.status in ('INACTIVE')  " ;;
  a)    SQL_STATUS="AND s.status like '%' " ;;
@@ -303,6 +309,7 @@ esac
 init_sql_sess
 
 $SP <<EOF >$LOGF
+set timing off
 alter session set "_optimizer_cartesian_enabled"=false;
 $SQL_SESS
 EOF
