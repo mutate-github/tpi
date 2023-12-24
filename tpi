@@ -85,9 +85,9 @@ init_msg()
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
   sql__="sql SQL_ID | SQLTEXT [plan SQL_ID] [sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] ] - Find out sql_id by SQLTEXT\SQL_ID from V\$SQL, plan from VSQL_PLAN by sql_id, sqlstat from V\$SQLSTAT by sql_id"
-  ash__="ash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [format display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | (tmc)chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
-  dhash__="dhash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] | (tmc)chart ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
-  spm__="spm [days def7 - baselines] [ blplan SQL_HANDLE|% (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | blevolve SQL_HANDLE PLAN_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | report_sql_monitor SQL_ID ]"
+  ash__="ash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID PHV [fmt display plan] | sqlstat [SQL_ID|par|inv|fch|sor|exe|pio|lio|row|cpu|ela|iow|mem] [executions] | temp [sizeMb] | (tmc)chart ] - Top SQL, Events, Sessions V\$ACTIVE_SESSION_HISTORY"
+  dhash__="dhash [dd/mm/yy-HH:MI-HH:MI(hours) - def1h] [ event | sess [SID SERIAL# [all|nosqlid] | SQL_ID] | where [FIELD CONDITION] | sql [top [event]] [all [event]] [SQL_ID|SQL_TEXT] | plan SQL_ID PHV [fmt display plan] | sqlstat [SQL_ID|pio|lio|cpu|exe|ela|fch|sor|iow|row] [executions] | growseg [TBS] [SEGMENT] | segstat [SEGMENT] [OWNER] | temp [sizeMb] | (tmc)chart ] - Top SQL, Events, Sessions DBA_HIST_ACTIVE_SESS_HISTORY"
+  spm__="spm [days def7 - baselines] [find %|SQL_HANDLE SQL_PLAN_NAME] [ blplan %|SQL_HANDLE (PLAN_NAME) | blexec [count] | bllpfcc SQL_ID PLAN_HASH_VALUE [SQL_HANDLE] | bllpfawr SQL_ID PLAN_HASH_VALUE MIN_SNAP_ID MAX_SNAP_ID | blchattr SQL_HANDLE PLAN_NAME ATTR VALUE | blchplan NEW_SQL_ID NEW_PHV OLD_SQLSET_NAME | blevolve SQL_HANDLE PLAN_NAME | sqlset_list SQLSET_NAME OWNER | sqlset_plan SQLSET_NAME SQL_ID [PHV] | sqlset_drop SQLSET_NAME | bldrop SQL_HANDLE (PLAN_NAME) | sqltune [SQL_ID | awr SQL_ID begin_snap end_snap]  | sqltune_report TASK_NAME | sqltune_accept TASK_NAME | sqltune_create_plan_bl TASK_NAME OWNER PLAN_HASH_VALUE | sqltune_list [TASK_NAME] [cnt] | sqltune_drop TASK_NAME | sql_profiles | sql_profile_chattr TASK_NAME ATTR VALUE  | sql_profile_drop NAME | hints profile|baseline|patch NAME | sqlpatch_list | sqlpatch_create SQL_ID HINTS | sqlpatch_alter PATCHNAME enable|disable | sqlpatch_drop PATCHNAME | report_sql_monitor SQL_ID ]"
 }
 
 init_msg
@@ -4303,14 +4303,20 @@ esac
 ;;
 plan)
   SQL_ID_=`echo $* | awk '{print $2}'`
-  FMT_=`echo $* | awk '{print $3}'`
+  PHV_=`echo $* | awk '{print $3}'`
+  if [ "$PHV_" = "%" ]; then PHV_=''; fi
+  shift
+  shift
+  shift
+  FMT_="$*"
+  echo "FMT_: "$FMT_
   $SP <<EOF >$LOGF
   PROMPT "Avilable SNAP_ID from  WRM\$_SNAPSHOT_DETAILS and dba_hist_active_sess_history in $INTERVAL_BT_ for sql_id: $SQL_ID_ :"
-  set lines 250 pages 60 feedback off
+  set lines 250 pages 90 feedback off
   col SQL_EXEC_START for a15
   select to_char(SQL_EXEC_START,'dd/mm/yyyy') SQL_EXEC_START,sql_id,sql_plan_hash_value,min(snap_id),max(snap_id) from dba_hist_active_sess_history 
   where dbid=(select dbid from v\$database) and snap_id > (select min(snap_id) from WRM\$_SNAPSHOT_DETAILS where $INTERVAL_BT_ )
-  and sql_id='$SQL_ID_'
+  and sql_id='$SQL_ID_' and sql_plan_hash_value like '%$PHV_%'
   and $INTERVAL_SQL_
   group by to_char(SQL_EXEC_START,'dd/mm/yyyy'),sql_id,sql_plan_hash_value order by  min(snap_id);
 
@@ -4327,11 +4333,11 @@ plan)
   column cost for 9999999
   column plan_hash_value for 9999999999
   select unique p.timestamp,p.sql_id,p.plan_hash_value, s.snap_id from DBA_HIST_SQL_PLAN p, DBA_HIST_SNAPSHOT s
-  where p.sql_id = '$SQL_ID_' and p.timestamp between s.begin_interval_time and s.end_interval_time order by p.timestamp;
+  where p.sql_id = '$SQL_ID_' and p.plan_hash_value like '%$PHV_%' and $INTERVAL_BI_ and p.timestamp between s.begin_interval_time and s.end_interval_time order by p.timestamp;
 
   set pages 0
   --select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '-predicate +outline'));
-  select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '$FMT_'));
+  select * from table(dbms_xplan.display_awr(sql_id=>'$SQL_ID_',plan_hash_value=>'$PHV_',format=>nvl('$FMT_', 'typical +outline last')));
 EOF
 ;;
 sqlstat)
@@ -4858,8 +4864,8 @@ plan)
   column plan_hash_value for 9999999999
   column OBJECT_NAME for a30
   BREAK ON plan_hash_value SKIP 1 NODUPLICATES
-  -- select plan_table_output from table(dbms_xplan.display_cursor('$P1_',null,'typical +outline last')) ;
- select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', '-predicate') ));
+-- select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', '-predicate') ));
+  select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', 'typical +outline last') ));
 EOF
 ;;
 sqlstat)
@@ -4971,51 +4977,22 @@ logf
 
 spm()
 {
-type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
+type_=`echo $* | awk '{print $1}'`
 
-case $type_ in
- *[0-9])  DAYS=$type_ ;;
- *)       DAYS=7 ;;
+case "$type_" in
+    find)  P1_=`echo $* | awk '{print $2}'` ; P2_=`echo $* | awk '{print $3}'` ; COND1_=" and sql_handle like '$P1_' and plan_name like nvl('$P2_','%') " ; DAYS=10950 ;;
+  [0-9]*)  DAYS=$type_ ; shift ; type_=`echo $* | awk '{print $1}'` ;;
+       *)  COND1_="" ; DAYS=7 ;;
 esac
+# echo "spm DAYS: "$DAYS
+# echo "spm COND1_: "$COND1_
 
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 400 timing off
 PROMPT
-PROMPT Current records in dba_sql_plan_baselines by last days: $DAYS
+PROMPT Current records in dba_sql_plan_baselines by last days: $DAYS and condition: $COND1_
 PROMPT
-/*
-column SQL_NAME for a30 heading "SQL_HANDLE \ PLAN_NAME"
-column SQL_HANDLE for a20
-column PLAN_NAME for a30
-column creator for a10
-column origin for a12
-column parsing_schema_name for a10
-column created for a10
-column last_modified for a10
-column last_executed for a10
-column enabled for a3
-column accepted for a3
-column fixed for a3
-column optimizer_cost for 9999999 heading COST
-column module for a12
-column executions for 999999999 heading EXEC
-column elapsed_time for 99999.00000 heading ELA_T\EX
-column cpu_time for 99999.00000 heading CPU_T\EX
-column buffer_gets for 99999999999 heading BUFGETS\EX
-column disk_reads for 999999999 heading DISKR\EX
-column rows_processed for 999999999 heading ROWS\EX
---ttitle left "View dba_sql_plan_baselines:"
-select sql_handle||chr(10)||plan_name sql_name,creator,origin,parsing_schema_name,
-cast(created as date) created, cast(last_modified as date) last_modified, cast(last_executed as date) last_executed,
-enabled, accepted, fixed, optimizer_cost, module, executions, 
-decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/decode(executions, 0, 1, executions)/1000000, 4)) cpu_time, 
-(elapsed_time / decode(executions, 0, 1, executions)) / 1000000 elapsed_time, 
-trunc(buffer_gets/decode(executions, 0, 1, executions)) buffer_gets,
-trunc(disk_reads/decode(executions, 0, 1, executions)) disk_reads,
-trunc(rows_processed/decode(executions, 0, 1, executions)) rows_processed 
-from dba_sql_plan_baselines where created > sysdate-$DAYS order by cast(created as date), sql_handle;
-*/
 set serveroutput on
 declare
  v_sqlid VARCHAR2(13);
@@ -5036,12 +5013,11 @@ BEGIN
              trunc(rows_processed/decode(executions, 0, 1, executions)) rows_processed
                  from (select t.*, c.* from dba_sql_plan_baselines c, table(dbms_xplan.DISPLAY_SQL_PLAN_BASELINE(c.sql_handle, c.plan_name)) t
                  /* where c.sql_handle = 'SQL_0b27795a43a131fa' */) g
-                 where PLAN_TABLE_OUTPUT like 'Plan hash value%' and created>sysdate-$DAYS order by created) loop
+                 where PLAN_TABLE_OUTPUT like 'Plan hash value%' $COND1_ and created>sysdate-$DAYS order by created) loop
     v_num := to_number(sys.UTL_RAW.reverse(sys.UTL_RAW.SUBSTR(sys.dbms_crypto.hash(src => UTL_I18N.string_to_raw(a.sql_text || chr(0),'AL32UTF8'), typ => 2),9,4)) || 
              sys.UTL_RAW.reverse(sys.UTL_RAW.SUBSTR(sys.dbms_crypto.hash(src => UTL_I18N.string_to_raw(a.sql_text || chr(0),'AL32UTF8'), typ => 2),13,4)),RPAD('x', 16, 'x'));
     v_sqlid := '';
-    FOR i IN 0 .. FLOOR(LN(v_num) / LN(32))
-    LOOP
+    FOR i IN 0 .. FLOOR(LN(v_num) / LN(32)) LOOP
         v_sqlid := SUBSTR('0123456789abcdfghjkmnpqrstuvwxyz',FLOOR(MOD(v_num / POWER(32, i), 32)) + 1,1) || v_sqlid;
     END LOOP;
     dbms_output.put_line(lpad(v_sqlid, 13, '0')||' '||rpad(a.plan_hash_value,12)||' '||rpad(a.sql_handle,20)||' '||rpad(a.plan_name,30)||' '||rpad(cast(a.created as date),19)||' '||
@@ -5208,7 +5184,7 @@ blevolve)
   sql_handle="$2"
   plan_name="$3"
 $SP <<EOF >$LOGF
-set lines 230 pages 400
+set lines 2230 pages 400
 set long 1000000000 longc 1000000000
 set echo off feed off veri off tab off 
 set serveroutput on
@@ -5545,6 +5521,62 @@ select substr(extractvalue(value(d), '/hint'), 1, 32760) as outline_hints, rownu
                     and comp_data is not null)) d
 --)
 ;
+EOF
+;;
+sqlpatch_create)
+P2_="$2"
+shift
+shift
+P3_="$*"
+echo "$P2_"
+echo "$P3_"
+exit
+$SP <<EOF >$LOGF
+declare
+  l_sql_id_trg char(13) := '$P2_';
+  l_child_number_src number := 0;        -- v\$sql.child_number  
+  l_hints varchar2(32767) := q'[$P3_]';
+  l_sql_text clob;
+begin
+  -- удаление SQL патча, если такой есть 
+  dbms_sqldiag.drop_sql_patch(name => 'patch_'||l_sql_id_trg, ignore => true);
+
+  select sql_fulltext into l_sql_text from v\$sql where sql_id = l_sql_id_trg and rownum = 1;
+--  select sql_text into l_sql_text from dba_hist_sqltext where sql_id = l_sql_id_trg and rownum = 1;
+  
+  -- создание SQL патча это PROCEDURE  in 11g
+  sys.dbms_sqldiag_internal.i_create_patch(
+      sql_text  => l_sql_text,
+      hint_text => l_hints,
+      name      => 'patch_'||l_sql_id_trg);
+  dbms_output.put_line('patch_'||l_sql_id_trg||' was created');    
+end;
+/
+EOF
+;;
+sqlpatch_list)
+$SP <<EOF >$LOGF
+set lines 230 long 10000
+column name for a20
+column sql_text for a140
+column created for a20
+column last_modified for a20
+column status for a10
+column force_matching for a5
+select name, sql_text, cast(created as date) created, cast(last_modified as date) last_modified, status, force_matching from DBA_SQL_PATCHES order by last_modified;
+EOF
+;;
+sqlpatch_alter)
+P2_="$2"
+P3_="$3"
+$SP <<EOF >$LOGF
+exec DBMS_SQLDIAG.ALTER_SQL_PATCH(name=>'$P2_', attribute_name=>'STATUS', value=>'$P3_');
+EOF
+;;
+sqlpatch_drop)
+P2_="$2"
+$SP <<EOF >$LOGF
+exec DBMS_SQLDIAG.DROP_SQL_PATCH(name=> '$P2_');
 EOF
 ;;
 report_sql_monitor)
@@ -5938,6 +5970,7 @@ case "$U" in
 esac
 
 
+# echo "ID: "$ID
 case "$ID" in
 ""|a|k|in|access)  echo $a__ ${reset}; active_sessions $ALL ;;
 lock)   echo $lock__ ${reset}; lock $ALL ;;
@@ -5982,7 +6015,7 @@ corrupt) shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
 sql) shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
 ash) shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;
 dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL ; echo $dhash__ ;;
-spm) shift; ALL=$*;  echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
+spm) shift; ALL=$*; echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
 *)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
 
