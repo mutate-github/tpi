@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 23.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 24.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -48,7 +48,7 @@ fi
 
 init_msg()
 {
-  a__="a - ALL sessions, i - INACTIVE, k - KILLED  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
+  a__="a - ALL sessions, in - INACTIVE, k - KILLED  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
@@ -5939,7 +5939,7 @@ esac
 
 
 case "$ID" in
-""|a|k|i|access)  echo $a__ ${reset}; active_sessions $ALL ;;
+""|a|k|in|access)  echo $a__ ${reset}; active_sessions $ALL ;;
 lock)   echo $lock__ ${reset}; lock $ALL ;;
 p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)  echo $db__ ${reset}; db ;;
