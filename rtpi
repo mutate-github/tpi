@@ -15,7 +15,7 @@ args="$@"
 args=$(echo $args | sed -e 's|\$|\\$|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e 's|"|\\"|g')
 BASEDIR=`dirname $0`
 wtpi="$BASEDIR/tpi"
-echo "host: $P1_  sid: $sid  args: $args"
+# echo "host: $P1_  sid: $sid  args: $args"
 #for tnsnames connection through .tpi_login file
 #format .tpi_login file: sid encusername/encpassword@tns_alias
 BASEDIR=`dirname $0`
