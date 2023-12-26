@@ -60,5 +60,6 @@ else
      -H "Subject: $sub" -H "From: $sender" -H "To: $receiver_" -F \
     '=(;type=multipart/mixed' -F "=$msg;type=text/plain" -F \
       "file=@$file;type=$MIMEType;encoder=base64" -F '=)'
+echo "Mail sent."
 fi
 
