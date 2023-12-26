@@ -18,6 +18,7 @@ echo `date`"   HDSALL: "$HDSALL
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
+if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
 TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
 TNS_CATALOG=`$BASEDIR/iniget.sh mon.ini backup tns_catalog`

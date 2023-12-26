@@ -4,6 +4,7 @@ set -f
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
+if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`

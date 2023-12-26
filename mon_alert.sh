@@ -10,6 +10,7 @@ export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
+if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 #MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 #WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"

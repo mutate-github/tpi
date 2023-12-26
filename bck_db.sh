@@ -19,6 +19,7 @@ echo $DS_"   HDSALL: "$HDSALL
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
+if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
 WMMAIL="$BASEDIR/$MAILS"
 MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`

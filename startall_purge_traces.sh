@@ -5,6 +5,7 @@
 
 BASEDIR=$(dirname $0)
 LOGDIR="$BASEDIR/../log"
+if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 HOSTS=$($BASEDIR/iniget.sh mon.ini servers host)
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=$(cat $SET_ENV_F)
@@ -88,4 +89,6 @@ for HOST in $(echo "$HOSTS" | xargs -n1 echo); do
     cat $SCRIPT_NAME | ssh oracle@$HOST "/bin/sh -s $DB"
   done # DB
 done # HOST
+
+# rm $SCRIPT_NAME
 
