@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 24.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 28.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -52,7 +52,7 @@ init_msg()
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
-  oratop__="oratop [ h ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY"
+  oratop__="oratop [ h | dhsh ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
   size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
@@ -715,7 +715,7 @@ esac
 logf
 }
 
-legend_oratop="prompt NCPU   - Number of CPU                                   AAS    - Average Active Sessions. (! if>#cpu)           MBPS   - I/O megabytes per second (throughput)
+legend_oratop="prompt NCPU   - Number of CPU                                   AAS    - Average Active Sessions. (! if>#cpu)           IOMBPS - I/O megabytes per second (throughput)
 prompt HCPUB  - Host cpu busy %(busy/busy+idle). (! if>90%)     AST    - Active user Sessions Total (ASCPU+ASIO+ASWA)   IOPS   - I/O requests per second
 prompt CPUUPS - CPU Usage Per Sec                               ASCPU  - Active Sessions on CPU                         IORL   - I/O avg synch s/b/read latency in msec (! if>10ms)
 prompt LOAD   - Current os load. (! if>2*#CPU and high cpu)     ASIO   - Active Sessions waiting on user I/O            LOGR   - Logical reads per sec
@@ -726,35 +726,33 @@ prompt TPGA   - Total pga allocated                             UCPS   - User ca
 prompt SCT    - Session Count Total                             SSRT   - Sql service response time (T/call)"
 
 SET_COL_ORATOP="
-col begin_time for a17
-col NCPU for 999
-col HCPUB for 9999
-col CPUUPS for 99999
-col LOAD for 999
-col DCTR for 999
-col DWTR for 999
-col SPFR for 99999
-col TPGA for 99999
-col SCT for 9999
-col AAS for 9999
-col AST for 9999
-col ASCPU for 9999
-col ASIO for 9999
-col ASWA for 9999
-col ASPQ for 9999
-col UTPS for 99999
-col UCPS for 9999999
-col SSRT for 9999999
-col MBPS for 99999
-col IOPS for 999999
-col IORL for 99999
-col LOGR for 999999999
-col PHYR for 999999
-col PHYW for 999999
-col TEMP for 99999
-col DBTM for 99999"
-
-
+col BEGIN_TIME for a17 heading '1|BEGIN_TIME'
+col NCPU for 999 heading '2|NCPU'
+col HCPUB for 9999 heading '3|HCPUB'
+col CPUUPS for 99999 heading '4|CPUUPS'
+col LOAD for 999 heading '5|LOAD'
+col DCTR for 999 heading '6|DCTR'
+col DWTR for 999 heading '7|DWTR'
+col SPFR for 99999 heading '8|SPFR'
+col TPGA for 99999 heading '9|TPGA'
+col SCT for 9999 heading '10|SCT'
+col AAS for 9999 heading '11|AAS'
+col AST for 9999 heading '12|AST'
+col ASCPU for 9999 heading '13|ASCPU'
+col ASIO for 9999 heading '14|ASIO'
+col ASWA for 9999 heading '15|ASWA'
+col ASPQ for 9999 heading '16|ASPQ'
+col UTPS for 99999 heading '17|UTPS'
+col UCPS for 9999999 heading '18|UCPS'
+col SSRT for 9999999 heading '19|SSRT'
+col IOMBPS for 99999 heading '20|IOMBPS'
+col IOPS for 999999 heading '21|IOPS'
+col IORL for 99999 heading '22|IORL'
+col LOGR for 999999999 heading '23|LOGR'
+col PHYR for 999999 heading '24|PHYR'
+col PHYW for 999999 heading '25|PHYW'
+col TEMP for 99999 heading '26|TEMP'
+col DBTM for 99999 heading '27|DBTM'"
 
 oratop()
 {
@@ -765,6 +763,96 @@ esac
 
 P1_=`echo $ALL | awk '{print $1}'`
 case "$P1_" in
+dhsh)
+sysdate=$(date +%d/%m/%y\ %H:%M:%S)
+if [ $(is_number $(echo $* | awk -F"/" '{print $2}')) -eq 0 ]; then
+ DD_=`date +%d/%m/%Y`
+ HHB_=`date +%H`
+ HHE_=72     # 3 days
+ INTERVAL_BI_="begin_interval_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
+else
+ shift
+ DD_=`echo $* | awk -F- '{print $1}'`
+ HHB_=`echo $* | awk -F- '{print $2}'`
+ HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
+ HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
+ echo "$DD_   $HHB_    $HHE_   $HHR_"
+ if [ -n "$HHR_" ]; then
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
+ else
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
+ fi
+ echo "$INTERVAL_BI_"
+fi
+
+type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
+
+$SP <<EOF >$LOGF
+set lines 230 pages 80 tab off
+col BEGIN_TIME for a17 heading '1|BEGIN_TIME'
+col AAS for 9999 heading '2|AAS'
+col BCPUUPS for 99999 heading '3|BCPUUPS'
+col CPUUPS for 99999 heading '4|CPUUPS'
+col BLCHPT for 99999 heading '5|BLCHPT'
+col ENQREQPT for 99999 heading '6|ENQREQPT'
+col execps for 999999 heading '7|EXECPS'
+col hcpuups for 99999 heading '8|HCPUUPS'
+col IOMBPS for 99999 heading '9|IOMBPS'
+col IOPS for 999999 heading '10|IOPS'
+col IORL for 99999 heading '11|IORL'
+col LOGRPT for 99999 heading '12|LOGRPT'
+col lgnps for 99999 heading '13|LGNPS'
+col netmbps for 99999 heading '14|NETMBPS'
+col PHYR for 999999 heading '15|PHYR'
+col PHYRPT for 99999 heading '16|PHYRPT'
+col PHYW for 999999 heading '17|PHYW'
+col redokbps for 999999 heading '18|REDOKBPS'
+col redokbpt for 99999 heading '19|REDOKBPT'
+col rsptimpt for 9999999 heading '20|RSPTIMPT'
+col SSRT for 9999999 heading '21|SSRT'
+col tparspt for 99999 heading '22|TPARSPT'
+col UCPS for 9999999 heading '23|UCPS'
+col UTPS for 99999 heading '24|UTPS'
+col NCPU for 999 heading '25|NCPU'
+col instance_number for 99 noprint
+prompt "Stat from dba_hist_sysmetric_history dba_hist_snapshot in interval "$INTERVAL_BI_
+select dhsh.*, oss.ncpu
+from (
+SELECT  to_char(sn.begin_interval_time,'dd/mm/yy-hh24:mi:ss') begin_time
+  , sn.instance_number 
+  , ROUND(avg(CASE WHEN metric_name = 'Average Active Sessions'                       THEN m.value END)) aas
+  , nvl(ROUND(avg(CASE WHEN metric_name = 'Background CPU Usage Per Sec'                  THEN m.value END)),0) bcpuups
+  , nvl(ROUND(avg(CASE WHEN metric_name = 'CPU Usage Per Sec'                             THEN m.value END)),0) cpuups
+  , ROUND(AVG(CASE WHEN metric_name = 'DB Block Changes Per Txn'                      THEN m.value END)) blchpt
+  , ROUND(AVG(CASE WHEN metric_name = 'Enqueue Requests Per Txn'                      THEN m.value END)) enqreqpt
+  , ROUND(avg(CASE WHEN metric_name = 'Executions Per Sec'                            THEN m.value END)) execps
+  , nvl(ROUND(avg(CASE WHEN metric_name = 'Host CPU Usage Per Sec'                        THEN m.value END)),0) hcpuups
+  , ROUND(avg(CASE WHEN metric_name = 'I/O Megabytes per Second'                      THEN m.value END)) iombps
+  , ROUND(avg(CASE WHEN metric_name = 'I/O Requests per Second'                       THEN m.value END)) iops
+  , ROUND(AVG(CASE WHEN metric_name = 'Average Synchronous Single-Block Read Latency' THEN m.value END)) iorl
+  , ROUND(AVG(CASE WHEN metric_name = 'Logical Reads Per Txn'                         THEN m.value END)) LOGRPT
+  , ROUND(avg(CASE WHEN metric_name = 'Logons Per Sec'                                THEN m.value END)) lgnps
+  , ROUND(AVG(CASE WHEN metric_name = 'Network Traffic Volume Per Sec'                THEN m.value END)/1048576) netmbps
+  , ROUND(avg(CASE WHEN metric_name = 'Physical Reads Per Sec'                        THEN m.value END)) PHYR
+  , ROUND(AVG(CASE WHEN metric_name = 'Physical Reads Per Txn'                        THEN m.value END)) PHYRPT
+  , ROUND(avg(CASE WHEN metric_name = 'Physical Writes Per Sec'                       THEN m.value END)) PHYW
+  , ROUND(avg(CASE WHEN metric_name = 'Redo Generated Per Sec'                        THEN m.value END)/1024) redokbps
+  , ROUND(AVG(CASE WHEN metric_name = 'Redo Generated Per Txn'                        THEN m.value END)/1024) redokbpt
+  , ROUND(AVG(CASE WHEN metric_name = 'Response Time Per Txn'                         THEN m.value END)*10000) rsptimpt
+  , ROUND(AVG(CASE WHEN metric_name = 'SQL Service Response Time'                     THEN m.value END)*10000) ssrt
+  , ROUND(AVG(CASE WHEN metric_name = 'Total Parse Count Per Txn'                     THEN m.value END)) tparspt
+  , ROUND(avg(CASE WHEN metric_name = 'User Calls Per Sec'                            THEN m.value END)) ucps
+  , ROUND(avg(CASE WHEN metric_name = 'User Transaction Per Sec'                      THEN m.value END)) utps
+FROM   dba_hist_snapshot sn, dba_hist_sysmetric_history m
+WHERE  sn.snap_id = m.snap_id
+AND sn.dbid    = m.dbid
+AND sn.instance_number = m.instance_number
+AND $INTERVAL_BI_  --sn.begin_interval_time > SYSDATE - 31
+GROUP BY    sn.begin_interval_time, sn.instance_number 
+ORDER BY    sn.begin_interval_time) dhsh, (SELECT inst_id, VALUE ncpu FROM gv\$osstat WHERE   stat_name = 'NUM_CPUS') oss
+ where dhsh.instance_number=oss.inst_id order by to_date(begin_time,'dd/mm/yy-hh24:mi:ss');
+EOF
+;;
 h)
 $SP <<EOF >$LOGF
 set lines 230 pages 100 tab off
@@ -790,7 +878,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(utps) utps,               --   UTPS      [s,N]: user transactions per sec
       trunc(ucps) ucps,               --   UCPS    [c,m,N]: user calls per sec
       trunc(ssrt*10000) ssrt,         --   SSRT    [c,m,T]: sql service response time (T/call)
-      trunc(mbps) mbps,               --   MBPS      [m,N]: i/o megabytes per second (throughput)
+      trunc(mbps) iombps,             --   MBPS      [m,N]: i/o megabytes per second (throughput)
       trunc(iops) iops,               --   IOPS      [m,N]: i/o requests per second
       trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency in msec (red > 20ms)
       trunc(logr) logr,               --   LOGR      [s,N]: logical reads per sec
@@ -862,7 +950,7 @@ group by trunc(sample_time, 'mi')
 order by sample_time
 ) act_sess
 where act_sess.sample_time between begin_time and end_time
-ORDER BY begin_time;
+ORDER BY to_date(begin_time,'dd/mm/yy-hh24:mi:ss');
 EOF
 ;;
 *)
@@ -895,7 +983,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(utps) utps,               --   UTPS      [s,N]: user transactions per sec
       trunc(ucps) ucps,               --   UCPS    [c,m,N]: user calls per sec
       trunc(ssrt*10000) ssrt,         --   SSRT    [c,m,T]: sql service response time (T/call)
-      trunc(mbps) mbps,               --   MBPS      [m,N]: i/o megabytes per second (throughput)
+      trunc(mbps) iombps,             --   MBPS      [m,N]: i/o megabytes per second (throughput)
       trunc(iops) iops,               --   IOPS      [m,N]: i/o requests per second
       trunc(iorl) iorl,               --   IORL      [m,T]: avg synchronous single-block read latency. (red > 20ms)
       trunc(logr) logr,               --   LOGR      [s,N]: logical reads per sec
@@ -1784,6 +1872,7 @@ column owner for a20
 column segment_name for a30
 column table_name for a30
 column logging for a6
+column cache for a6
 column num_rows for 9999999999
 column avg_row_len for 999999
 column "SIZE_MB" for 99999999
@@ -1795,7 +1884,7 @@ column compression for a11
 column compress_for for a15
 column partitioned for a4
 column iot_type for a8
-select t.tablespace_name, owner, table_name, t.logging, num_rows, avg_row_len,
+select t.tablespace_name, owner, table_name, t.logging, t.cache,  num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
 last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
 from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P2_') and owner like nvl('$P3_','%') order by owner;
@@ -3929,22 +4018,22 @@ if [ "$view_" = "dba_hist_active_sess_history" ]; then
 fi
 $SP <<EOF >$LOGF
 set lines 250 pages 100
-col begin_time for a15
-col aas for 9990.99
-col cpu for 9990.99
-col bcpu for 9990.99
-col scheduler for 9990.99 heading "SHEDUL"
-col uio for 9990.99
-col sio for 9990.99
-col concurrency for 9990.99 heading "CONCUR"
-col application for 9990.99 heading "APPL"
-col COMMIT for 9990.99
-col configuration for 9990.99 heading "CONFIG"
-col administrative for 9990.99 heading "ADMIN"
-col network for 9990.99 heading "NET"
-col queueing for 9990.99 heading "QUEUE"
-col clust for 9990.99
-col other for 9990.99
+col begin_time for a15 heading '1|BEGIN_TIME'
+col aas for 9990.99 heading '2|AAS'
+col cpu for 9990.99 heading '3|CPU'
+col bcpu for 9990.99 heading '4|BCPU'
+col scheduler for 9990.99 heading '5|SHEDUL'
+col uio for 9990.99 heading '6|UIO'
+col sio for 9990.99 heading '7|SIO'
+col concurrency for 9990.99 heading '8|CONCUR'
+col application for 9990.99 heading '9|APPL'
+col COMMIT for 9990.99 heading '10|COMMIT'
+col configuration for 9990.99 heading '11|CONFIG'
+col administrative for 9990.99 heading '12|ADMIN'
+col network for 9990.99 heading '13|NET'
+col queueing for 9990.99 heading '14|QUEUE'
+col clust for 9990.99 heading '15|CLUST'
+col other for 9990.99 heading '16|OTHER'
 PROMPT "Data for chart: Average active/waiting sessions from $view_ in $INTERVAL_"
 SELECT
   to_char(sample_time,'dd/mm/yy-hh24:mi') as begin_time,
@@ -4141,7 +4230,7 @@ else
   PROMPT "Top 30 ACTIVE sessions in seconds from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_"
   $SET_COL
   select * from (
-  select session_id sid,"SESSION_SERIAL#" serial,username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+  select session_id sid,"SESSION_SERIAL#" serial, username,/*sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
    sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
    sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
    (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
@@ -4150,7 +4239,7 @@ else
   from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id 
   and dbid=(select dbid from v\$database) and $INTERVAL_
   --and  sql_id is not null
-  group by session_id,"SESSION_SERIAL#",username,/*sql_id,sql_plan_hash_value,event,*/program,module,action,machine
+  group by session_id,"SESSION_SERIAL#", username, /*sql_id,sql_plan_hash_value,event,*/ program,module,action,machine
   order by activity desc
   ) where rownum<31;
 EOF
@@ -4165,7 +4254,7 @@ where)
   PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_  for condition: $COND_"
   $SET_COL
   select * from (
-  select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */   program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+  select session_id sid,"SESSION_SERIAL#" serial, username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */  -- program||' \ '||module||' \ '||action||' \ '||machine PMAM,
     sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
     sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
     (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
@@ -4176,7 +4265,7 @@ where)
   --and  sql_id is not null 
   $COND_
   --and program like '%$PRG_%'
-  group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,sql_plan_hash_value,event, /* top_level_sql_id, top_level_call_name, */ session_state,program,module,action,machine
+  group by session_id,"SESSION_SERIAL#", username,sql_id,sql_plan_hash_value,event --, /* top_level_sql_id, top_level_call_name, */  session_state,program,module,action,machine 
   order by activity desc
   ) where rownum<31;
 EOF
@@ -4207,7 +4296,7 @@ EOF
   if [ -n "$EVENT_" ]; then
    S0_="x.event,"
    S1_="nvl(event,'ON CPU') event,"
-   S2_="event like '%$EVENT_%'"
+   S2_=" and event like '%$EVENT_%'"
    S3_=",event"
   else
    S2_="and sql_id is not null"
@@ -4215,7 +4304,7 @@ EOF
   $SP <<EOF >$LOGF
   $SET_COL
   PROMPT
-  PROMPT "Top 30 SQL TIME_WATED in second from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_"
+  PROMPT "Top 30 SQL TIME_WATED in second from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_ and $S2_"
   select * from (
   select  x.sql_id, x.sql_plan_hash_value, x.sql_opname, e.object_name || decode(e.object_name,'','','.') || e.procedure_name entry_name, $S0_  x.time_waited,x.cpu,x.wait,x.io, x.activity
   from      dba_procedures    e, dba_procedures    p,
@@ -4984,6 +5073,40 @@ esac
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 400 timing off
+PROMPT
+PROMPT Current records in dba_sql_plan_baselines by last days: $DAYS
+PROMPT
+column SQL_NAME for a30 heading "SQL_HANDLE \ PLAN_NAME"
+column SQL_HANDLE for a20
+column PLAN_NAME for a30
+column creator for a10
+column origin for a12
+column parsing_schema_name for a10
+column created for a10
+column last_modified for a10
+column last_executed for a10
+column enabled for a3
+column accepted for a3
+column fixed for a3
+column optimizer_cost for 9999999 heading COST
+column module for a12
+column executions for 999999999 heading EXEC
+column elapsed_time for 99999.00000 heading ELA_T\EX
+column cpu_time for 99999.00000 heading CPU_T\EX
+column buffer_gets for 99999999999 heading BUFGETS\EX
+column disk_reads for 999999999 heading DISKR\EX
+column rows_processed for 999999999 heading ROWS\EX
+--ttitle left "View dba_sql_plan_baselines:"
+select sql_handle||chr(10)||plan_name sql_name,creator,origin,parsing_schema_name,
+cast(created as date) created, cast(last_modified as date) last_modified, cast(last_executed as date) last_executed,
+enabled, accepted, fixed, optimizer_cost, module, executions,
+decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/decode(executions, 0, 1, executions)/1000000, 4)) cpu_time,
+(elapsed_time / decode(executions, 0, 1, executions)) / 1000000 elapsed_time,
+trunc(buffer_gets/decode(executions, 0, 1, executions)) buffer_gets,
+trunc(disk_reads/decode(executions, 0, 1, executions)) disk_reads,
+trunc(rows_processed/decode(executions, 0, 1, executions)) rows_processed
+from dba_sql_plan_baselines where created > sysdate-$DAYS  $COND1_  order by cast(created as date), sql_handle;
+
 PROMPT
 PROMPT Current records in dba_sql_plan_baselines by last days: $DAYS and condition: $COND1_
 PROMPT
