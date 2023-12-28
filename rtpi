@@ -34,7 +34,7 @@ case "$P1_" in
   storgco|ikb)                                                                           $wtpi $sid $login_str $args ;;
   p260unc2)                                                                              cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   p260unc4)                                                                              cat $wtpi | ssh oracle@$P1_ "if [ -f ~/uncunc_setenv.sh ]; then . ~/uncunc_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
-  [z]14-*|kem-ora01)                                                                     cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
+  [z]14-*|kem-ora01|brnsk-oracle-phenix|abkh-oracle-phenix)                              cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   z11-00341-otbd|opndb|SMOK-ORA01|obk|obkt|p750alife|alfa)                               cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   INSIS*)                                                                                cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   ais*|unit*|alpha|beta|crm)                                                             cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
@@ -44,7 +44,7 @@ case "$P1_" in
   KIKOPDR)                                                                               cat $wtpi | ssh oracle@$P1_ ". ~/db11.env; /bin/bash -s $sid $args" ;;
   s-dtln-wmsdb*|db06.wms.korablik.ru)                                                    cat $wtpi | ssh $P1_ "sudo -i -u oracle /bin/bash -s $sid $args" ;;
   [0-9]*)                                                                                cat $wtpi | ssh $P1_ "/bin/bash -s $sid $args" ;;
-  *)                                                                                     cat $wtpi | ssh oracle@$P1_ "/bin/bash -s $sid $args" ;;
+  *)                                                                                     cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
 esac
 
 exit

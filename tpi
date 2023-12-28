@@ -52,7 +52,7 @@ init_msg()
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
-  oratop__="oratop [ h | dhsh ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
+  oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
   size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
@@ -847,7 +847,7 @@ FROM   dba_hist_snapshot sn, dba_hist_sysmetric_history m
 WHERE  sn.snap_id = m.snap_id
 AND sn.dbid    = m.dbid
 AND sn.instance_number = m.instance_number
-AND $INTERVAL_BI_  --sn.begin_interval_time > SYSDATE - 31
+AND $INTERVAL_BI_  --sn.begin_interval_time > SYSDATE - 3
 GROUP BY    sn.begin_interval_time, sn.instance_number 
 ORDER BY    sn.begin_interval_time) dhsh, (SELECT inst_id, VALUE ncpu FROM gv\$osstat WHERE   stat_name = 'NUM_CPUS') oss
  where dhsh.instance_number=oss.inst_id order by to_date(begin_time,'dd/mm/yy-hh24:mi:ss');
@@ -4123,16 +4123,16 @@ else
  HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
  HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
  if [ -n "$HHR_" ]; then
-   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '1' minute"
-   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
-   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
-   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '1' minute"
+   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '2' minute"
+   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
+   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
    shift
  else
-   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
-   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
-   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
-   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '1' minute"
+   INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
+   INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
+   INTERVAL_SQL_="sql_exec_start >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sql_exec_start <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
+   INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
    shift
  fi
 fi
