@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 28.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 29.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -378,7 +378,7 @@ case "$(db_version)" in
     CMD2_=$CODE9_2_ ;;
 *)  CMD1_=$CODE11_ 
     CMD2_=$CODE11_2_
-    CMD3_="select owner||'.'||object_name into STR_ from dba_objects where object_id=s.PLSQL_ENTRY_OBJECT_ID;" 
+    CMD3_="select owner||'.'||object_name||' / '||object_id into STR_ from dba_objects where object_id=s.PLSQL_ENTRY_OBJECT_ID;" 
     CMD4_="begin select sql_id into  STR2_ from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value and rownum=1; exception when others then null; end;" ;;
 esac
 
@@ -446,21 +446,21 @@ BEGIN
   end;
 
   dbms_output.put_line(chr(126)||'===============================================================================');
-  dbms_output.put_line(chr(126)||'SID/Serial                : '|| s.sid||'  '||s.serial#);
-  dbms_output.put_line(chr(126)||'AUDSID                    : '|| s.audsid);
-  dbms_output.put_line(chr(126)||'Foreground                : '|| 'PID: '||s.process);
-  dbms_output.put_line(chr(126)||'Shadow                    : '|| 'PID: '||p.spid||' - '||p.program || '  Parent SID: ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
-  dbms_output.put_line(chr(126)||'Terminal                  : '|| s.terminal || '/ ' || p.terminal);
-  dbms_output.put_line(chr(126)||'OS User                   : '|| s.osuser||' on '||s.machine);
-  dbms_output.put_line(chr(126)||'Oracle User               : '|| s.username);
-  dbms_output.put_line(chr(126)||'Program / Module / Action : '|| s.program||' / '||s.module||' / '||s.action);
-  dbms_output.put_line(chr(126)||'PLSQL_ENTRY               : '|| STR_);
-  dbms_output.put_line(chr(126)||'Status Flags              : '|| s.status||' '||s.server||' '||s.type);
-  dbms_output.put_line(chr(126)||'Tran Active               : '|| nvl(s.taddr, 'NONE'));
-  dbms_output.put_line(chr(126)||'Login Time                : '|| to_char(s.logon_time, 'Dy HH24:MI:SS'));
-  dbms_output.put_line(chr(126)||'Last Call                 : '|| to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || to_char(s.last_call_et/60, '9999990.0') || ' min');
-  dbms_output.put_line(chr(126)||'Lock/ Latch               : '|| nvl(s.lockwait, 'NONE')||'/ '||nvl(p.latchwait, 'NONE'));
-  dbms_output.put_line(chr(126)||'Latch Spin                : '|| nvl(p.latchspin, 'NONE'));
+  dbms_output.put_line(chr(126)||'SID/Serial                          : '|| s.sid||'  '||s.serial#);
+  dbms_output.put_line(chr(126)||'AUDSID                              : '|| s.audsid);
+  dbms_output.put_line(chr(126)||'Foreground                          : '|| 'PID: '||s.process);
+  dbms_output.put_line(chr(126)||'Shadow                              : '|| 'PID: '||p.spid||' - '||p.program || '  Parent SID: ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
+  dbms_output.put_line(chr(126)||'Terminal                            : '|| s.terminal || '/ ' || p.terminal);
+  dbms_output.put_line(chr(126)||'OS User                             : '|| s.osuser||' on '||s.machine);
+  dbms_output.put_line(chr(126)||'Oracle User                         : '|| s.username);
+  dbms_output.put_line(chr(126)||'Program / Module / Action           : '|| s.program||' / '||s.module||' / '||s.action);
+  dbms_output.put_line(chr(126)||'Object_name / PLSQL_ENTRY_OBJECT_ID : '|| STR_);
+  dbms_output.put_line(chr(126)||'Status Flags                        : '|| s.status||' '||s.server||' '||s.type);
+  dbms_output.put_line(chr(126)||'Tran Active                         : '|| nvl(s.taddr, 'NONE'));
+  dbms_output.put_line(chr(126)||'Login Time                          : '|| to_char(s.logon_time, 'Dy HH24:MI:SS'));
+  dbms_output.put_line(chr(126)||'Last Call                           : '|| to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || to_char(s.last_call_et/60, '9999990.0') || ' min');
+  dbms_output.put_line(chr(126)||'Lock/ Latch                         : '|| nvl(s.lockwait, 'NONE')||'/ '||nvl(p.latchwait, 'NONE'));
+  dbms_output.put_line(chr(126)||'Latch Spin                          : '|| nvl(p.latchspin, 'NONE'));
 
   dbms_output.put_line(chr(126)||'Session Waits:');
 --  for c1 in ( select * from sys.v_\$session_wait where sid = s.sid) loop
