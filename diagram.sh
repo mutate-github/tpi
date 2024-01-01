@@ -36,7 +36,8 @@ histo="|=======================================================================+
 scale=$(awk "BEGIN{print $limit/100}")
 
 tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
-egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
+# egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
+egrep "${date}" "${file}" | uniq >> ${file}.tmp
 rm /tmp/$$_tmp.tmp 2>/dev/null
 file=${file}.tmp
 
