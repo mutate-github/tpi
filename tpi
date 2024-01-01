@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 29.12.2023 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 01.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -800,7 +800,7 @@ col hcpuups for 99999 heading '8|HCPUUPS'
 col IOMBPS for 99999 heading '9|IOMBPS'
 col IOPS for 999999 heading '10|IOPS'
 col IORL for 99999 heading '11|IORL'
-col LOGRPT for 99999 heading '12|LOGRPT'
+col LOGRPT for 999999 heading '12|LOGRPT'
 col lgnps for 99999 heading '13|LGNPS'
 col netmbps for 99999 heading '14|NETMBPS'
 col PHYR for 999999 heading '15|PHYR'
@@ -5978,8 +5978,6 @@ case "$type_" in
         @?/rdbms/admin/addmrpt.sql" ;;
    *)  RPT_="PROMPT UNKNOWN TYPE OF REPORT" ;;
 esac
-
-echo "RPT_="$RPT_
 
 $SP <<EOF >$LOGF
 $RPT_
