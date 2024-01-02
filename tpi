@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 01.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 02.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -776,13 +776,13 @@ else
  HHB_=`echo $* | awk -F- '{print $2}'`
  HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
  HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
- echo "$DD_   $HHB_    $HHE_   $HHR_"
+# echo "$DD_   $HHB_    $HHE_   $HHR_"
  if [ -n "$HHR_" ]; then
    INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
  else
    INTERVAL_BI_="begin_interval_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_interval_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
  fi
- echo "$INTERVAL_BI_"
+# echo "$INTERVAL_BI_"
 fi
 
 type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
