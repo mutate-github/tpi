@@ -1,0 +1,86 @@
+#!/bin/bash
+set -f
+#export PROMPT_COMMAND='PS1=`echo "\n\[\e[0;33m\][\D{%d.%m.%Y %H:%M:%S}] \[\e[01;31m\]\u@\h:\$ORACLE_SID \[\e[1;34m\]\w\n\$ \[\e[0;32m\]\[\e[0m\]"`'
+#aliases=/etc/profile.d/00-dbs-aliases.sh
+#if [ -s $aliases ]; then  . /etc/profile.d/00-dbs-aliases.sh ; fi
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 [SERVER] ORACLE_SID"
+  exit
+fi
+P1_="$1"
+sid="$2"
+# if [ -z "$sid" ]; then sid="$P1_"; fi
+shift
+shift
+args="$@"
+args=$(echo $args | sed -e 's|\$|\\$|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e 's|"|\\"|g')
+BASEDIR=`dirname $0`
+wtpi="$BASEDIR/tpi"
+# echo "host: $P1_  sid: $sid  args: $args"
+#for tnsnames connection through .tpi_login file
+#format .tpi_login file: server sid encusername/encpassword@tns_alias
+BASEDIR=`dirname $0`
+if [ "$BASEDIR" = "/bin" ]; then
+  BASEDIR=`find . -type f -name .tpi_login -exec dirname {} \;`
+fi
+login_str=$(awk '/^'$P1_' +'$sid' +.*/{print substr($0,index($0,$3))}' $BASEDIR/.tpi_login 2>/dev/null | head -1)
+chmod 600 $BASEDIR/.tpi_login 2>/dev/null
+# echo "rtpi_login_str: "$login_str
+
+shopt -s nocasematch
+case "${P1_}:${sid}" in
+  *gold-d*:*|*retail-db:*|*stock-db:*|egais*:*)                                      cat $wtpi | ssh oracle@$P1_ ". ~/.bashrc >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+  srv-deosdb*:*|srv-vetdb*:*|*label-db:*|srv-axdb*:*|*alcdsk-db:*)                   cat $wtpi | ssh oracle@$P1_ ". ~/.bashrc >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+#  srv-olapwhs01*:goldwhs)                                                           cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+  askona*:*)                                                                         cat $wtpi | ssh oracle@$P1_ ". ~/.profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+  storgco:*|ikb:*)                                                                   $wtpi $sid $login_str $args ;;
+  p260unc2:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
+  p260unc4:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/uncunc_setenv.sh ]; then . ~/uncunc_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
+  [z]14-*:*|kem-ora01:*|brnsk-oracle-phenix:*|abkh-oracle-phenix:*)                  cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
+  z11-00341-otbd:opndb|SMOK-ORA01:obk|obkt:*|p750alife:*|alfa:*)                     cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
+#  mdstock2:PSTOCK)                                                                  cat $wtpi | ssh oracle$P1_ "[ -r ~/.bash_profile ] && source ~/.bash_profile ; /bin/bash -s $sid $args" ;;
+  z11-0090[78]-insis:INSIS*)                                                         cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
+  aisprod:aisutf)                                                                    $wtpi $sid $login_str $args ;;
+  beta:aisutf)                                                                       $wtpi $sid $login_str $args ;;
+  ais*:*|unit*:*|alpha:*|beta:*|crm:*)                                               cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
+  jet:*|ja:*)                                                                        cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
+#  cft*:*|kik*:*|bd*:*|prov*:*)                                                       cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
+#  EPS*:*|creditc:*)                                                                  cat $wtpi | ssh oracle@$P1_ ". ~/db12.env; /bin/bash -s $sid $args" ;;
+#  KIKOPDR:*)                                                                         cat $wtpi | ssh oracle@$P1_ ". ~/db11.env; /bin/bash -s $sid $args" ;;
+#  s-dtln-wmsdb*:*|db06.wms.korablik.ru:*)                                            cat $wtpi | ssh $P1_ "sudo -i -u oracle /bin/bash -s $sid $args" ;;
+  [0-9]*:*)                                                                          cat $wtpi | ssh $P1_ "/bin/bash -s $sid $args" ;;
+  *:*)                                                                               cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile ; /bin/bash -s $sid $args" ;;
+esac
+
+exit
+
+#######################################################
+
+host=$1
+HST=$host
+# HST=`awk '$2=="'$host'"{print $1}' /app/start/etc/hosts`
+# if [ "$HST" = "" ]; then
+#  HST=$host
+# fi
+shift
+args=$*
+case $host in
+  askona*|192.168.1.132|192.168.1.131) username=grid ;;
+#  [z]14-*|kem-ora01)
+#        echo "args:"$args
+#        args2=$(echo "$args" | sed  's|\$|\\\\$|g')
+#        echo "args2:"$args2
+#        cat $wtpi | ssh -o ServerAliveInterval=30 dbservice@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ "/bin/bash -s $args"
+#        cat $wtpi | eval ssh -o ServerAliveInterval=30 t.mukhametshin@172.16.83.38 -t ssh -o ServerAliveInterval=30 -l oracle $P1_ '/bin/bash -s $args2'
+#  ;;
+    #alias $P1_ >/dev/null 2>&1
+    #rc=$?
+    #if [ "$rc" -eq 0 ]; then
+    #  cat $wtpi | eval $P1_ '/bin/sh -s $args'
+    #else
+  *) username=oracle ;;
+esac
+cat ~/tal/tpi | ssh $username@$HST "/bin/bash -s $args"
+exit
+
+
