@@ -40,9 +40,9 @@ case "${P1_}:${sid}" in
   z11-00341-otbd:opndb|SMOK-ORA01:obk|obkt:*|p750alife:*|alfa:*)                     cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
 #  mdstock2:PSTOCK)                                                                  cat $wtpi | ssh oracle$P1_ "[ -r ~/.bash_profile ] && source ~/.bash_profile ; /bin/bash -s $sid $args" ;;
   z11-0090[78]-insis:INSIS*)                                                         cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
-  aisprod:aisutf)                                                                cat $wtpi | ssh oracle@mon ". ~/.bash_profile; /bin/bash -s $sid $login_str $args" ;;
-  beta:aisutf)                                                                   cat $wtpi | ssh oracle@mon ". ~/.bash_profile; /bin/bash -s $sid $login_str $args" ;;
-#  ais*:*|unit*:*|alpha:*|beta:*|crm:*)                                              cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
+  aisprod:aisutf)                                                                    $wtpi $sid $login_str $args ;;
+  beta:aisutf)                                                                       $wtpi $sid $login_str $args ;;
+  ais*:*|unit*:*|alpha:*|beta:*|crm:*)                                              cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
   jet:*|ja:*)                                                                        cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
 #  cft*:*|kik*:*|bd*:*|prov*:*)                                                       cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
 #  EPS*:*|creditc:*)                                                                  cat $wtpi | ssh oracle@$P1_ ". ~/db12.env; /bin/bash -s $sid $args" ;;
