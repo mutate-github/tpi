@@ -22,7 +22,7 @@ BASEDIR=`dirname $0`
 if [ "$BASEDIR" = "/bin" ]; then
   BASEDIR=`find . -type f -name .tpi_login -exec dirname {} \;`
 fi
-login_str=$(awk '/^'$sid' /{print substr($0,index($0,$2))}' $BASEDIR/.tpi_login 2>/dev/null | head -1)
+login_str=$(awk '/^'$P1_' +'$sid' +.*/{print substr($0,index($0,$3))}' $BASEDIR/.tpi_login 2>/dev/null | head -1)
 chmod 600 $BASEDIR/.tpi_login 2>/dev/null
 # echo "rtpi_login_str: "$login_str
 
@@ -37,6 +37,7 @@ case "$P1_" in
   [z]14-*|kem-ora01|brnsk-oracle-phenix|abkh-oracle-phenix)                              cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   z11-00341-otbd|opndb|SMOK-ORA01|obk|obkt|p750alife|alfa)                               cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   INSIS*)                                                                                cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
+  aisprod)                                                                            cat $wtpi | ssh oracle@mon ". ~/.bash_profile; /bin/bash -s $sid $login_str $args" ;;
   ais*|unit*|alpha|beta|crm)                                                             cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
   jet|ja)                                                                                cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
   cft*|kik*|bd*|prov*)                                                                   cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
