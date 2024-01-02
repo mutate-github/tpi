@@ -18,7 +18,7 @@ BASEDIR=`dirname $0`
 wtpi="$BASEDIR/tpi"
 # echo "host: $P1_  sid: $sid  args: $args"
 #for tnsnames connection through .tpi_login file
-#format .tpi_login file: sid encusername/encpassword@tns_alias
+#format .tpi_login file: server sid encusername/encpassword@tns_alias
 BASEDIR=`dirname $0`
 if [ "$BASEDIR" = "/bin" ]; then
   BASEDIR=`find . -type f -name .tpi_login -exec dirname {} \;`
