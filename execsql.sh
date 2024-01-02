@@ -35,7 +35,7 @@ cat $SCRIPT >> execsql_one_$$.sh
 cat <<EOFF2 >> execsql_one_$$.sh
 EOS
 
-sqlplus '/as sysdba' @execsql_one_$$.sql $PARAM <<EOS
+sqlplus -s '/ as sysdba' @execsql_one_$$.sql $PARAM <<EOS
 exit
 EOS
 rm execsql_one_[0-9]*.sql

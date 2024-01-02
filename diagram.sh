@@ -1,10 +1,10 @@
 #!/bin/bash
 set -f
 
-echo "usage: ./diagramm.sh sysmetric_h.log 25/11/23-0[89]  3 11 15 17 19 20 22 23 24"
-echo "usage: tpi ... oratop h    | diagramm.sh  3 11 15 17 19 20 22 23 24"
-echo "usage: tpi ... oratop dhsh | diagramm.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24" 
-echo "usage: tpi ... tchart      | diagramm.sh  2 3 6 7 8 9 10 13 16"
+printf "usage: ./diagram.sh sysmetric_h.log 25/11/23-0[89]  3 11 15 17 19 20 22 23 24 \n"
+printf "usage: tpi ... oratop h    | diagram.sh  3 11 15 17 19 20 22 23 24 \n"
+printf "usage: tpi ... oratop dhsh | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24 \n"
+printf "usage: tpi ... tchart      | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
 echo ""
 
 case "$#" in
@@ -36,7 +36,8 @@ histo="|=======================================================================+
 scale=$(awk "BEGIN{print $limit/100}")
 
 tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
-egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
+# egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
+egrep "${date}" "${file}" | uniq >> ${file}.tmp
 rm /tmp/$$_tmp.tmp 2>/dev/null
 file=${file}.tmp
 
