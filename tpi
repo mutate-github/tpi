@@ -16,9 +16,9 @@ if [[ "$_P2_" =~ "@" ]]; then
   login_str="$_P2_"
   shift
 fi
-#echo "tpi_P1_: "$_P1_
-#echo "tpi_P2_: "$_P2_
-#echo "tpi_@: "$@
+echo "tpi_P1_: "$_P1_
+echo "tpi_P2_: "$_P2_
+echo "tpi_@: "$@
 
 # case "$sid" in
 # jet|ja)                     . /etc/profile.ora ;;
