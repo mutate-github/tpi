@@ -36,6 +36,8 @@ size_lim=256M    # size limit for lsn.log
 
 $SET_ENV
 
+export ORACLE_SID=\$sid
+
 trc=\$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'\$sid'$')
 tns3=\$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
 
@@ -52,7 +54,7 @@ for trc_ in \$(echo \$trc | xargs); do
 done
 
 VALUE=\$(sqlplus -s '/as sysdba' <<'EOS'
-set lines 250  heading off feedback off pagesize 0 trimspool on
+set lines 250  heading off feedback off pagesize 0 trimspool on timing off
 select value from v\$system_parameter where name='diagnostic_dest';
 EOS
 )

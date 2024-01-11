@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 02.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 11.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -422,9 +422,7 @@ BEGIN
       dbms_output.put_line(chr(126)||'There are more than one session !!! Set parameter OSID:');
       for i in (select p.spid, s.audsid, s.serial#, s.username, s.status, s.machine
                   from   sys.v_\$process p, sys.v_\$session s
-                 where p.addr = s.paddr
-                   and (p.spid = id or s.sid = id or s.serial# = id or s.audsid = id))
-      loop
+                 where p.addr = s.paddr and (p.spid = id or s.sid = id or s.serial# = id or s.audsid = id)) loop
         dbms_output.put_line(chr(126)||i.spid||' / '||i.audsid||' / '||i.serial#||' => '||i.username||' '||i.status||' '||i.machine);
       end loop;
       return;
@@ -462,48 +460,19 @@ BEGIN
   dbms_output.put_line(chr(126)||'Lock/ Latch                         : '|| nvl(s.lockwait, 'NONE')||'/ '||nvl(p.latchwait, 'NONE'));
   dbms_output.put_line(chr(126)||'Latch Spin                          : '|| nvl(p.latchspin, 'NONE'));
 
-  dbms_output.put_line(chr(126)||'Session Waits:');
---  for c1 in ( select * from sys.v_\$session_wait where sid = s.sid) loop
---    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3);
     for c1 in ( select w.*, case when event like '%latch%' then ', LatchName: '||l.name else '' end name  from sys.v_\$session_wait w, sys.v_\$latchname l where w.p2=l.latch#(+) and w.sid = s.sid) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3||c1.name );
-    for c2 in (SELECT MAX (SYS_CONNECT_BY_PATH (name||' '||value,'    ')) scbp from (
-                 select a.name, b.value, ROW_NUMBER () OVER (ORDER BY name desc) rn from v\$statname a, v\$sesstat b
-                 where a.statistic#=b.statistic# and b.sid=s.sid and a.name in ('db block gets','consistent gets','physical reads')
-                 ) START WITH rn = 1 CONNECT BY PRIOR rn = rn - 1) loop
-       dbms_output.put_line(chr(126)||chr(32)||c2.scbp);
+    dbms_output.put_line(chr(126)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3||c1.name );
+    for c2 in ( select  BLOCK_GETS, CONSISTENT_GETS, PHYSICAL_READS, BLOCK_CHANGES from v\$sess_io where sid=s.sid ) loop
+       dbms_output.put_line(chr(126)||'V\$SESS_IO: BLOCK_GETS='||c2.BLOCK_GETS||'  CONSISTENT_GETS='||c2.CONSISTENT_GETS||'  PHYSICAL_READS='||c2.PHYSICAL_READS||'  BLOCK_CHANGES='||c2.BLOCK_CHANGES);
     end loop;
   end loop;
-/*
-  dbms_output.put_line(chr(126)||'Current SQL statement:');
-  for c1 in ( select * from sys.v_\$sqltext
-              where HASH_VALUE = s.sql_hash_value order by piece) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.sql_text);
-  end loop;
-*/
-/*
-  dbms_output.put_line(chr(126)||'Explain plan V\$SQL_PLAN: s.sql_id='||s.sql_id||'  s.sql_hash_value='||s.sql_hash_value ||'  s.sql_adress=' ||s.sql_address|| '  s.sql_child_number='||s.sql_child_number);
-  for c1 in ( SELECT distinct lpad(id,3,'0')||' '||lpad(' ',depth)||operation||' '||options||' '||object_name|| case options when 'FULL' then '<<< FULL' end ss from v\$sql_plan where address=s.sql_address and hash_value=s.sql_hash_value and child_number=s.sql_child_number order by 1) loop
-    dbms_output.put_line(chr(126)||chr(32)||c1.ss);
-  end loop;
-*/
-/*  if (s.sql_id is not null) then
-    dbms_output.put_line(chr(126)||'Explain plan from dbms_xplan.display_cursor:');
-    for c1 in (select plan_table_output from   table(dbms_xplan.display_cursor(s.sql_id,s.sql_child_number,'Typical +PEEKED_BINDS')) ) loop
-      dbms_output.put_line(chr(126)||chr(32)||c1.plan_table_output);
-    end loop;
-  end if; */
 
-$CMD1_
-$CMD2_
--- lock was here
+  $CMD1_
+  $CMD2_
 
-------------
-  dbms_output.put_line(chr(126)||'Previous SQL statement:');
   $CMD4_
-  dbms_output.put_line(chr(126)||'sql_id: '||STR2_);
-  for c1 in ( select * from sys.v_\$sqltext
-              where HASH_VALUE = s.prev_hash_value order by piece) loop
+  dbms_output.put_line(chr(126)||'Previous SQL statement for SQL_ID: '||STR2_);
+  for c1 in ( select * from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value order by piece) loop
     dbms_output.put_line(chr(126)||chr(32)||c1.sql_text);
   end loop;
   dbms_output.put_line(chr(126)||'===============================================================================');
@@ -2458,7 +2427,6 @@ AND first_time > sysdate - $CNT
 GROUP BY TRUNC (first_time),"THREAD#" , TO_CHAR (first_time, 'Dy')
 ORDER BY 1,2;
 
-
 ttitle left "Archive logs dest information from v\$arhive_dest:"
 column status for a10
 column dest_name for a30
@@ -2478,14 +2446,6 @@ ttitle off
 
 select tablespace_name, sum(bytes/(1024*1024)) DB_size_MB from dba_temp_files
 group by tablespace_name order by tablespace_name;
-
---select round(sum(s),2) DB_size_MB from
---(select sum(bytes/(1024*1024)) s from dba_data_files
---union
---select sum(bytes/(1024*1024)) s from dba_temp_files
---union
---select sum(bytes/(1024*1024)) s from v\$log
---);
 ttitle off
 EOF
 logf
@@ -2599,32 +2559,6 @@ group by tablespace_name, block_size ) f,
 where f.tablespace_name=s.tablespace_name
 group by f.tablespace_name
 ORDER BY "% Used" desc;
-
-exit
-column tablespace_name for a30
-column free for 999999999.99
-column total for 999999999.99
-column used_per for 9999.99
-select  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */  t.tablespace_name, free, total, 100-((free/total)*100) used_per from
-(select tablespace_name,sum(total)/(1024*1024) total from
-  (select tablespace_name, case when autoextensible='YES' then maxbytes else bytes end total from dba_data_files)
-group by tablespace_name) t,
-(select tablespace_name, sum(free)/(1024*1024) free from
-  (select d.tablespace_name, d.file_name, case when autoextensible='YES' then (d.maxbytes-d.bytes)+nvl(f.bytes,0) else nvl(f.bytes,0) end free
-  from (select tablespace_name, file_id, sum(bytes) bytes from dba_free_space group by tablespace_name,file_id) f,dba_data_files d where f.file_id(+)=d.file_id
-)
-group by tablespace_name) f
-where t.tablespace_name = f.tablespace_name
-union
-select f.tablespace_name, (sum(f.total_bytes/(1024*1024))-sum(s.used_blocks*f.block_size/(1024*1024))) free, sum(f.total_bytes/(1024*1024)) total,
-100-(((sum(f.total_bytes)-sum(s.used_blocks*f.block_size))/sum(f.total_bytes))*100) used_per from
-( select tablespace_name, block_size, sum(total_bytes) total_bytes from (
- select f.tablespace_name, case when autoextensible='YES' then f.maxbytes else f.user_bytes end total_bytes, t.block_size from dba_temp_files f, dba_tablespaces t
- where t.contents='TEMPORARY' and f.tablespace_name=t.tablespace_name )
-group by tablespace_name, block_size ) f,
- v\$sort_segment s
-where f.tablespace_name=s.tablespace_name
-group by f.tablespace_name order by used_per desc;
 EOF
 ;;
 *)
@@ -2736,9 +2670,8 @@ EOF
 USAGE)
 $SP <<'EOF' >$LOGF
 set lines 220
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 70
 set numwidth 15
-
 column "Total Bytes" format 9,999,999,999,999
 column "SQL Blocks" format 999,999,999,999
 column "VMS Blocks" format 999,999,999,999
@@ -6090,50 +6023,49 @@ esac
 # echo "ID: "$ID
 case "$ID" in
 ""|a|k|in|access)  echo $a__ ${reset}; active_sessions $ALL ;;
-lock)   echo $lock__ ${reset}; lock $ALL ;;
+lock)      echo $lock__ ${reset}; lock $ALL ;;
 p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
-db)  echo $db__ ${reset}; db ;;
-health)  shift ; ALL=$* ; echo $health__ ${reset}; health $ALL ;;
-oratop)  shift ; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
-sga)  echo $sga__ ${reset}; sga ;;
-pga)  echo $pga__ ${reset}; pga ;;
-size) echo $size__ ${reset}; size $ALL ;;
-arch) echo $arch__ ${reset}; arch $ALL ;;
-tbs)  shift; ALL=$*; echo $size__ ${reset}; tbs $ALL ;;
-df) shift; ALL=$*; echo $size__ ${reset}; df $ALL ;;
-maxseg) shift; echo $size__ ", (TABLESPACE NAME = '"$ALL"'):" ${reset}; maxseg $ALL ;;
-fra) echo $size__ ${reset}; fra ;;
-redo) shift ; ALL=$* ; echo $redo__ ${reset}; redo $ALL ;;
-undo) shift ; ALL=$* ; echo $undo__ ${reset}; undo $ALL ;;
-sesstat)  shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
-topseg) shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topseg $ALL ;;
-o)   shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
-s)   shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
-t)   shift ; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
-i)   shift ; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
-l)   shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
-c)   echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
-u)   shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
-profile) shift; ALL=$* ; echo $profile__  ${reset}; profile $ALL ;;
-links)   echo $links__ ${reset} ; links ;;
-latch)   echo $latch__ ${reset} ; latch ;;
-bind) shift ; ALL=$* ; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
-pipe) shift ; ALL=$* ; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
-longops)  echo $longops__ ${reset}; longops $ALL ;;
+db)        echo $db__ ${reset}; db ;;
+health)    shift; ALL=$* ; echo $health__ ${reset}; health $ALL ;;
+oratop)    shift; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
+sga)       echo $sga__ ${reset}; sga ;;
+pga)       echo $pga__ ${reset}; pga ;;
+size)      echo $size__ ${reset}; size $ALL ;;
+arch)      echo $arch__ ${reset}; arch $ALL ;;
+tbs)       shift; ALL=$*; echo $size__ ${reset}; tbs $ALL ;;
+df)        shift; ALL=$*; echo $size__ ${reset}; df $ALL ;;
+maxseg)    shift; echo $size__ ", (TABLESPACE NAME = '"$ALL"'):" ${reset}; maxseg $ALL ;;
+fra)       echo $size__ ${reset}; fra ;;
+redo)      shift; ALL=$* ; echo $redo__ ${reset}; redo $ALL ;;
+undo)      shift; ALL=$* ; echo $undo__ ${reset}; undo $ALL ;;
+sesstat)   shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
+topseg)    shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topseg $ALL ;;
+o)         shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
+s)         shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
+t)         shift; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
+i)         shift; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
+l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
+c)         echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
+u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
+profile)   shift; ALL=$* ; echo $profile__  ${reset}; profile $ALL ;;
+links)     echo $links__ ${reset} ; links ;;
+latch)     echo $latch__ ${reset} ; latch ;;
+bind)      shift; ALL=$* ; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
+pipe)      shift; ALL=$* ; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
+longops)   echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
-job)  shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
-get_ddl) shift ; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
-trace) shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
-kill) shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
-exec) shift; ALL=$*; echo $exec__ ${reset}; exec_ $ALL ;;
-alert) shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
-report) shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
-corrupt) shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
-sql) shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
-ash) shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;
-dhash) shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL ; echo $dhash__ ;;
-spm) shift; ALL=$*; echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
-*)   echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
+job)       shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
+get_ddl)   shift; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
+trace)     shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
+kill)      shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
+exec)      shift; ALL=$*; echo $exec__ ${reset}; exec_ $ALL ;;
+alert)     shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
+report)    shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
+corrupt)   shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
+sql)       shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
+ash)       shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;
+dhash)     shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL ; echo $dhash__ ;;
+spm)       shift; ALL=$*; echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
+*)         echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
-
 
