@@ -2960,7 +2960,7 @@ user()
 {
 P1_=$1
 case "$(db_version)" in
-8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');" ;;
+8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');"  ;;
 *)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$P1_');" ;;
 esac
 
@@ -3004,10 +3004,9 @@ prompt tbs quotas:
 col tablespace_name for a30
 col username for a20
 col Mbytes for 999999999 heading "SUM (Mb)"
-col dropped for a5
 break on report
 COMPUTE SUM OF Mbytes on report
-select tablespace_name, username, bytes/1024/1024 Mbytes, max_bytes, blocks, max_blocks, dropped from dba_ts_quotas where username=upper('$P1_') order by Mbytes desc;
+select tablespace_name, username, bytes/1024/1024 Mbytes, max_bytes, blocks, max_blocks from dba_ts_quotas where username=upper('$P1_') order by Mbytes desc;
 EOF
 logf
 }
