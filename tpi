@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 11.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 16.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -3000,11 +3000,14 @@ column type for a15
 select * from dba_tab_privs where grantee=upper('$P1_') order by grantor, table_name, PRIVILEGE;
 
 prompt
-prompt usage tablespace:
+prompt tbs quotas:
+col tablespace_name for a30
+col username for a20
+col Mbytes for 999999999 heading "SUM (Mb)"
+col dropped for a5
 break on report
-COMPUTE SUM OF SUM_ on report
-column sum_ format 99999999.00 heading "SUM (Mb)"
-select owner,tablespace_name, sum(bytes/1024/1024) sum_ from dba_segments where owner=upper('$P1_') group by owner,tablespace_name order by 3 desc;
+COMPUTE SUM OF Mbytes on report
+select tablespace_name, username, bytes/1024/1024 Mbytes, max_bytes, blocks, max_blocks, dropped from dba_ts_quotas where username=upper('$P1_') order by Mbytes desc;
 EOF
 logf
 }
