@@ -31,9 +31,8 @@ chmod 600 $BASEDIR/.tpi_login 2>/dev/null
 
 shopt -s nocasematch
 case "${P1_}:${sid}" in
-  *gold*:*|*retail-db:*|*stock-db:*|egais*:*)                                      cat $wtpi | ssh oracle@$P1_ ". ~/.bashrc >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
-  srv-deosdb*:*|srv-vetdb*:*|*label-db:*|srv-axdb*:*|*alcdsk-db:*)                   cat $wtpi | ssh oracle@$P1_ ". ~/.bashrc >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
-#  srv-olapwhs01*:goldwhs)                                                           cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+  *gold*:*|*retail-db:*|*stock-db:*|egais*:*|srv-vetdb*:*|*label-db:*|*alcdsk-db:)   cat $wtpi | ssh oracle@$P1_ ". ~/.bashrc >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
+  srv-deosdb*:*|srv-olapwhs*:*|srv-axdb*:*)                                          cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile  >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
   askona*:*)                                                                         cat $wtpi | ssh oracle@$P1_ ". ~/.profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
   storgco:*|ikb:*)                                                                   $wtpi $sid $login_str $args ;;
   p260unc2:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
