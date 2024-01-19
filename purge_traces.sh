@@ -28,9 +28,7 @@ jet|ja)                     . /etc/profile.ora ;;
 aisutf*|unit*|crm)          . ~/.ora_env ;;
 askona*|aixtdb*|sbaskona)   . ~/.profile ;;
 egais*|GOLD506*)            . ~/.bashrc ;;
-goldwhs)                    . ~/.bash_profile ;;
 unc*)                       . ~/${sid}_setenv.sh ;;
-goldwhs)                    . ~/.bash_profile ;;
 # opndb)                      . ~/BRSKDB_setenv.sh ; login_str="tal/tal@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb*|obk*)                : ;;
 INSIS*|insis*|alfa|ALFA)    : ;;
@@ -50,6 +48,8 @@ INSIS*|insis*|alfa|ALFA)    : ;;
 ;;
 esac
 
+export ORACLE_SID=$sid
+
 trc=$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'$sid'$')
 tns3=$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
 
@@ -66,7 +66,7 @@ for trc_ in $(echo $trc | xargs); do
 done
 
 VALUE=$(sqlplus -s '/as sysdba' <<'EOS'
-set lines 250  heading off feedback off pagesize 0 trimspool on
+set lines 250  heading off feedback off pagesize 0 trimspool on timing off
 select value from v$system_parameter where name='diagnostic_dest';
 EOS
 )
