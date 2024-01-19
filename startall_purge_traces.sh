@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # usage: startall_purge_traces.sh 
 # Talgat Mukhametshin dba.almaty@gmail.com t.mukhametshin@db-service.ru
@@ -12,8 +12,8 @@ SET_ENV=$(cat $SET_ENV_F)
 SCRIPT_NAME="$BASEDIR/purge_traces.sh"
 
 cat <<EOFF >  $SCRIPT_NAME
-#!/bin/sh
-
+#!/bin/bash
+set -f
 # ps -ef | awk -F_ '/[p]mon/{print \$NF}' | while read i; do ./purge_traces.sh \$i; done
 #
 # usage purge_traces.sh \$ORACLE_SID
@@ -38,21 +38,6 @@ $SET_ENV
 
 export ORACLE_SID=\$sid
 
-trc=\$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'\$sid'$')
-tns3=\$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
-
-echo "set home for diag/rdbms traces: "\$trc
-echo "set home for listener tns3: "\$tns3
-echo "age: "\$age
-
-for trc_ in \$(echo \$trc | xargs); do
-  echo "purge diag/rdbms/ ALERT TRACE INCIDENT: "\$trc_
-  adrci exec="set home \$trc_ ; migrate schema"
-  adrci exec="set home \$trc_ ; purge -age \$age -type ALERT"
-  adrci exec="set home \$trc_ ; purge -age \$age -type TRACE"
-  adrci exec="set home \$trc_ ; purge -age \$age -type INCIDENT"
-done
-
 VALUE=\$(sqlplus -s '/as sysdba' <<'EOS'
 set lines 250  heading off feedback off pagesize 0 trimspool on timing off
 select value from v\$system_parameter where name='diagnostic_dest';
@@ -60,6 +45,25 @@ EOS
 )
 
 echo "diagnostic_dest: "\$VALUE
+cd \$VALUE
+
+trc=\$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'\$sid'$')
+tns3=\$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
+echo "trc: "\$trc
+echo "tns3: "\$tns3
+
+echo "set home for diag/rdbms traces: "\$trc
+echo "set home for listener tns3: "\$tns3
+echo "age: "\$age
+
+for trc_ in \$(echo \$trc | xargs); do
+  echo "purge diag/rdbms/ ALERT TRACE INCIDENT CDUMP: "\$trc_
+  adrci exec="set home \$trc_ ; migrate schema"
+  adrci exec="set home \$trc_ ; purge -age \$age -type ALERT"
+  adrci exec="set home \$trc_ ; purge -age \$age -type TRACE"
+  adrci exec="set home \$trc_ ; purge -age \$age -type INCIDENT"
+  adrci exec="set home \$trc_ ; purge -age \$age -type CDUMP"
+done
 
 for tns3_ in \$(echo \$tns3 | xargs); do
   echo "purge listener ALERT TRACE: "\$tns3_
@@ -78,8 +82,10 @@ END
 )
 
 echo "purge audit logs for \$VALUE :"
-find \$VALUE  -type f -mtime +\$audit -name "*.aud" | xargs -i -P20 rm {}
-find \$VALUE  -type f -mtime +\$audit -name "*.aud" -exec rm {} \;
+case \$(uname | awk -F_ '{print \$1}') in
+  Linux)   find \$VALUE  -type f -mtime +\$audit -name "*.aud" | xargs -i -P20 rm {} ;;
+  *)       find \$VALUE  -type f -mtime +\$audit -name "*.aud" -exec rm {} \; ;;
+esac
 EOFF
 
 chmod u+x $SCRIPT_NAME
@@ -88,7 +94,7 @@ for HOST in $(echo "$HOSTS" | xargs -n1 echo); do
   DBS=$($BASEDIR/iniget.sh mon.ini $HOST db)
   for DB in  $(echo "$DBS" | xargs -n1 echo); do
     echo "HOST=$HOST  DB=$DB  "$(date)
-    cat $SCRIPT_NAME | ssh oracle@$HOST "/bin/sh -s $DB"
+    cat $SCRIPT_NAME | ssh oracle@$HOST "/bin/bash -s $DB"
   done # DB
 done # HOST
 
