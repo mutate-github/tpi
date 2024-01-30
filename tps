@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 26/06/2023 Talgat Mukhametshin  email: mutate@mail.ru
+# version 07/07/2023 Talgat Mukhametshin  email: mutate@mail.ru
 
 set -f
 
@@ -119,11 +119,15 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+SELECT  datname, client_addr, COUNT(*) AS session_count
+FROM pg_stat_activity
+GROUP BY  datname, client_addr
+ORDER BY session_count desc;
 \pset title "pg_stat_activity where state like '$P1_%'"
 SELECT datname, pid, application_name, client_addr, query_start, /*state_change, */ state,  wait_event_type, wait_event,  query
 FROM pg_stat_activity WHERE state like '$P1_%' 
-ORDER BY query_start ASC
-LIMIT 50;
+ORDER BY query_start ASC;
+--LIMIT 50;
 EOF
 ;;
 esac
