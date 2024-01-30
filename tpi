@@ -48,7 +48,7 @@ fi
 
 init_msg()
 {
-  a__="SPID\SID\SERIAL# [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
+  a__="SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
@@ -420,13 +420,13 @@ BEGIN
     select s.sid into v_sid
       from sys.v_\$process p, sys.v_\$session s
      where p.addr = s.paddr
-       and (p.spid = id or s.sid = id /* or s.serial# = id or s.audsid = id */ ) and rownum=1;
+       and (p.spid = id or s.sid = id or s.process = id /* or s.serial# = id or s.audsid = id */ ) and rownum=1;
   exception
     when too_many_rows then
       dbms_output.put_line(chr(126)||'There are more than one session !!! Set parameter OSID:');
       for i in (select p.spid, s.audsid, s.serial#, s.username, s.status, s.machine
                   from   sys.v_\$process p, sys.v_\$session s
-                 where p.addr = s.paddr and (p.spid = id or s.sid = id or s.serial# = id or s.audsid = id)) loop
+                 where p.addr = s.paddr and (p.spid = id or s.sid = id or s.process = id /* or s.serial# = id or s.audsid = id */)) loop
         dbms_output.put_line(chr(126)||i.spid||' / '||i.audsid||' / '||i.serial#||' => '||i.username||' '||i.status||' '||i.machine);
       end loop;
       return;
@@ -450,7 +450,7 @@ BEGIN
   dbms_output.put_line(chr(126)||'===============================================================================');
   dbms_output.put_line(chr(126)||'SID / Serial                        : '|| s.sid||'  '||s.serial#);
   dbms_output.put_line(chr(126)||'SPID / Program / Parent SID         : '|| p.spid||' / '||p.program || ' / ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
-  dbms_output.put_line(chr(126)||'AUDSID / OS client Process ID       : '|| s.audsid || ' / ' || s.process);
+  dbms_output.put_line(chr(126)||'OS_client_PID / AUDSID              : '|| s.process || ' / ' || s.audsid);
   dbms_output.put_line(chr(126)||'s.terminal / p.terminal             : '|| s.terminal || ' / ' || p.terminal);
   dbms_output.put_line(chr(126)||'Username / OSUser / Machine         : '|| s.username || ' / ' ||  s.osuser||' / '||s.machine);
   dbms_output.put_line(chr(126)||'Program / Module / Action           : '|| s.program||' / '||s.module||' / '||s.action);
@@ -3037,34 +3037,35 @@ logf
 
 links()
 {
+P1_="$1"
 REL=$(db_version)
 case $REL in
 9)  $SP <<EOF >$LOGF
 set lines 300
-set echo off feed off veri off tab off pages 0
+set echo off feed off veri off tab off pages 0 timing off
 select 'create database link '||l.name||' connect to '||l.userid||' identified by "'||l.password||'" using '''||l.host||''';' 
-from sys.link$ l, sys.user$ u where l.owner#=u.user#;
+from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name);
 EOF
 ;;
 *) $SP <<EOF >$LOGF
 set lines 300
-set echo off feed off veri off tab off pages 0
+set echo off feed off veri off tab off pages 0 timing off
 select 'create database link '||l.name||' connect to '||l.userid||' identified by values '''||l.passwordx||''' using '''||l.host||''';'
-from sys.link$ l, sys.user$ u where l.owner#=u.user# order by l.name;
+from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by l.name;
 EOF
 ;;
 esac
 
 $SP <<EOF >>$LOGF
-set lines 180
+set lines 230
+set echo off feed off veri off tab off pages 80 timing off
 alter session set NLS_DATE_FORMAT='dd/mm/yyyy hh24:mi:ss';
-set echo off feed off veri off tab off pages 40
 column owner for a30
 column name for a35
 column userid for a30
 column host for a45
 column ctime for a20
-select u.name owner,l.name,l.userid,l.host,l.ctime from sys.link$ l, sys.user$ u where l.owner#=u.user# order by owner, l.name;
+select u.name owner,l.name,l.userid,l.host,l.ctime from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by owner, l.name;
 prompt
 EOF
 logf
@@ -6053,11 +6054,11 @@ i)         shift; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
 l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)         echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
-profile)   shift; ALL=$* ; echo $profile__  ${reset}; profile $ALL ;;
-links)     echo $links__ ${reset} ; links ;;
+profile)   shift; ALL=$*; echo $profile__  ${reset}; profile $ALL ;;
+links)     shift; ALL=$*; echo $links__ ${reset} ; links $ALL ;;
 latch)     echo $latch__ ${reset} ; latch ;;
-bind)      shift; ALL=$* ; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
-pipe)      shift; ALL=$* ; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
+bind)      shift; ALL=$*; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
+pipe)      shift; ALL=$*; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
 longops)   echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)       shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
