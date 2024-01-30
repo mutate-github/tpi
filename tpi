@@ -48,7 +48,7 @@ fi
 
 init_msg()
 {
-  a__="a - ALL sessions, in - INACTIVE, k - KILLED  | [access OBJECT] - active sessions which accessing OBJECT | SPID\SID\SERIAL# [p] [parameter_name] - session param info from V\$SES_OPTIMIZER_ENV by [parameter_name]" 
+  a__="SPID\SID\SERIAL# [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
   p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
@@ -327,10 +327,17 @@ logf
 
 process_info()
 {
+P1_=$(echo $* | awk '{print $1}')
+P2_=$(echo $* | awk '{print $2}')
+case "$P2_" in
+  p)  P3_=$(echo $* | awk '{print $3}' | tr '[:lower:]' '[:upper:]') ;;
+  *)  shift; ALL="$*" ;;
+esac
+
 CODE11_="
   if (s.sql_id is not null) then
     dbms_output.put_line(chr(126)||'Explain plan from dbms_xplan.display_cursor:');
-    for c1 in (select plan_table_output from   table(dbms_xplan.display_cursor(s.sql_id,s.sql_child_number,'Typical +PEEKED_BINDS')) ) loop
+    for c1 in (select plan_table_output from   table(dbms_xplan.display_cursor(s.sql_id,s.sql_child_number,'-predicate $ALL')) ) loop
       dbms_output.put_line(chr(126)||chr(32)||c1.plan_table_output);
     end loop;
   end if;
@@ -382,11 +389,8 @@ case "$(db_version)" in
     CMD4_="begin select sql_id into  STR2_ from sys.v_\$sqltext where HASH_VALUE = s.prev_hash_value and rownum=1; exception when others then null; end;" ;;
 esac
 
-P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 case "$P2_" in
-P)
+p)
 $SP <<EOF >$LOGF
 set serveroutput on size 500000
 set echo off feed off veri off tab off
@@ -444,21 +448,18 @@ BEGIN
   end;
 
   dbms_output.put_line(chr(126)||'===============================================================================');
-  dbms_output.put_line(chr(126)||'SID/Serial                          : '|| s.sid||'  '||s.serial#);
-  dbms_output.put_line(chr(126)||'AUDSID                              : '|| s.audsid);
-  dbms_output.put_line(chr(126)||'Foreground                          : '|| 'PID: '||s.process);
-  dbms_output.put_line(chr(126)||'Shadow                              : '|| 'PID: '||p.spid||' - '||p.program || '  Parent SID: ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
-  dbms_output.put_line(chr(126)||'Terminal                            : '|| s.terminal || '/ ' || p.terminal);
-  dbms_output.put_line(chr(126)||'OS User                             : '|| s.osuser||' on '||s.machine);
-  dbms_output.put_line(chr(126)||'Oracle User                         : '|| s.username);
+  dbms_output.put_line(chr(126)||'SID / Serial                        : '|| s.sid||'  '||s.serial#);
+  dbms_output.put_line(chr(126)||'SPID / Program / Parent SID         : '|| p.spid||' / '||p.program || ' / ' || to_number(substr(to_char(s.ownerid, 'XXXXXXXX'),length(to_char(s.ownerid, 'XXXXXXXX'))-3 ),'XXXX') ); 
+  dbms_output.put_line(chr(126)||'AUDSID / OS client Process ID       : '|| s.audsid || ' / ' || s.process);
+  dbms_output.put_line(chr(126)||'s.terminal / p.terminal             : '|| s.terminal || ' / ' || p.terminal);
+  dbms_output.put_line(chr(126)||'Username / OSUser / Machine         : '|| s.username || ' / ' ||  s.osuser||' / '||s.machine);
   dbms_output.put_line(chr(126)||'Program / Module / Action           : '|| s.program||' / '||s.module||' / '||s.action);
   dbms_output.put_line(chr(126)||'Object_name / PLSQL_ENTRY_OBJECT_ID : '|| STR_);
   dbms_output.put_line(chr(126)||'Status Flags                        : '|| s.status||' '||s.server||' '||s.type);
   dbms_output.put_line(chr(126)||'Tran Active                         : '|| nvl(s.taddr, 'NONE'));
   dbms_output.put_line(chr(126)||'Login Time                          : '|| to_char(s.logon_time, 'Dy HH24:MI:SS'));
   dbms_output.put_line(chr(126)||'Last Call                           : '|| to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || to_char(s.last_call_et/60, '9999990.0') || ' min');
-  dbms_output.put_line(chr(126)||'Lock/ Latch                         : '|| nvl(s.lockwait, 'NONE')||'/ '||nvl(p.latchwait, 'NONE'));
-  dbms_output.put_line(chr(126)||'Latch Spin                          : '|| nvl(p.latchspin, 'NONE'));
+  dbms_output.put_line(chr(126)||'Lock / Latch / Latch Spin           : '|| nvl(s.lockwait, 'NONE')||' / '||nvl(p.latchwait, 'NONE') || ' / ' || nvl(p.latchspin, 'NONE'));
 
     for c1 in ( select w.*, case when event like '%latch%' then ', LatchName: '||l.name else '' end name  from sys.v_\$session_wait w, sys.v_\$latchname l where w.p2=l.latch#(+) and w.sid = s.sid) loop
     dbms_output.put_line(chr(126)||c1.state||': '||c1.event||', '||c1.p1text||'='||c1.p1||', '||c1.p2text||'='||c1.p2||', '||c1.p3text||'='||c1.p3||c1.name );
@@ -4196,7 +4197,7 @@ where)
   PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_  for condition: $COND_"
   $SET_COL
   select * from (
-  select session_id sid,"SESSION_SERIAL#" serial, username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */  -- program||' \ '||module||' \ '||action||' \ '||machine PMAM,
+  select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,sql_id,sql_plan_hash_value,nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */  -- program||' \ '||module||' \ '||action||' \ '||machine PMAM,
     sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
     sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
     (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
@@ -4207,7 +4208,7 @@ where)
   --and  sql_id is not null 
   $COND_
   --and program like '%$PRG_%'
-  group by session_id,"SESSION_SERIAL#", username,sql_id,sql_plan_hash_value,event --, /* top_level_sql_id, top_level_call_name, */  session_state,program,module,action,machine 
+  group by /*session_id,"SESSION_SERIAL#",*/ username,sql_id,sql_plan_hash_value,event --, /* top_level_sql_id, top_level_call_name, */  session_state,program,module,action,machine 
   order by activity desc
   ) where rownum<31;
 EOF
@@ -6010,8 +6011,8 @@ logf
 export TERM=xterm
 U=`uname | awk -F_ '{print $1}'`
 case "$U" in
- CYGWIN)  echo -n "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   " ;;
- AIX)     echo -n "DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   " ;;
+ CYGWIN)  echo -n "DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  " ;;
+ AIX)     echo -n "DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  " ;;
  *)
  red=`tput setaf 1`
  green=`tput setaf 2`
@@ -6020,7 +6021,7 @@ case "$U" in
  magneta=`tput setaf 5`
  cyan=`tput setaf 6`
  reset=`tput sgr0`
- echo -n ${green}"DB="$sid"   "`date +%d/%m/%y" "%H:%M:%S`"   "$ls2"   "
+ echo -n ${green}"DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  "
  ;;
 esac
 
@@ -6071,6 +6072,6 @@ sql)       shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
 ash)       shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;
 dhash)     shift; ALL=$*; echo $dhash__ ", for: "$ALL ${reset}; dhash $ALL ; echo $dhash__ ;;
 spm)       shift; ALL=$*; echo $spm__ ", Now: "$ALL ${reset}  ; spm $ALL ; echo $spm__ ;;
-*)         echo echo $a__  "process_info"${reset}; process_info $ALL ;; 
+*)         echo $a__  "process_info"${reset}; process_info $ALL ;; 
 esac
 
