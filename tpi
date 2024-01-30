@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 16.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 30.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -1971,8 +1971,7 @@ EOF
 *)
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 70
-
+set echo off feed off veri off tab off pages 80
 prompt
 column tablespace_name for a15
 column owner for a20
@@ -1987,9 +1986,9 @@ column status for a10
 column partitioned for a4
 column degree for a2
 column VISIBILITY for a9
-prompt dba_indexes for index_name = $P2_
+prompt dba_indexes for index_name like $P2_ and owner like nvl('$P3_','%')
 select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, degree, VISIBILITY
-from dba_indexes where upper(index_name) = upper('$P2_') order by owner,index_name;
+from dba_indexes where owner like nvl('$P3_','%') and index_name like upper('$P2_') order by owner,index_name;
 
 set longc 100000000
 column index_owner for a30
@@ -1998,8 +1997,12 @@ column table_owner for a30
 column table_name for a30
 column column_expression for a50
 column column_position for 99
-prompt dba_ind_expressions for index_name = $P2_
-select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where upper(index_name) = upper('$P2_') order by table_owner,table_name,index_name,column_position;
+prompt dba_ind_expressions for index_name like $P2_ and owner like nvl('$P3_','%')
+select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where table_owner like nvl('$P3_','%') and index_name like upper('$P2_') order by table_owner,table_name,index_name,column_position;
+
+col cmd for a230
+prompt recompile cmd for  index_name like $P2_ and owner like nvl('$P3_','%')
+select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P3_','%') and index_name = upper('$P2_') and status='UNUSABLE';
 EOF
 ;;
 esac
@@ -2282,7 +2285,10 @@ SELECT s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.XID, substr(to_
 round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2) undo, s.program||' \ '||s.module||' \ '||s.action pma, u.status,
 to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || ltrim(to_char(s.last_call_et/60, '9999990.0')) || ' min' last_call_et
 FROM v\$session s, v\$transaction t, dba_undo_extents u, sys.v_\$system_parameter x
-WHERE s.taddr = t.addr and u.segment_name like '_SYSSMU'||t.xidusn||'_%$' and u.status = 'ACTIVE' and x.name  = 'db_block_size'
+WHERE --s.taddr = t.addr 
+s.saddr = t.ses_addr
+and u.segment_name like '_SYSSMU'||t.xidusn||'_%$' and u.status = 'ACTIVE' 
+and x.name  = 'db_block_size'
 GROUP BY s.sid, s.serial#, s.username, s.osuser, u.segment_name, t.xid, to_char(t.flag,'0000000X'), t.used_ublk, round(t.used_ublk * TO_NUMBER(x.value)/(1024*1024),2), s.program||' \ '||s.module||' \ '||s.action, u.status, s.last_call_et
 ORDER BY t.used_ublk desc, s.sid, s.serial#, s.username;
 EOF
@@ -2618,7 +2624,7 @@ AND p.name  = 'db_block_size'
 AND a.saddr = b.session_addr
 AND a.inst_id=b.inst_id
 AND a.inst_id=p.inst_id
-and a.status<>'INACTIVE'
+--and a.status<>'INACTIVE'
 ORDER BY b.tablespace, b.blocks desc;
 
 col free for 999,999 heading "FREE Mb"
@@ -6041,7 +6047,7 @@ topseg)    shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topse
 o)         shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
 s)         shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
 t)         shift; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
-i)         shift; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
+i)         shift; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
 l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)         echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
