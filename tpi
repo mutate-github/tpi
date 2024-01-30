@@ -2936,7 +2936,8 @@ col thread# for 99
 col SEQUENCE# for 999999999
 col PROCESS for a7
 col PID for 999999999
-select thread#,sequence#,process, pid,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
+col block# for 999999999
+select thread#, sequence#, process, pid, status, block# from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
 
 --ttitle left "V\$STANDBY_LOG :"
 --select group#,thread#,sequence#,bytes,used,archived,status from v\$standby_log;
