@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 16.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 30.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -1689,15 +1689,19 @@ $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 150
 column owner for a25
-column object_name for a30
+column object_name for a60
 column OBJECT_TYPE for a25
 column status for a20
 ttitle left "Invalid dba_objects for owner like nvl(upper('$P2_'),'%') :"
 BREAK ON REPORT
 COMPUTE SUM  LABEL 'SUM' OF count(*) on report
 select owner, count(*)  from dba_objects where status!='VALID' and owner like nvl(upper('$P2_'),'%') group by owner order by owner;
-column OBJECT_NAME for a30
-select owner, object_name, object_type,status from dba_objects where status!='VALID' and owner like nvl(upper('$P2_'),'%') order by owner, object_type, object_name;
+select owner, object_name, object_type, status from dba_objects where status!='VALID' and owner like nvl(upper('$P2_'),'%') order by owner, object_type, object_name;
+
+col cmd for a230
+select 'alter '||decode(object_type,'PACKAGE BODY','PACKAGE',object_type)||' "'||owner||'"."'||object_name||'" '||decode(object_type,'PACKAGE BODY','COMPILE BODY','COMPILE')||';' cmd  from dba_objects
+ where status <> 'VALID' and owner like nvl(upper('$P2_'),'%') and (object_type like 'PACKAGE%' or object_type in ('PROCEDURE','FUNCTION','VIEW','JAVA CLASS','TRIGGER')) 
+ order by owner, object_type, object_name;
 EOF
 ;;
   ddl)
@@ -1923,7 +1927,7 @@ case "$P2_" in
 PART)
 $SP <<EOF >$LOGF
 set lines 230 numw 6
-set echo off feed off veri off tab off pages 70
+set echo off feed off veri off tab off pages 80 
 col OWNER for a20
 col INDEX_NAME for a30
 col TABLE_NAME for a30
@@ -1971,7 +1975,7 @@ EOF
 *)
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 70
+set echo off feed off veri off tab off pages 80
 
 prompt
 column tablespace_name for a15
@@ -1987,9 +1991,9 @@ column status for a10
 column partitioned for a4
 column degree for a2
 column VISIBILITY for a9
-prompt dba_indexes for index_name = $P2_
+prompt dba_indexes for index_name like $P2_ and owner like nvl('$P3_','%')
 select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, degree, VISIBILITY
-from dba_indexes where upper(index_name) = upper('$P2_') order by owner,index_name;
+from dba_indexes where owner like nvl('$P3_','%') and index_name like upper('$P2_') order by owner,index_name;
 
 set longc 100000000
 column index_owner for a30
@@ -1998,8 +2002,12 @@ column table_owner for a30
 column table_name for a30
 column column_expression for a50
 column column_position for 99
-prompt dba_ind_expressions for index_name = $P2_
-select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where upper(index_name) = upper('$P2_') order by table_owner,table_name,index_name,column_position;
+prompt dba_ind_expressions for index_name like $P2_ and owner like nvl('$P3_','%')
+select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where table_owner like nvl('$P3_','%') and index_name like upper('$P2_') order by table_owner,table_name,index_name,column_position;
+
+col cmd for a230
+prompt recompile cmd for  index_name like $P2_ and owner like nvl('$P3_','%')
+select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P3_','%') and index_name = upper('$P2_') and status='UNUSABLE';
 EOF
 ;;
 esac
@@ -6041,7 +6049,7 @@ topseg)    shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topse
 o)         shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
 s)         shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
 t)         shift; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
-i)         shift; echo $i__ ", INDEX_NAME = " $ALL ${reset}; index $ALL ;;
+i)         shift; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
 l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)         echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
