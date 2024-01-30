@@ -10,7 +10,7 @@ fi
 
 if [ -z $lst ]; then
   :
-# lst='z14-0473-novre z14-0511-ol z14-0515-ol z14-0518-rman z14-0533-ol z14-0633-qat z14-0681-phnxdb z14-0682-raksdb z14-0815-ora z14-0816-rasmdb z14-0974-todb z14-0977-tfdb z14-1014-tora z14-1847 z14-1901 z14-2043-phnxdb brnsk-oracle-phenix kem-ora01 abkh-oracle-phenix z14-1014-tora-test'
+ lst='z14-0473-novre z14-0511-ol z14-0515-ol z14-0518-rman z14-0533-ol z14-0633-qat z14-0681-phnxdb z14-0682-raksdb z14-0815-ora z14-0816-rasmdb z14-0974-todb z14-0977-tfdb z14-1014-tora z14-1847 z14-1901 z14-2043-phnxdb brnsk-oracle-phenix kem-ora01 abkh-oracle-phenix z14-1014-tora-test'
 # lst='p260unc2 p260unc4'
 # lst='askona01 askona04 askona05 db-gold-dca dcb-retail-db db-gold-dev dca-label-db dcb-label-db dca-stock-db dcb-stock-db dcb-t-alcdsk-db degcdb1 degcdb2 degcdbt gold2 ikb-db1-stby ikb-db2-stby mdstock1 mdstock2 mdstockt mrct-dev-db mrct-prd-db mrct-uat-db srv-axdb1-mrg srv-axdb2-mrg srv-deosdb-dca srv-deosdb-dcb srv-gold-db-dcc srv-olapwhs01-dca srv-olapwhs01-dcb srv-vetdb-dca srv-vetdb-dcb t-retail-db t-stock-db'
 fi
@@ -89,7 +89,8 @@ for srv in $lst; do
 #  echo $svr
   $WRTPI $srv | awk -F" ora_pmon_" '/ ora_pmon_/{print $2}' |  while read sid; do
       echo "SERVER: "$srv ", DB: "$sid
-       $WRTPI $srv $sid k
+       $WRTPI $srv $sid db nls | grep NLS_CHARACTERSET
+       $WRTPI $srv $sid exec 'select \* FROM V$TIMEZONE_FILE'
 #      echo "ps -ef | grep [o]ra_pmon" | ssh $srv "/bin/sh -s "
 #       cat $script | ssh $srv "/bin/sh -s $sid"
 #        $WRTPI $srv $sid scheduler PURGE_ORPHAN_AWR_SNAPS
