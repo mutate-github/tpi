@@ -10,6 +10,7 @@ unc*)                       [ -r ~/${sid}_setenv.sh ] && source ~/${sid}_setenv.
 # opndb)                    [ -r ~/BRSKDB_setenv.sh && source ~/BRSKDB_setenv.sh ; login_str="tal/tal@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb*|obk*)                : ;;
 INSIS*|insis*|alfa|ALFA)    : ;;
+dbprod|dbprog)              : ;;
 *) #        if [ -r ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -r ~/.bash_profile ]; then . ~/.bash_profile ; fi
    #        if [ -r ~/.profile ]; then . ~/.profile ; fi
