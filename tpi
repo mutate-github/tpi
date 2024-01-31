@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 30.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 31.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -69,7 +69,7 @@ init_msg()
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u USERNAME - dba_users information"
   profile__="profile [PROFILE] - profiles information"
-  links__="links - links information"
+  links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
   lock__="lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
@@ -493,8 +493,7 @@ lock()
 {
 P2_=`echo $ALL | awk '{print $2}'`
 P3_=`echo $ALL | awk '{print $3}'`
-SETP_="
-set echo off feed off veri off tab off 
+SETP_="set echo off feed off veri off tab off 
 set lines 230 pages 100
 column Action format a10
 column SID format 99999
@@ -513,7 +512,8 @@ PROMPT 2: Row-S (SS) Row Share
 PROMPT 3: Row-X (SX) Row Exclusive
 PROMPT 4: Share (S) Share
 PROMPT 5: S/Row-X (SSX) Share/Row Exclusive
-PROMPT 6: Exclusive (X) "
+PROMPT 6: Exclusive (X)"
+
 case "$P2_" in
 lib) $SP <<'END' > $LOGF
 set lines 230
@@ -1699,6 +1699,11 @@ COMPUTE SUM  LABEL 'SUM' OF count(*) on report
 select owner, count(*)  from dba_objects where status!='VALID' and owner like nvl(upper('$P2_'),'%') group by owner order by owner;
 column OBJECT_NAME for a30
 select owner, object_name, object_type,status from dba_objects where status!='VALID' and owner like nvl(upper('$P2_'),'%') order by owner, object_type, object_name;
+
+ttitle left "recompile commands for invalid objects owner like nvl(upper('$P2_'),'%') :"
+column cmd for a230
+select 'alter '||decode(object_type,'PACKAGE BODY','PACKAGE',object_type)||' "'||owner||'"."'|| object_name||'" '||decode(object_type,'PACKAGE BODY','COMPILE BODY','COMPILE')||';' cmd from dba_objects
+where status <> 'VALID' and owner like nvl(upper('$P2_'),'%') and (object_type like 'PACKAGE%' or object_type in ('PROCEDURE','FUNCTION','VIEW','JAVA CLASS','TRIGGER'));
 EOF
 ;;
   ddl)
