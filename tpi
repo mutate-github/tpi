@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 31.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 02.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -4277,7 +4277,7 @@ EOF
                       plsql_subprogram_id,
                       sql_id,
                       sql_plan_hash_value,
-                      sql_opname $S3_) x
+                      sql_opname $S3_ ) x
   where     e.object_id (+) = x.plsql_entry_object_id
   and       e.subprogram_id (+) = x.plsql_entry_subprogram_id
   and       p.object_id (+) = x.plsql_object_id
@@ -4789,11 +4789,12 @@ EOF
    shift
    shift
    EVENT_="$*"
+   echo "EVENT_: "$EVENT_
    if [ -n "$EVENT_" ]; then
-     S0_="x.event,"
+     S0_="x.event, "
      S1_="nvl(event,'ON CPU') event,"
-     S2_="event like '%$EVENT_%'"
-     S3_=",event"
+     S2_=" and event like '%$EVENT_%'"
+     S3_=", event "
    else 
      S2_="and sql_id is not null"
    fi
@@ -4825,7 +4826,7 @@ EOF
                       plsql_subprogram_id,
                       sql_id,
                       sql_plan_hash_value,
-                      sql_opname $S3_) x
+                      sql_opname $S3_ ) x
    where     e.object_id (+) = x.plsql_entry_object_id
    and       e.subprogram_id (+) = x.plsql_entry_subprogram_id
    and       p.object_id (+) = x.plsql_object_id
