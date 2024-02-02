@@ -536,7 +536,7 @@ prompt "-- kglpnmod M  (0: no lock; 1: null; 2: shared; 3: exclusive)"
 SELECT /* +rule */ 'kill -9 '||pr.spid spid, s.sid, s.serial#, sw.event, sw.seconds_in_wait s_w,
 ob.kglnaown||'.'||ob.kglnaobj "Object", p.kglpnmod "M", p.kglpnreq "R",
 s.username,substr(s.status,1,1) status,s.osuser,s.machine,s.program,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time
-FROM sys.x$kglpn p, sys.v_$session s, sys.v_$process pr, sys.x$kglob ob, sys.v_$session_wait sw
+FROM x$kglpn p, sys.v_$session s, sys.v_$process pr, x$kglob ob, sys.v_$session_wait sw
 WHERE p.kglpnuse=s.saddr and pr.addr = s.paddr and ob.kglhdadr=p.kglpnhdl
 --and (sw.event like 'lib%')
 and sw.event in ('library cache load lock','library cache lock','cursor: pin S wait on X','row cache lock')
@@ -2927,13 +2927,13 @@ col first_time for a15
 col last_time for a15
 col first_seq for 999999999
 col last_seq for 999999999
-ttitle left "Reclaimable v\$archived_log join sys.x\$kccagf   exec dbms_backup_restore.refreshagedfiles; :"
+ttitle left "Reclaimable v\$archived_log join x\$kccagf   exec dbms_backup_restore.refreshagedfiles; :"
 select applied,deleted,backup_count
  ,decode(rectype,11,'YES','NO') reclaimable,count(*) 
  ,to_char(min(completion_time),'dd/mm/yy hh24:mi') first_time
  ,to_char(max(completion_time),'dd/mm/yy hh24:mi') last_time
  ,min(sequence#) first_seq,max(sequence#) last_seq
-from v\$archived_log left outer join sys.x\$kccagf using(recid)
+from v\$archived_log left outer join x\$kccagf using(recid)
 where is_recovery_dest_file='YES' and deleted<>'YES'
 group by applied,deleted,backup_count,decode(rectype,11,'YES','NO') order by min(sequence#);
 
