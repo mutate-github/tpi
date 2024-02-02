@@ -2978,8 +2978,8 @@ case "$(db_version)" in
 esac
 
 $SP <<EOF >$LOGF
-set lines 200
-set echo off feed off veri off tab off pages 50
+set lines 300
+set echo off feed off veri off tab off pages 50 timing off
 set numwidth 15
 column username for a30
 column table_name for a20
@@ -2989,6 +2989,11 @@ column TEMPORARY_TABLESPACE for a20
 column profile for a20
 column last_login for a19
 $CMD1_
+col name for a30
+col lcount for 99999
+col password_spare4 for a250
+select name,lcount,password||';'||spare4 password_spare4 from user$ where name like upper('$P1_');
+
 prompt
 prompt sys privs:
 
