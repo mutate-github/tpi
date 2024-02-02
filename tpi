@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 02.01.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 02.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -2983,7 +2983,6 @@ set echo off feed off veri off tab off pages 50
 set numwidth 15
 column username for a30
 column table_name for a20
-column privilege for a15
 column account_status for a20
 column default_tablespace for a20
 column TEMPORARY_TABLESPACE for a20
@@ -2995,7 +2994,7 @@ prompt sys privs:
 
 column grantee for a20
 column GRANTED_ROLE for a30
-column privilege for a30
+column privilege for a35
 select * from dba_sys_privs where grantee=upper('$P1_') order by privilege;
 
 prompt
@@ -3008,7 +3007,7 @@ column table_name for a30
 column grantee for a20
 column grantor for a20
 column owner for a25
-column PRIVILEGE for a15
+column PRIVILEGE for a20
 column type for a15
 select * from dba_tab_privs where grantee=upper('$P1_') order by grantor, table_name, PRIVILEGE;
 
