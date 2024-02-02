@@ -654,7 +654,8 @@ union all
 select 'Average dirty buffers' Name, round(sum(decode(name,'dirty buffers inspected',value,0)) / sum(decode(name,'free buffer inspected',value,0)),4), 'Target ~ ??, if too much durty -- too low buffers' Remarks
     from V$SYSSTAT
 union all
-select 'consistent reads - undo records applied / consistent read rollbacks', round((select value from V$SYSSTAT where name='transaction tables consistent reads - undo records applied')/(select value from V$SYSSTAT where name='transaction tables consistent read rollbacks'),4) ratio, 'Less is better' Remarks
+select 'consistent reads - undo records applied / consistent read rollbacks', round((select value from V$SYSSTAT where name='transaction tables consistent reads - undo records applied') / 
+  decode((select value from V$SYSSTAT where name='transaction tables consistent read rollbacks'),0,1,(select value from V$SYSSTAT where name='transaction tables consistent read rollbacks')),4) ratio, 'Less is better' Remarks
     from dual
 union all
 select 'Log Buffers space requests' Name, round(sum(decode(name,'redo log space requests',value,0))) Ratio,  'Target (..?)' Remarks
