@@ -31,7 +31,7 @@ check_script_and_send_email()
 {
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_email ;;
-           *)   if [[ "${SCRIPTS}" =~ "%" ]]; then echo "MM ALL SCRIPTS! "; send_email ; fi  ;;
+           *)   if [[ "${SCRIPTS}" =~ "%" ]]; then echo "MM ALL SCRIPTS!"; send_email ; fi  ;;
 esac
 }
 
