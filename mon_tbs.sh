@@ -28,7 +28,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
        echo "Fired: "$0"\n" > $LOGF_HEAD
        head -2 $LOGF >> $LOGF_HEAD
        LST=`cat $LOGF_TRG`
-       CUR_VAL=`awk '{print $NF}' $LOGF_TRG`
+       CUR_VAL=`awk '{print $NF}' $LOGF_TRG | head -1`
        echo $LST  | xargs -n7 echo | while read a b c d e f g; do
            echo "" >> $LOGF_TRG
            echo "Datafiles information:" >> $LOGF_TRG
