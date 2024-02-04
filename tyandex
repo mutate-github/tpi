@@ -1,7 +1,8 @@
 #!/bin/bash
 set -f
 
-sender=t.mukhametshin@db-service.ru
+# sender=t.mukhametshin@db-service.ru
+sender=dba.almaty@gmail.com
 gapp=vngogoshxiqchxsz
 
 if [ $# -lt 1 ]; then
