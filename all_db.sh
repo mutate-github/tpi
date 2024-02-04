@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 lst="$*"
 script=exec_all_db_$$.sh
@@ -21,7 +21,7 @@ if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
 
 cat > $script<<'EOF'
-#!/bin/sh
+#!/bin/bash
 sid=$1
 # echo "in script:" $sid
 # env | grep ORA
@@ -91,11 +91,11 @@ for srv in $lst; do
       echo "SERVER: "$srv ", DB: "$sid
        $WRTPI $srv $sid db nls | grep NLS_CHARACTERSET
        $WRTPI $srv $sid exec 'select \* FROM V$TIMEZONE_FILE'
-#      echo "ps -ef | grep [o]ra_pmon" | ssh $srv "/bin/sh -s "
-#       cat $script | ssh $srv "/bin/sh -s $sid"
+#      echo "ps -ef | grep [o]ra_pmon" | ssh $srv "/bin/bash -s "
+#       cat $script | ssh $srv "/bin/bash -s $sid"
 #        $WRTPI $srv $sid scheduler PURGE_ORPHAN_AWR_SNAPS
 #       $WRTPI $srv $sid ash tchart
-#       cat $BASEDIR/purge_traces.sh | ssh oracle@$srv "/bin/sh -s $sid"
+#       cat $BASEDIR/purge_traces.sh | ssh oracle@$srv "/bin/bash -s $sid"
       echo "================================================================================="
   done
 done

@@ -92,7 +92,7 @@ for HDS in `echo $HDSLST | xargs -n1 echo`; do
 
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 # echo "sid="\$sid
 $SET_ENV
@@ -144,7 +144,7 @@ echo "FINISH DELETE REDUNDANT BACKUPSET > \$INF_STR at `date`"
 echo "--------------------------------------------------------------------------------------------------------------"
 EOF_CREATE_F1
 
-  cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
+  cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/bash -s $DB" >> $logf
   rm $ONE_EXEC_F
   exec >> $logf 2>&1
 

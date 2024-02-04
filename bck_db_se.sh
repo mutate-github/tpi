@@ -96,8 +96,8 @@ for HDS in `echo $HDSLST | xargs -n1 echo`; do
 HOST_STB_DB=`echo $HOST_STB_SE | awk -F: '{print $1}'`
 HOST_STB_STB=`echo $HOST_STB_SE | awk -F: '{print $2}'`
 if [ -n "$HOST_STB_SE" -a "$HOST_STB_DB" = "$DB" ]; then
-  VALUE_STB=`cat << EOF | ssh oracle@$HOST_STB_STB "/bin/sh -s $HOST_STB_DB"
-#!/bin/sh
+  VALUE_STB=`cat << EOF | ssh oracle@$HOST_STB_STB "/bin/bash -s $HOST_STB_DB"
+#!/bin/bash
 sid=\\$1
 $SET_ENV
 export ORACLE_SID=\\$sid
@@ -121,7 +121,7 @@ echo "LOGS: "$LOGS
 
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 # echo "sid="\$sid
 $SET_ENV
@@ -220,7 +220,7 @@ order by j.start_time;
 EOS
 EOF_CREATE_F1
 
-  cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf
+  cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/bash -s $DB" >> $logf
   rm $ONE_EXEC_F
   exec >> $logf 2>&1
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 HOST=$1
 DB=$2
@@ -11,7 +11,7 @@ ONE_EXEC_F="one_exec_${me}.sh"
 #echo "ONE_EXEC_F="$ONE_EXEC_F
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 echo "sid="\$sid
 $SET_ENV
@@ -23,7 +23,7 @@ EOF\`
 echo \$VALUE
 EOF_CREATE_F1
 
-cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $DB"
+cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/bash -s $DB"
 
 # rm $ONE_EXEC_F
 

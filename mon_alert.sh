@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -f
 #exec 5> debug_output.txt
 #BASH_XTRACEFD="5"

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -f
 
 echo "Usage: $0 primary_host standby_host ORACLE_SID"
@@ -64,7 +64,7 @@ done
 echo "\nSTEP 0: Switch logfile DB: $ORACLE_SID  on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -74,14 +74,14 @@ set lines 250 pages 50 timing off
 alter system switch logfile;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 1: Show arch lag for DB: $ORACLE_SID on $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -105,14 +105,14 @@ SELECT   prim.thread# thread, prim.seq primary_seq, TO_CHAR (prim.tm, 'DD/MM/YYY
 --select thread#,sequence#,process,status from gv\$managed_standby order by THREAD#, SEQUENCE#, PROCESS;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 2: Show standby redo log for DB: $ORACLE_SID on host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -126,7 +126,7 @@ select group#, member, type, status from v\$logfile where type='STANDBY' order b
 --select group#, bytes, status, archived, SEQUENCE# from v\$log;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
@@ -134,7 +134,7 @@ cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
 echo "\nSTEP 3: Restart DB: $ORACLE_SID in restrict mode on host: $primary_host"
 next_step && ( 
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -143,14 +143,14 @@ set lines 250 pages 50 timing off
 startup restrict force
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID" 
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID" 
 ) 
 
 
 echo "\nSTEP 4: Show switchover_status DB: $ORACLE_SID  on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -159,7 +159,7 @@ set lines 250 pages 50 timing off
 select name, open_mode, database_role,switchover_status from v\$database;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
@@ -167,7 +167,7 @@ cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
 echo "\nSTEP 5: Switchover DB: $ORACLE_SID to standby on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -176,7 +176,7 @@ set lines 250 pages 50 timing off
 alter database commit to switchover to standby;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
@@ -184,7 +184,7 @@ cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
 echo "\nSTEP 6: Show alert_log on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -198,14 +198,14 @@ select value||'/alert_&&db_name..log' from V\$DIAG_INFO where name='Diag Trace';
 EOS\`
 tail -20 \$VALUE
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 7: Show switchover_status for DB: $ORACLE_SID  on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -214,7 +214,7 @@ set lines 250 pages 50 timing off
 select name, open_mode, database_role,switchover_status from v\$database;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
@@ -222,7 +222,7 @@ cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
 echo "\nSTEP 8: Switchover $ORACLE_SID to primary on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -231,14 +231,14 @@ set lines 250 pages 50 timing off
 alter database commit to switchover to primary with session shutdown;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 9: Show alert_log on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -252,14 +252,14 @@ select value||'/alert_&&db_name..log' from V\$DIAG_INFO where name='Diag Trace';
 EOS\`
 tail -20 \$VALUE
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 10: Open database: $ORACLE_SID on old standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -268,14 +268,14 @@ set lines 250 pages 50 timing off
 alter database open;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$standby_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
 echo "\nSTEP 11: Startup and enable manage recovery new standby database: $ORACLE_SID on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 $set_env
 export ORACLE_SID=\$sid
@@ -285,7 +285,7 @@ startup
 recover managed standby database disconnect using current logfile;
 EOS
 EOF_CREATE_SCP
-cat ${one_exec_f} | ssh oracle@$primary_host "/bin/sh -s $ORACLE_SID"
+cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 rm one_exec_switchover_*.sh

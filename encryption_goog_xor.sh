@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # https://9to5answer.com/bitwise-xor-a-string-in-bash
 set -f
 

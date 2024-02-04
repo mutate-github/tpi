@@ -41,7 +41,7 @@ EOS
 rm execsql_one_[0-9]*.sql
 EOFF2
 
-cat execsql_one_$$.sh  | ssh $SRV "/bin/sh -s $SID"
+cat execsql_one_$$.sh  | ssh $SRV "/bin/bash -s $SID"
 
 # rm execsql_one_$$.sh
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #scp tpi 172.16.249.1:~/tal/
 #scp rtpi 172.16.249.1:~/tal/

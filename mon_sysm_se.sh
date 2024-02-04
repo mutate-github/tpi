@@ -19,7 +19,7 @@ SET_ENV=`cat $SET_ENV_F`
 ONE_EXEC_F=$BASEDIR/one_exec_mon_sysm_se_${me}.sh
 
 cat << EOF_CREATE_F > $ONE_EXEC_F
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 # echo "sid="\$sid
 $SET_ENV
@@ -158,7 +158,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
 #    echo "DB="$DB
     LOGF=$LOGDIR/mon_sysm_se_db_${HOST}_${DB}.log
-    cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $LOGF
+    cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/bash -s $DB" >> $LOGF
 #    exec >> $LOGF 2>&1
   done
 done

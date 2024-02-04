@@ -25,8 +25,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
 
-VALUE=`cat <<EOF | ssh $HOST "/bin/sh -s $DB"
-#!/bin/sh
+VALUE=`cat <<EOF | ssh $HOST "/bin/bash -s $DB"
+#!/bin/bash
 sid=\\$1
 #echo "sid="\\$sid
 $SET_ENV
