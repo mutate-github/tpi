@@ -5,23 +5,28 @@ set -f
 #PS4='$LINENO: '
 #set -x
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 #export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-LINES=`$BASEDIR/iniget.sh mon.ini alert lines`
-EXCLUDE=`$BASEDIR/iniget.sh mon.ini alert exclude`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+LINES=`$BASEDIR/iniget.sh $CONFIG alert lines`
+EXCLUDE=`$BASEDIR/iniget.sh $CONFIG alert exclude`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in `echo "$DBS" | xargs -n1 echo`; do
     LOGF=$LOGDIR/mon_alert_${HOST}_${DB}.log
     LOGF_HEAD=$LOGDIR/mon_alert_${HOST}_${DB}_head.log
@@ -113,8 +118,7 @@ if [ "$ERRCT" -gt 1 ]; then
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}'
  echo " " >> $LOGF_HEAD
  echo "$ERRMESS" | awk 'BEGIN {FS="<BR>"}{for (i=1;NF>=i;i++) {print $i}}' >> $LOGF_HEAD
-# cat $LOGF_HEAD | $WMMAIL -s "$MPREFIX ALERT_LOG warning: $HOST / $DB" $ADMINS
- cat $LOGF_HEAD | $BASEDIR/send_msg.sh $HOST $DB "ALERT_LOG warning:"
+ cat $LOGF_HEAD | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "ALERT_LOG warning:"
 fi
 
 # rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE

@@ -1,14 +1,22 @@
 #!/bin/bash
-
 set -f
+
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
-ONE_EXEC_F=$BASEDIR/one_exec_mon_sysmetric_se_${me}.sh
+ONE_EXEC_F=$BASEDIR/one_exec_mon_sysm_se_${me}.sh
 
 cat << EOF_CREATE_F > $ONE_EXEC_F
 #!/bin/sh
@@ -146,10 +154,10 @@ EOF_CREATE_F
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
 #  echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
 #    echo "DB="$DB
-    LOGF=$LOGDIR/mon_sysmetric_db_${HOST}_${DB}.log
+    LOGF=$LOGDIR/mon_sysm_se_db_${HOST}_${DB}.log
     cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $LOGF
 #    exec >> $LOGF 2>&1
   done
