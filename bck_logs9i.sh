@@ -12,7 +12,7 @@ echo "Using config: ${CONFIG}"
 
 etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
-if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
+if [[ -n "$etime" ]] && ( ! grep -q "00:0[0123]" <<< "$etime" ); then
    echo "Previous script did not finish. "`date`
    ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
    echo "Cancelling today's backup and exiting ..."
@@ -41,12 +41,13 @@ ONE_EXEC_F=$BASEDIR/one_exec_bck_logs_${me}.sh
 if [ -z "$HDSALL" ]; then
   HDSLST=$HOST_DB_SET
 else
-  if [[ "$HDSALL" =~ ":" ]]; then
+   if ( grep -q ":" <<< "$HDSALL" ); then
     HDSLST=$HDSALL
   else
     HDSLST=`$BASEDIR/iniget.sh $CONFIG backup host:db:set | grep "$HDSALL"`
   fi
 fi
+echo "HDSLST: "$HDSLST
 
 for HDS in `echo "$HDSLST" | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`

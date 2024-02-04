@@ -12,7 +12,7 @@ echo "Using config: ${CONFIG}"
 
 etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
-if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
+if [[ -n "$etime" ]] && ( ! grep -q "00:0[0123]" <<< "$etime" ); then
    echo "Previous script did not finish. "`date`
    ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
    echo "Cancelling today's backup and exiting ..."
@@ -49,7 +49,7 @@ ONE_EXEC_F=$BASEDIR/one_exec_bck_db_${me}.sh
 if [ -z "$HDSALL" ]; then
   HDSLST=$HOST_DB_SET
 else
-  if [[ "$HDSALL" =~ ":" ]]; then
+  if ( grep -q ":" <<< "$HDSALL" ); then
     HDSLST=$HDSALL
   else
     HDSLST=`$BASEDIR/iniget.sh $CONFIG backup host:db:set | grep "$HDSALL"`
@@ -73,7 +73,7 @@ for HDS in `echo $HDSLST | xargs -n1 echo`; do
   #exec &> >(tee -a "$logf")
 
   shopt -s nocasematch
-  if [[ "$RP" =~ "WINDOW" ]]; then DAYS="DAYS"; else DAYS=""; fi
+  if ( grep -q "WINDOW" <<< "$RP" ); then DAYS="DAYS"; else DAYS=""; fi
   RETENTION="CONFIGURE RETENTION POLICY TO "$RP" "$RP2" ${DAYS};"
   if [[ "$CATALOG" = nocatalog ]]; then
      TNS_CATALOG=""
@@ -130,7 +130,7 @@ set pagesize 0 feedback off verify off heading off echo off
 select database_role from v\$database;
 END\`
 echo "VALUE of database_role: "\$VALUE
-if [[ "\$VALUE" =~ "PRIMARY" ]]; then
+if ( grep -q "PRIMARY" <<< "\$VALUE" ); then
   RETENTION_="$RETENTION"
 fi
 
@@ -150,7 +150,7 @@ EOF_CREATE_F1
 
   rc=`sed '/^$/d' $logf | tail -1`
 #  echo "rc="$rc >> $logf
-  if [[ "$rc" =~ "COMPLETED" ]]; then
+  if ( grep "COMPLETED" <<< "$rc" ); then
     BCK_STATUS=" completed with SUCCESS"
     SUCCESS_LIST=$DB" "$SUCCESS_LIST
   else
@@ -171,7 +171,6 @@ EOF_CREATE_F1
   echo "HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL  -  $BCK_STATUS" >> $LOGF_TOTAL
   cat $logf.mail.log  >> $LOGF_TOTAL
 
-#  cat $logf.mail.log | $WMMAIL -s "$MPREFIX BACKUP on (HOST: $HOST, DB: $DB, NAS: $NAS, LVL: $LVL) $BCK_STATUS" $ADMINS  # 2>/dev/null
   rm ${logf}.mail.log
 
 done  # for $HDS
