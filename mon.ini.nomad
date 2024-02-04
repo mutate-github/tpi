@@ -56,7 +56,7 @@ limitPER=93
 limitGB=32
 
 [swap]
-limitPER=70
+limitPER=95
 
 [load]
 limitPER=70
