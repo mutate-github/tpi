@@ -23,8 +23,8 @@ db=aisutf
 
 [mail]
 # script=mmail.nomad
-# script=tgmail
-script=tyandex
+script=tgmail
+# script=tyandex
 prefix=NOMAD->
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
@@ -63,7 +63,7 @@ limitPER=70
 
 [tbs]
 # free space limit in % 92
-limitPER=93
+limitPER=91
 # free space limin in Gb 32
 limitGB=32
 
