@@ -1,20 +1,25 @@
 #!/bin/sh
 set -f
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-limPER=`$BASEDIR/iniget.sh mon.ini fra limitPER`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+limPER=`$BASEDIR/iniget.sh $CONFIG fra limitPER`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_fra_${HOST}_${DB}.log
@@ -26,8 +31,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     if [ -s $LOGF_TRG ]; then
       echo "Fired: "$0"\n" > $LOGF_HEAD
       CUR_VAL=`cat $LOGF_TRG | tail -1 |  awk '{print $NF}'`
-#      cat $LOGF_HEAD $LOGF | $WMMAIL -s "$MPREFIX FRA usage warning: ${HOST} / ${DB} (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
-      cat $LOGF_HEAD $LOGF | $BASEDIR/send_msg.sh $HOST $DB "FRA usage warning (current: $CUR_VAL %, threshold: $limPER %)"
+      cat $LOGF_HEAD $LOGF | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "FRA usage warning (current: $CUR_VAL %, threshold: $limPER %)"
       rm $LOGF_HEAD
     fi
     rm $LOGF $LOGF_TRG

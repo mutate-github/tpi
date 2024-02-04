@@ -1,14 +1,20 @@
 #!/bin/sh
+set -f
+
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 PERCENT=80
@@ -16,7 +22,7 @@ PERCENT=80
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
 
@@ -38,8 +44,7 @@ EOF`
 
     echo $VALUE | xargs -n4 echo | while read NAME_ CURRENT_ LIMIT_ PERCENT_ ; do
       if [ "$PERCENT_" -gt "$PERCENT" ]; then
-#        echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - $NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )" $ADMINS
-        echo "" | $BASEDIR/send_msg.sh $HOST $DB "$NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )"
+        echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "$NAME_ limit warning: (current: $CURRENT_, limit: $LIMIT_, threshold: ${PERCENT} % , now: $PERCENT_ )"
       fi
     done
 
