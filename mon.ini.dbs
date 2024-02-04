@@ -1,14 +1,16 @@
 [servers]
 #host=srv-axdb1-mrg
 #host=srv-axdb2-mrg
-#host=dcb-retail-db
-#host=dcb-stock-db
+host=db-gold-dca
+host=dcb-retail-db
+host=dca-stock-db
+host=dcb-stock-db
 #host=z14-1847
 #host=z14-0473-novre
-host=mp
-host=md
-host=mu
-host=p260unc2
+#host=mp
+#host=md
+#host=mu
+#host=p260unc2
 
 [mp]
 db=mprd
@@ -28,8 +30,22 @@ db=RZ_NOVT1
 [z14-1847]
 db=OMS_MURT
 
+[db-gold-dca]
+db=GOLD506
+
 [dcb-retail-db]
 db=GOLD506
+
+[dca-stock-db]
+db=depo34db
+db=stockdb
+db=depo60db
+db=depo35db
+db=depo3db
+db=depo38db
+db=vshody
+db=rmandb
+db=depo11db
 
 [dcb-stock-db]
 db=depo34db

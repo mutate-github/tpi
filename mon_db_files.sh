@@ -25,20 +25,18 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
 
-VALUE=`cat <<EOF | ssh $HOST "/bin/bash -s $DB"
-#!/bin/bash
-sid=\\$1
-#echo "sid="\\$sid
+VALUE=$(echo -e "#!/bin/bash
+sid=\$1
+# echo 'sid='\$sid
 $SET_ENV
-export ORACLE_SID=\\$sid
-sqlplus -s '/as sysdba' <<'END'
-set pagesize 0 feedback off verify off heading off echo off
-select trunc((select count(*) from v\\$datafile)/value*100) from v\\$parameter where NAME='db_files';
+export ORACLE_SID=\$sid
+sqlplus -s / as sysdba <<'END'
+set pagesize 0 feedback off verify off heading off echo off timing off
+select trunc((select count(1) from v\$datafile)/value*100) from v\$parameter where NAME='db_files';
 END
-EOF`
+" | ssh $HOST "/bin/bash -s $DB" | tr -d '[[:cntrl:]]' | sed -e 's/^[ \t]*//')
 
-    VALUE=`echo $VALUE | sed -e 's/^ //'`
-    echo $VALUE
+    echo "VALUE: "$VALUE
 
     if [ "$VALUE" -gt "$PERCENT" ]; then
       echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)"
