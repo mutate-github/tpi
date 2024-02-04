@@ -1,35 +1,30 @@
 [servers]
-#host=kikdb01
-#host=kikdb02
-#host=kikdb03
-host=srv-axdb1-mrg
-host=srv-axdb2-mrg
+#host=srv-axdb1-mrg
+#host=srv-axdb2-mrg
+#host=dcb-retail-db
+#host=dcb-stock-db
+#host=z14-1847
+host=z14-0473-novre
 
-[kikdb01] 
-db=cft 
-db=bd 
-db=prov 
-db=kika 
-db=EPS 
-db=creditc 
-db=KIKOPDR
+[z14-0473-novre]
+db=RZ_NOVT1
 
-[kikdb02]
-db=cft 
-db=bd 
-db=prov 
-db=kika 
-db=EPS 
-db=creditc 
-db=KIKOPDR 
-db=kikm
+[z14-1847]
+db=OMS_MURT
 
-[kikdb03]
-db=kika 
-db=kikm 
-db=kikt 
-db=bdd 
-db=EPSTEST4
+[dcb-retail-db]
+db=GOLD506
+
+[dcb-stock-db]
+db=depo34db
+db=stockdb
+db=depo60db
+db=depo35db
+db=depo3db
+db=depo38db
+db=vshody
+db=rmandb
+db=depo11db
 
 [srv-axdb1-mrg]
 db=dbdat
@@ -63,9 +58,26 @@ db=catdb
 #script=tgmail
 script=tyandex
 prefix=DBS
+# % - mask send mail for all host or db or scripts. may be many lines of host:db:set
+# host:db:set=%:%:%
+# host:db:set=aisprod:aisutf:mon_db.sh:mon_diskspace.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_tbs.sh:mon_alert.sh
+host:db:set=%:%:%
 
 [admins]
 email=t.mukhametshin@db-service.ru
+# email=support@db-service.ru
+
+[telegram]
+cmd=/home/t.mukhametshin/telegram-bot-bash/bin/send_message.sh
+chat_id=376048411
+# % - mask send mail for all host or db or scripts. may be many lines of host:db:set
+# host:db:set=%:%:%
+# host:db:set=aisprod:aisutf:mon_db.sh:mon_diskspace.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_tbs.sh:mon_alert.sh
+host:db:set=dcb-retail-db:GOLD506:mon_db.sh:mon_alert.sh:mon_diskspace.sh:mon_fra.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_stb.sh:mon_tbs.sh
+
+
+[locks]
+threshold=30
 
 [diskspace]
 # free space limit in %
@@ -73,17 +85,23 @@ limitPER=60
 # free space limin in Gb
 limitGB=652
 
+[swap]
+limitPER=50
+
+[load]
+limitPER=70
+
 [tbs]
 # free space limit in %
-limitPER=95
+limitPER=90
 # free space limin in Gb
 limitGB=32
 
 [standby]
 # limit in minutes unapplied archivelogs
-lag_minutes=120
+lag_minutes=30
 # limit count unapplied archivelogs
-seq_gap=50
+seq_gap=100
 # repeat TRIGGER mail if trg_file is older than "repeat_minutes"
 repeat_minutes=600
 # repeat TRIGGER mail at "repeat_at" hour
@@ -123,4 +141,3 @@ host:db:set=kikdb02:kika:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:EPS:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:creditc:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:KIKOPDR:u15:REDUNDANCY:1:nocatalog:0
-
