@@ -1,12 +1,17 @@
 #!/bin/sh
 set -f
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 BASEDIR=`dirname $0`
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   MSG=""
@@ -20,8 +25,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   else MSG="PING warning: "
   fi
   if [ -n "$MSG" ]; then
-#    echo "" | $WMMAIL -s "$MPREFIX $MSG host $HOST - not responding" $ADMINS
-    echo "" | $BASEDIR/send_msg.sh $HOST $DB "$MSG host $HOST - not responding"
+    echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "$MSG host $HOST - not responding"
   fi
 done
 
