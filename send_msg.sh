@@ -42,7 +42,7 @@ esac
 }
 
 send_tlgrm()
-{ printf %s "send_tlgrm_MSG: $msg" | head -15; printf %s "$msg" | head -15 | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} ; }
+{ printf %s "send_tlgrm_MSG: $msg" | head -15; printf %s "$msg" | head -15 | $BASEDIR/ttlgrm_bot.sh $CONFIG $MPREFIX $HOST $DB $ALL ; }
 
 check_script_and_send_tlgrm()
 {
@@ -78,7 +78,7 @@ for HDS in $(echo $MMHOSTS | xargs -n1 echo); do
 done
 
 # send msg to telegram bot
-# printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL}
+# printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh $CONFIG $MPREFIX $HOST $DB $ALL
 for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
 #alpha:aisutf:%
 #beta:aisutf:mon_db.sh:mon_alert.sh:mon_diskspace.sh
