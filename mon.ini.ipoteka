@@ -35,7 +35,7 @@ threshold=30
 
 [diskspace]
 # free space limit in %
-limitPER=3
+limitPER=90
 # free space limin in Gb
 limitGB=1020
 
