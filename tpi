@@ -12,7 +12,7 @@ if [ -n "$PDB" ]; then
 fi
 
 _P2_="$2"
-if [[ "$_P2_" =~ "@" ]]; then
+if ( grep -q "@" <<< "$_P2_" ); then
   login_str="$_P2_"
   shift
 fi
