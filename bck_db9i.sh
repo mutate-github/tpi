@@ -1,6 +1,15 @@
 #!/bin/bash
 set -f
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
 if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
@@ -10,9 +19,10 @@ if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
    exit 127
 fi
 # this scriopt optimized for for oracle 9i
-# $1 is optional parameter, sample usage:
-# $0 vhost0:jet:nas:RECOVERY_WINDOW:1:nocatalog:2   - start single backup with partucular parameters
-# $0 vhost0                                         - start multiple backups with partucular parameters from mon.ini
+# $1 client name
+# $2 is optional parameter, sample usage:
+# $0 ipoteka vhost0:jet:nas:RECOVERY_WINDOW:1:nocatalog:2   - start single backup with partucular parameters
+# $0 ipoteka vhost0                                         - start multiple backups with partucular parameters from mon.ini.$CONFIG
 HDSALL=$1
 DS_=`date '+%m%d_%H-%M'`
 echo $DS_"   HDSALL: "$HDSALL
@@ -20,17 +30,17 @@ echo $DS_"   HDSALL: "$HDSALL
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+MAILS=`$BASEDIR/iniget.sh $CONFIG mail script`
 WMMAIL="$BASEDIR/$MAILS"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
-TNS_CATALOG=`$BASEDIR/iniget.sh mon.ini backup tns_catalog`
-HOST_DB_SET=`$BASEDIR/iniget.sh mon.ini backup host:db:set`
+MPREFIX=`$BASEDIR/iniget.sh $CONFIG mail prefix`
+ADMINS=`$BASEDIR/iniget.sh $CONFIG admins email`
+TARGET=`$BASEDIR/iniget.sh $CONFIG backup target`
+TNS_CATALOG=`$BASEDIR/iniget.sh $CONFIG backup tns_catalog`
+HOST_DB_SET=`$BASEDIR/iniget.sh $CONFIG backup host:db:set`
 shopt -s extglob
-LEVEL0="+("`$BASEDIR/iniget.sh mon.ini backup level0 | sed 's/,/|/g'`")"
-LEVEL1="+("`$BASEDIR/iniget.sh mon.ini backup level1 | sed 's/,/|/g'`")"
-LEVEL2="+("`$BASEDIR/iniget.sh mon.ini backup level2 | sed 's/,/|/g'`")"
+LEVEL0="+("`$BASEDIR/iniget.sh $CONFIG backup level0 | sed 's/,/|/g'`")"
+LEVEL1="+("`$BASEDIR/iniget.sh $CONFIG backup level1 | sed 's/,/|/g'`")"
+LEVEL2="+("`$BASEDIR/iniget.sh $CONFIG backup level2 | sed 's/,/|/g'`")"
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 me=$$
@@ -42,7 +52,7 @@ else
   if [[ "$HDSALL" =~ ":" ]]; then
     HDSLST=$HDSALL
   else
-    HDSLST=`$BASEDIR/iniget.sh mon.ini backup host:db:set | grep "$HDSALL"`
+    HDSLST=`$BASEDIR/iniget.sh $CONFIG backup host:db:set | grep "$HDSALL"`
   fi
 fi
 
