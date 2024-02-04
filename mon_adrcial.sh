@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -f
 
 CLIENT="$1"
@@ -31,7 +31,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     LOGHEAD=$LOGDIR/mon_alert_adrci_${HOST}_${DB}_head.txt
 
 cat << EOF_CREATE_F1 > $ONE_EXEC_F
-#!/bin/sh
+#!/bin/bash
 sid=\$1
 # echo "sid="\$sid
 $SET_ENV
@@ -67,7 +67,7 @@ cat << EOF_CREATE_F3 >> $ONE_EXEC_F
 done
 EOF_CREATE_F3
 
-cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/sh -s $DB" | egrep -va "ADR|[*].*" > $LOGFILE
+cat ${ONE_EXEC_F} | ssh oracle@$HOST "/bin/bash -s $DB" | egrep -va "ADR|[*].*" > $LOGFILE
 
 head -2 $LOGFILE > $LOGHEAD
 cat $LOGFILE | tail -n +2 | sed '/^ *$/d' > $LOGFILE.new.txt
