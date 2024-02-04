@@ -1,12 +1,21 @@
 #!/bin/bash
-#
-# usage: startall_purge_traces.sh 
+set -f
+# usage: startall_purge_traces.sh client_name
 # Talgat Mukhametshin dba.almaty@gmail.com t.mukhametshin@db-service.ru
+
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
 
 BASEDIR=$(dirname $0)
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-HOSTS=$($BASEDIR/iniget.sh mon.ini servers host)
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=$(cat $SET_ENV_F)
 SCRIPT_NAME="$BASEDIR/purge_traces.sh"
@@ -91,7 +100,7 @@ EOFF
 chmod u+x $SCRIPT_NAME
 
 for HOST in $(echo "$HOSTS" | xargs -n1 echo); do
-  DBS=$($BASEDIR/iniget.sh mon.ini $HOST db)
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in  $(echo "$DBS" | xargs -n1 echo); do
     echo "HOST=$HOST  DB=$DB  "$(date)
     cat $SCRIPT_NAME | ssh oracle@$HOST "/bin/bash -s $DB"
