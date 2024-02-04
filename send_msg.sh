@@ -42,7 +42,7 @@ esac
 }
 
 send_tlgrm()
-{ printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} ; }
+{ printf %s "send_tlgrm_MSG: $msg" | head -15; printf %s "$msg" | head -15 | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} ; }
 
 check_script_and_send_tlgrm()
 {
