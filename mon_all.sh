@@ -4,7 +4,7 @@ CLIENT="$1"
 
 BASEDIR=`dirname $0`
 echo $BASEDIR
-#cd $BASEDIR
+# cd $BASEDIR
 
 echo ""
 echo "START ALL MONITORING *****************************************************************************"`date`
@@ -42,4 +42,6 @@ $BASEDIR/mon_limsess.sh
 echo "Monitor: ================================================================================ mon_lock.sh"
 $BASEDIR/mon_lock.sh
 echo "FINISH ALL MONITORING ****************************************************************************"`date`
+
+
 
