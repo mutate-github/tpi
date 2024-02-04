@@ -121,4 +121,3 @@ tns_catalog=rman/rman@TNS_CATALOG
 host:db:set=aisprod:aisutf:nas:RECOVERY_WINDOW_OF:5:nocatalog
 host:db:set=unit:unit:nas:RECOVERY_WINDOW_OF:5:nocatalog
 
-
