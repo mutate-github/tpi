@@ -75,7 +75,7 @@ script=tyandex
 prefix=DBS
 # % - mask send mail for all host or db or scripts. may be many lines of host:db:set
 # host:db:set=%:%:%
-# host:db:set=aisprod:aisutf:mon_db.sh:mon_diskspace.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_tbs.sh:mon_alert.sh
+# host:db:set=aisprod:aisutf:mon_db.sh:mon_disksp.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_tbs.sh:mon_alert.sh
 host:db:set=mp:%:%
 
 [admins]
@@ -86,8 +86,8 @@ email=t.mukhametshin@db-service.ru
 cmd=/home/t.mukhametshin/telegram-bot-bash/bin/send_message.sh
 chat_id=376048411
 # % - mask send telegram msg for all host or db or scripts. may be many lines of host:db:set
-host:db:set=mp:%:mon_diskspace.sh:mon_db.sh:mon_tbs.sh
-# host:db:set=dcb-retail-db:GOLD506:mon_db.sh:mon_alert.sh:mon_diskspace.sh:mon_fra.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_stb.sh:mon_tbs.sh
+host:db:set=mp:%:mon_disksp.sh:mon_db.sh:mon_tbs.sh
+# host:db:set=dcb-retail-db:GOLD506:mon_db.sh:mon_alert.sh:mon_disksp.sh:mon_fra.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_stb.sh:mon_tbs.sh
 
 [locks]
 threshold=30

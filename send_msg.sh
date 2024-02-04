@@ -58,7 +58,7 @@ esac
 # printf %s "$msg" | $WMMAIL -s "$MPREFIX ${HOST}/${DB} ${ALL}" $ADMINS
 for HDS in $(echo $MMHOSTS | xargs -n1 echo); do
 #alpha:aisutf:%
-#beta:aisutf:mon_db.sh:mon_alert.sh:mon_diskspace.sh
+#beta:aisutf:mon_db.sh:mon_alert.sh:mon_disksp.sh
   PHOST=$(echo $HDS | awk -F: '{print $1}')
   PDB=$(echo $HDS | awk -F: '{print $2}')
   SCRIPTS=$(echo $HDS | cut -d':' -f3-)
@@ -81,7 +81,7 @@ done
 # printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh $CONFIG $MPREFIX $HOST $DB $ALL
 for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
 #alpha:aisutf:%
-#beta:aisutf:mon_db.sh:mon_alert.sh:mon_diskspace.sh
+#beta:aisutf:mon_db.sh:mon_alert.sh:mon_disksp.sh
   PHOST=$(echo $HDS | awk -F: '{print $1}')
   PDB=$(echo $HDS | awk -F: '{print $2}')
   SCRIPTS=$(echo $HDS | cut -d':' -f3-)

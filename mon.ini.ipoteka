@@ -16,8 +16,8 @@ prefix=IPOTEKA->
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
 host:db:set=%:%:%
-#host:db:set=beta:aisutf:mon_diskspace.sh:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
-#host:db:set=gw:%:mon_diskspace.sh:mon_swap.sh:mon_ping_ssh.sh
+#host:db:set=beta:aisutf:mon_disksp.sh:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
+#host:db:set=gw:%:mon_disksp.sh:mon_swap.sh:mon_ping_ssh.sh
 
 [admins]
 email=dba.almaty@gmail.com
