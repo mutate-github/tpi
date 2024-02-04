@@ -30,7 +30,7 @@ sid=\$1
 # echo 'sid='\$sid
 $SET_ENV
 export ORACLE_SID=\$sid
-sqlplus -s / as sysdba <<'END'
+sqlplus -s '/ as sysdba' <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select trunc((select count(1) from v\$datafile)/value*100) from v\$parameter where NAME='db_files';
 END

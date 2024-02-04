@@ -31,7 +31,7 @@ sid=\$1
 # echo 'sid='\$sid
 $SET_ENV
 export ORACLE_SID=\$sid
-sqlplus -s / as sysdba <<'END'
+sqlplus -s '/ as sysdba' <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select ' '||resource_name||' '||current_utilization||' '||limit_value||' '||trunc(current_utilization/limit_value*100)||' ' percent from v\$resource_limit where resource_name  in ('processes','sessions');
 END
