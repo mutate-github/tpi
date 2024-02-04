@@ -22,7 +22,7 @@ db=aisutf
 db=aisutf
 
 [mail]
-script=mmail
+script=mmail.nomad
 #script=tgmail
 #script=tyandex
 prefix=NOMAD->
