@@ -22,9 +22,9 @@ db=aisutf
 db=aisutf
 
 [mail]
-script=mmail.nomad
-#script=tgmail
-#script=tyandex
+# script=mmail.nomad
+# script=tgmail
+script=tyandex
 prefix=NOMAD->
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
