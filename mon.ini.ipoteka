@@ -1,8 +1,19 @@
 [servers]
 host=vhost0
+host=vhost1
+# host=standby       #!! too old bash !!
 host=nas
+host=uno
+host=duo
+host=duo2
 
 [vhost0]
+db=jet
+
+[vhost1]
+db=jet
+
+[standby]
 db=jet
 
 [nas]
@@ -37,19 +48,19 @@ threshold=30
 # free space limit in %
 limitPER=90
 # free space limin in Gb
-limitGB=1020
+limitGB=20
 
 [swap]
-limitPER=70
+limitPER=80
 
 [load]
-limitPER=70
+limitPER=80
 
 [tbs]
 # free space limit in % 92
 limitPER=93
 # free space limin in Gb 32
-limitGB=32
+limitGB=22
 
 [standby]
 # limit in minutes unapplied archivelogs
@@ -62,7 +73,7 @@ repeat_minutes=600
 repeat_at=08
 # standby for database primary_host=db:standby_host
 vhost0=jet:vhost1
-vhost0=jet:stb
+vhost0=jet:standby
 
 [fra]
 # FRA limit in %
