@@ -1,21 +1,26 @@
 #!/bin/sh
 set -f
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-limPER=`$BASEDIR/iniget.sh mon.ini tbs limitPER`
-limGB=`$BASEDIR/iniget.sh mon.ini tbs limitGB`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+limPER=`$BASEDIR/iniget.sh $CONFIG tbs limitPER`
+limGB=`$BASEDIR/iniget.sh $CONFIG tbs limitGB`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_tbs_${HOST}_${DB}.log
@@ -39,8 +44,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
 #           echo "" >> $LOGF_TRG
        done  >>  $LOGF_TRG
 
-#       cat $LOGF_HEAD $LOGF_TRG | $WMMAIL -s "$MPREFIX TBS usage warning: ${HOST} / ${DB} free space too low (current: $CUR_VAL %, threshold: $limPER %)" $ADMINS
-       cat $LOGF_HEAD $LOGF_TRG  | $BASEDIR/send_msg.sh $HOST $DB "TBS usage warning: free space too low current: ${CUR_VAL}%, threshold: ${limPER}%"
+       cat $LOGF_HEAD $LOGF_TRG  | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "TBS usage warning: free space too low current: ${CUR_VAL}%, threshold: ${limPER}%"
        rm $LOGF $LOGF_TRG $LOGF_HEAD
     fi
   done # DB

@@ -1,7 +1,8 @@
 #!/bin/bash
 set -f
 
-sender=t.mukhametshin@db-service.ru
+# sender=t.mukhametshin@db-service.ru
+sender=dba.almaty@gmail.com
 gapp=vngogoshxiqchxsz
 
 if [ $# -lt 1 ]; then
@@ -31,8 +32,8 @@ msg=${msg%x}
 
 # send telegram message:
 #BASEDIR=`dirname $0`
-#TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini telegram cmd`
-#TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini telegram chat_id`
+#TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini.$CLIENT telegram cmd`
+#TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini.$CLIENT telegram chat_id`
 #$TLGRM_CMD mark0 $TLGRM_CHT "sender: $sender  
 #\`$msg\`"
 

@@ -1,15 +1,21 @@
 #!/bin/sh
 set -f
+
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-PART_OF_DAY=`$BASEDIR/iniget.sh mon.ini alert part_of_day`
-EXCLUDE=`$BASEDIR/iniget.sh mon.ini alert exclude`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+PART_OF_DAY=`$BASEDIR/iniget.sh $CONFIG alert part_of_day`
+EXCLUDE=`$BASEDIR/iniget.sh $CONFIG alert exclude`
 
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
@@ -18,7 +24,7 @@ ONE_EXEC_F=$BASEDIR/one_exec_mon_adrci_alert_${me}.sh
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
 #  echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in `echo "$DBS" | xargs -n1 echo`; do
 #    echo "DB="$DB
     LOGFILE=$LOGDIR/mon_alert_adrci_${HOST}_${DB}_log.txt
@@ -69,7 +75,7 @@ mv $LOGFILE.new.txt $LOGFILE
 
 if [ -s $LOGFILE ];then
 #   cat $LOGHEAD  $LOGFILE | $WMMAIL -s "$MPREFIX ALERT_LOG warning (host: $HOST / db: $DB)" $ADMINS
-    cat $LOGHEAD  $LOGFILE | $BASEDIR/send_msg.sh $HOST $DB "ALERT_LOG warning mon_adrci_alert.sh:"
+    cat $LOGHEAD  $LOGFILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "ALERT_LOG warning mon_adrci_alert.sh:"
 fi
 
 rm $LOGHEAD $LOGFILE $ONE_EXEC_F

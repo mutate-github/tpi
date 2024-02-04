@@ -1,14 +1,19 @@
-#!/bin/sh
+#!/bin/bash
+
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-#MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
-#WMMAIL="$BASEDIR/$MAILS"
 WRTPI="$BASEDIR/rtpi"
-#MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-HOSTS=`$BASEDIR/iniget.sh mon.ini servers host`
-#ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
+HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 PERCENT=90
@@ -16,7 +21,7 @@ PERCENT=90
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh mon.ini $HOST db`
+  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
 
@@ -36,8 +41,7 @@ EOF`
     echo $VALUE
 
     if [ "$VALUE" -gt "$PERCENT" ]; then
-#      echo "" | $WMMAIL -s "$MPREFIX ${HOST} / ${DB} - db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)" $ADMINS
-      echo "" | $BASEDIR/send_msg.sh $HOST $DB "db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)"
+      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "db_files usage warning: (current: ${VALUE} %, threshold: ${PERCENT} %)"
     fi
   done # DB
 done # HOST

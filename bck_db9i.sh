@@ -18,11 +18,11 @@ if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
    echo "Cancelling today's backup and exiting ..."
    exit 127
 fi
-
-# $1 is client name
-# $1 is optional parameter, sample usage:
-# $0 client kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup with partucular parameters
-# $0 client kikdb02                                    - start multiple backups with partucular parameters from mon.ini.$CONFIG
+# this scriopt optimized for for oracle 9i
+# $1 client name
+# $2 is optional parameter, sample usage:
+# $0 ipoteka vhost0:jet:nas:RECOVERY_WINDOW:1:nocatalog:2   - start single backup with partucular parameters
+# $0 ipoteka vhost0                                         - start multiple backups with partucular parameters from mon.ini.$CONFIG
 HDSALL=$1
 DS_=`date '+%m%d_%H-%M'`
 echo $DS_"   HDSALL: "$HDSALL
@@ -107,15 +107,13 @@ echo "alter system set control_file_record_keep_time=60;" | sqlplus '/as sysdba'
 
 \$ORACLE_HOME/bin/rman target $TARGET $CATALOG $TNS_CATALOG << EOF
 CONFIGURE DEFAULT DEVICE TYPE TO DISK;
-CONFIGURE COMPRESSION ALGORITHM 'MEDIUM';
 CONFIGURE CONTROLFILE AUTOBACKUP ON;
 CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/$NAS/$DB/ctl_%d_%F';
-CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY;
 run {
   allocate channel cpu1 type disk;
   allocate channel cpu2 type disk;
-  backup AS COMPRESSED BACKUPSET incremental level = $LVL database filesperset 1 $not_backed
-  format '/$NAS/$DB/level_${LVL}_%d_%t_%U' TAG 'LEVEL_${LVL}';
+  backup incremental level = $LVL database filesperset 1 $not_backed
+  format '/$NAS/$DB/level_$LVL_%d_%t_%U' TAG 'LEVEL_$LVL';
   backup archivelog all format '/$NAS/$DB/logs_%d_%t_%U' delete input TAG 'ARCHIVELOGS';
   backup spfile format '/$NAS/$DB/spfile_%d_%U.bck' TAG 'SPFILE';
 }
@@ -144,51 +142,6 @@ EOF
 
 echo "FINISH DELETE REDUNDANT BACKUPSET > \$INF_STR at `date`"
 echo "--------------------------------------------------------------------------------------------------------------"
-
-echo "Backups last 30 days stats:"
-sqlplus -s '/ as sysdba' <<'EOS'
-set lines 230 pages 100 feedback off tab off
-column OUTPUT_DEVICE_TYPE for a18
-column start_time for a20
-column end_time for a20
-column input_mbytes for 999999999
-column output_mbytes for 999999999
-column compress_ratio for 99999
-column status for a25
-column input_type for a10
-column dow for a10
-column time_taken_display for a18
-column d for 9999999
-column i0 for 9999999
-column i1 for 9999999
-column i2 for 9999999
-select   j.OUTPUT_DEVICE_TYPE,
-         to_char(j.start_time, 'yyyy-mm-dd hh24:mi:ss') start_time,
-         to_char(j.end_time, 'yyyy-mm-dd hh24:mi:ss') end_time,
-         j.time_taken_display,
-         trunc(j.input_bytes/1024/1024) input_mbytes, trunc(j.output_bytes/1024/1024) output_mbytes,
-         CASE
-             WHEN input_bytes / DECODE (output_bytes, 0, NULL, output_bytes) >  1
-             THEN trunc(input_bytes / DECODE (output_bytes, 0, NULL, output_bytes))
-             ELSE 1
-         END  compress_ratio,
-         j.status, j.input_type,
-         decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday', 3, 'Tuesday', 4, 'Wednesday', 5, 'Thursday', 6, 'Friday', 7, 'Saturday') dow,
-         x.D, x.I0, x.I1, x.I2
-from V\$RMAN_BACKUP_JOB_DETAILS j
-  left outer join (select d.session_recid, d.session_stamp,
-                       sum(case when d.backup_type = 'D' then d.pieces else 0 end) D,
-                       sum(case when d.backup_type||d.incremental_level = 'I0' then d.pieces else 0 end) I0,
-                       sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
-                       sum(case when d.backup_type||d.incremental_level = 'I2' then d.pieces else 0 end) I2
-                   from V\$BACKUP_SET_DETAILS d join V\$BACKUP_SET s
-                     on s.set_stamp = d.set_stamp and s.set_count = d.set_count
-                   where s.input_file_scan_only = 'NO' and d.backup_type in ('D','I')
-                   group by d.session_recid, d.session_stamp) x
-    on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
-where j.start_time > trunc(sysdate)-30 and j.input_type='DB INCR'
-order by j.start_time;
-EOS
 EOF_CREATE_F1
 
   cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/sh -s $DB" >> $logf

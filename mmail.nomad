@@ -46,8 +46,8 @@ $to=~s/, $//;
 #send $msg to telegram bot
 #$BASEDIR=`dirname $0`;
 #chop($BASEDIR);
-#$TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini telegram cmd`;
-#$TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini telegram chat_id`;
+#$TLGRM_CMD=`$BASEDIR/iniget.sh mon.ini.$CLIENT telegram cmd`;
+#$TLGRM_CHT=`$BASEDIR/iniget.sh mon.ini.$CLIENT telegram chat_id`;
 #chop($TLGRM_CMD);
 #chop($TLGRM_CHT);
 #chop($msg);

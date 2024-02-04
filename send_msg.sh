@@ -3,6 +3,9 @@ set -f
 # for case +(...|...)
 shopt -s extglob
 
+CONFIG="$1"
+shift
+
 HOST=$1
 DB=$2
 shift
@@ -16,16 +19,19 @@ msg=${msg%x}
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-MAILS=`$BASEDIR/iniget.sh mon.ini mail script`
+MAILS=$($BASEDIR/iniget.sh $CONFIG mail script)
 WMMAIL="$BASEDIR/$MAILS"
-MPREFIX=`$BASEDIR/iniget.sh mon.ini mail prefix`
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-MMHOSTS=`$BASEDIR/iniget.sh mon.ini mail host:db:set`
-TGHOSTS=`$BASEDIR/iniget.sh mon.ini telegram host:db:set`
-NAME_PARENT=$(awk -F/ '{print $NF}' /proc/"$PPID"/cmdline)
+MPREFIX=$($BASEDIR/iniget.sh $CONFIG mail prefix)
+ADMINS=$($BASEDIR/iniget.sh $CONFIG admins email)
+MMHOSTS=$($BASEDIR/iniget.sh $CONFIG mail host:db:set)
+TGHOSTS=$($BASEDIR/iniget.sh $CONFIG telegram host:db:set)
+#NAME_PARENT=$(awk -F/ '{print $NF}' /proc/"$PPID"/cmdline)
+NAME_PARENT=$(awk -F/ '{print $NF}' /proc/"$PPID"/comm)
+echo "send_msg.sh NAME_PARENT: "$NAME_PARENT
+echo "send_msg.sh comm: "$(cat /proc/$PPID/comm)
 
 send_email()
-{ printf %s "$msg" | $WMMAIL -s "$MPREFIX ${HOST}/${DB} ${ALL}" $ADMINS ; }
+{ echo "send_msg.sh WMMAIL: "$WMMAIL ; printf %s "$msg" | $WMMAIL -s "$MPREFIX ${HOST}/${DB} ${ALL}" $ADMINS ; }
 
 check_script_and_send_email()
 {
@@ -36,10 +42,12 @@ esac
 }
 
 send_tlgrm()
-{ printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL} ; }
+{ printf %s "send_tlgrm_MSG: $msg" | head -15; printf %s "$msg" | head -15 | $BASEDIR/ttlgrm_bot.sh $CONFIG $MPREFIX $HOST $DB $ALL ; }
 
 check_script_and_send_tlgrm()
 {
+echo "send_msg.sh NAME_PARENT: "$NAME_PARENT
+echo "send_msg.sh SCRIPTS: "$SCRIPTS
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_tlgrm ;;
            *)   if [[ "${SCRIPTS}" =~ "%" ]]; then echo "TG ALL SCRIPTS! "; send_tlgrm ; fi  ;;
@@ -70,7 +78,7 @@ for HDS in $(echo $MMHOSTS | xargs -n1 echo); do
 done
 
 # send msg to telegram bot
-# printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh ${MPREFIX} ${HOST} ${DB} ${ALL}
+# printf %s "$msg" | $BASEDIR/ttlgrm_bot.sh $CONFIG $MPREFIX $HOST $DB $ALL
 for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
 #alpha:aisutf:%
 #beta:aisutf:mon_db.sh:mon_alert.sh:mon_diskspace.sh
@@ -83,7 +91,7 @@ for HDS in $(echo $TGHOSTS | xargs -n1 echo); do
     shopt -s extglob
     case "$PHOST" in
        "$HOST")   case "$PDB" in
-                    "$DB")  check_script_and_send_tlgrm ; break ;;
+                    "$DB")   echo "TG DB: "$DB ; check_script_and_send_tlgrm ; break ;;
                     *)    echo "TG ALL DATABASES! " ; check_script_and_send_tlgrm ;;
                   esac
                   ;;
