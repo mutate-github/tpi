@@ -37,7 +37,7 @@ check_script_and_send_email()
 {
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_email ;;
-           *)   if [[ "${SCRIPTS}" =~ "%" ]]; then echo "MM ALL SCRIPTS!"; send_email ; fi  ;;
+           *)   if ( grep -q "%" <<< "$SCRIPTS" ); then echo "MM ALL SCRIPTS!"; send_email ; fi  ;;
 esac
 }
 
@@ -50,7 +50,7 @@ echo "send_msg.sh NAME_PARENT: "$NAME_PARENT
 echo "send_msg.sh SCRIPTS: "$SCRIPTS
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_tlgrm ;;
-           *)   if [[ "${SCRIPTS}" =~ "%" ]]; then echo "TG ALL SCRIPTS! "; send_tlgrm ; fi  ;;
+           *)   if ( grep -q "%" <<< "$SCRIPTS" ); then echo "TG ALL SCRIPTS! "; send_tlgrm ; fi  ;;
 esac
 }
 
