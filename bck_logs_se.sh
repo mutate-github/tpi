@@ -1,28 +1,39 @@
 #!/bin/bash
 set -f
 
+CLIENT="$1"
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
+
 etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
 echo "etime: "$etime
-#if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
-#   echo "Previous script did not finish. "`date`
-#   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
-#   echo "Cancelling today's backup and exiting ..."
-#   exit 127
-#fi
+if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
+   echo "Previous script did not finish. "`date`
+   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
+   echo "Cancelling today's backup and exiting ..."
+   exit 127
+fi
 
-# $1 is optional parameter, sample usage:
-# $0 kikdb02:cft:u15:REDUNDANCY:1:nocatalog:0   - start single backup archivelogs with partucular parameters
-# $0 kikdb02                                    - start multiple backups archivelogs with partucular parameters from mon.ini
+# $1 is clietn name
+# $2 is optional parameter, sample usage:
+# $0 nomad aisprod:aisutf:nas:REDUNDANCY:1:nocatalog:0   - start single backup archivelogs with partucular parameters
+# $0 nomad aisprod                                    - start multiple backups archivelogs with partucular parameters from mon.ini.$CLIENT
 HDSALL=$1
 echo `date`"   HDSALL: "$HDSALL
 
 BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-ADMINS=`$BASEDIR/iniget.sh mon.ini admins email`
-TARGET=`$BASEDIR/iniget.sh mon.ini backup target`
-TNS_CATALOG=`$BASEDIR/iniget.sh mon.ini backup tns_catalog`
-HOST_DB_SET=`$BASEDIR/iniget.sh mon.ini backup host:db:set`
+ADMINS=`$BASEDIR/iniget.sh $CONFIG admins email`
+TARGET=`$BASEDIR/iniget.sh $CONFIG backup target`
+TNS_CATALOG=`$BASEDIR/iniget.sh $CONFIG backup tns_catalog`
+HOST_DB_SET=`$BASEDIR/iniget.sh $CONFIG backup host:db:set`
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=`cat $SET_ENV_F`
 me=$$
@@ -34,7 +45,7 @@ else
   if [[ "$HDSALL" =~ ":" ]]; then
     HDSLST=$HDSALL
   else
-    HDSLST=`$BASEDIR/iniget.sh mon.ini backup host:db:set | grep "$HDSALL"`
+    HDSLST=`$BASEDIR/iniget.sh $CONFIG backup host:db:set | grep "$HDSALL"`
   fi
 fi
 
@@ -42,7 +53,7 @@ for HDS in `echo "$HDSLST" | xargs -n1 echo`; do
   HOST=`echo $HDS | awk -F: '{print $1}'`
   DB=`echo $HDS | awk -F: '{print $2}'`
   NAS=`echo $HDS | awk -F: '{print $3}'`
-  HOST_STB_SE=`$BASEDIR/iniget.sh mon.ini standby $HOST`
+  HOST_STB_SE=`$BASEDIR/iniget.sh $CONFIG standby $HOST`
   logf="$LOGDIR/bck_logs_${HOST}_${DB}.log"
   exec >> $logf 2>&1
   echo "DEBUG HOST="$HOST"   DB="$DB"   NAS="$NAS"  HOST_STB_SE="$HOST_STB_SE
