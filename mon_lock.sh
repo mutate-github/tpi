@@ -2,19 +2,20 @@
 set -f
 
 CLIENT="$1"
+BASEDIR=`dirname $0`
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
   CONFIG=${CONFIG}.${CLIENT}
-  if [ ! -s "$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+  if [ ! -s "$BASEDIR/$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
 fi
 echo "Using config: ${CONFIG}"
 
-BASEDIR=`dirname $0`
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
 HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+
 THRESHOLD=`$BASEDIR/iniget.sh $CONFIG locks threshold`
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
