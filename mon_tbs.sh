@@ -22,12 +22,16 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   echo "HOST="$HOST
   DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
-    echo "DB="$DB
+    echo "DB="$DB 
     LOGF=$LOGDIR/mon_tbs_${HOST}_${DB}.log
     LOGF_TRG=$LOGDIR/mon_tbs_${HOST}_${DB}_trg.log
     LOGF_HEAD=$LOGDIR/mon_tbs_${HOST}_${DB}_heading_$$.log
     $WRTPI $HOST $DB tbs free | awk '/Tablespace Name/,/Elapsed/' | egrep -v "Elapsed" > $LOGF
-    awk -v lim=$limPER '{if($NF+0>=lim) {print $0}}' $LOGF > $LOGF_TRG
+#    awk -v lim=$limPER '{if($NF+0>=lim) {print $0}}' $LOGF > $LOGF_TRG
+    awk -v lim=$limPER -v gb=$limGB '{if($NF+0>=lim && $(NF-3)<gb*1024) {print $0}}' $LOGF > $LOGF_TRG
+    echo "limPER: "$limPER
+    echo "limGB: "$limGB
+    cat "$LOGF_TRG"
 
     if [ -s $LOGF_TRG ]; then
        echo "Fired: "$0"\n" > $LOGF_HEAD

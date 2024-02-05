@@ -63,9 +63,9 @@ limitPER=70
 
 [tbs]
 # free space limit in % 92
-limitPER=91
+limitPER=92
 # free space limin in Gb 32
-limitGB=32
+limitGB=10
 
 [standby]
 # limit in minutes unapplied archivelogs
