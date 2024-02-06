@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 04.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 06.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -1690,7 +1690,7 @@ case "$P1_" in
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 150
-column owner for a25
+column owner for a30
 column object_name for a30
 column OBJECT_TYPE for a25
 column status for a20
@@ -2996,8 +2996,18 @@ col password_spare4 for a250
 select name,lcount,password||';'||spare4 password_spare4 from user$ where name like upper('$P1_');
 
 prompt
-prompt sys privs:
+prompt v\$pwfile_users:
+column sysdba for a10
+column sysoper for a10
+column sysasm for a10
+column sysbackup for a10
+column sysdg for a10
+column syskm for a10
+column authentication_type for a10
+select username,sysdba,sysoper,sysasm,sysbackup,sysdg,syskm,account_status,authentication_type from v\$pwfile_users where username like upper('$P1_');
 
+prompt
+prompt sys privs:
 column grantee for a20
 column GRANTED_ROLE for a30
 column privilege for a35
