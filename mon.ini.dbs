@@ -5,12 +5,15 @@ host=db-gold-dca
 host=dcb-retail-db
 host=dca-stock-db
 host=dcb-stock-db
+host=srv-olapwhs01-dca
+host=srv-olapwhs01-dcb
 #host=z14-1847
 #host=z14-0473-novre
 host=mp
 host=md
 host=mu
 host=p260unc2
+host=askona04
 
 [mp]
 db=mprd
@@ -23,6 +26,9 @@ db=muat
 
 [p260unc2]
 db=unc10g
+
+[askona04]
+db=askona
 
 [z14-0473-novre]
 db=RZ_NOVT1
@@ -57,6 +63,12 @@ db=depo38db
 db=vshody
 db=rmandb
 db=depo11db
+
+[srv-olapwhs01-dca]
+db=goldwhs
+
+[srv-olapwhs01-dcb]
+db=goldwhs
 
 [srv-axdb1-mrg]
 db=dbdat
