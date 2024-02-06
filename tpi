@@ -2974,8 +2974,10 @@ user()
 {
 P1_=$1
 case "$(db_version)" in
-8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');"  ;;
-*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$P1_');" ;;
+8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');" 
+            CMD2_="select username,sysdba from v\$pwfile_users where username like upper('$P1_');" ;;
+*)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$P1_');" 
+            CMD2_="select username,sysdba,sysoper,sysasm,sysbackup,sysdg,syskm,account_status,authentication_type from v\$pwfile_users where username like upper('$P1_');" ;;
 esac
 
 $SP <<EOF >$LOGF
@@ -3004,7 +3006,7 @@ column sysbackup for a10
 column sysdg for a10
 column syskm for a10
 column authentication_type for a10
-select username,sysdba,sysoper,sysasm,sysbackup,sysdg,syskm,account_status,authentication_type from v\$pwfile_users where username like upper('$P1_');
+$CMD2_
 
 prompt
 prompt sys privs:

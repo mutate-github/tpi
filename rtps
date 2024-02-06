@@ -2,10 +2,10 @@
 
 SRV=$1
 shift
-args=$*
+# args=$*
+args="$@"
+args=$(echo $args | sed -e 's|\$|\\$|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e 's|"|\\"|g')
 
-args=$(echo $args | sed  's|\$|\\$|g')
-# args=$(echo $args | sed  's|-|=|g')
 BASEDIR=`dirname $0`
 wtps="$BASEDIR/tps"
 
