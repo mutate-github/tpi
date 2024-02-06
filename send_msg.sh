@@ -35,6 +35,8 @@ send_email()
 
 check_script_and_send_email()
 {
+echo "send_msg.sh check_script_and_send_email NAME_PARENT: "$NAME_PARENT
+echo "send_msg.sh check_script_and_send_email SCRIPTS: "$SCRIPTS
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_email ;;
            *)   if ( grep -q "%" <<< "$SCRIPTS" ); then echo "MM ALL SCRIPTS!"; send_email ; fi  ;;
@@ -46,8 +48,8 @@ send_tlgrm()
 
 check_script_and_send_tlgrm()
 {
-echo "send_msg.sh NAME_PARENT: "$NAME_PARENT
-echo "send_msg.sh SCRIPTS: "$SCRIPTS
+echo "send_msg.sh check_script_and_send_tlgrm NAME_PARENT: "$NAME_PARENT
+echo "send_msg.sh check_script_and_send_tlgrm SCRIPTS: "$SCRIPTS
 case "$NAME_PARENT" in
   ${SCRIPTS})   send_tlgrm ;;
            *)   if ( grep -q "%" <<< "$SCRIPTS" ); then echo "TG ALL SCRIPTS! "; send_tlgrm ; fi  ;;
@@ -64,11 +66,13 @@ for HDS in $(echo $MMHOSTS | xargs -n1 echo); do
   SCRIPTS=$(echo $HDS | cut -d':' -f3-)
   SCRIPTS='+('$(echo $SCRIPTS | sed 's/:/|/g')')'
   if [ "$PHOST" = "$HOST" -o "$PHOST" = "%" ]; then
-    echo "BINGO: is my host in regestry mail: "$HOST
+    echo "send_msg.sh BINGO: is my host in regestry mail HOST: "$HOST
+    echo "send_msg.sh PHOST: "$PHOST
+    echo "send_msg.sh PDB: "$PDB
     shopt -s extglob
     case "$PHOST" in
        "$HOST")  case "$PDB" in
-                   "$DB")  check_script_and_send_email ; break ;;
+                   "$DB")  echo "MM DB: "$DB ; check_script_and_send_email ; break ;;
                    *)      echo "MM ALL DATABASES! " ; check_script_and_send_email ;;
                  esac
                  ;;

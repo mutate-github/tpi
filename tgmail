@@ -48,6 +48,7 @@ if [ -z "$file" ]; then
 To: ${receiver_}
 Subject:${sub}
 ${msg}")
+echo "Mail sent."
 else
     # attachment exists condition
     # MIME type for multiple type of input file extensions
