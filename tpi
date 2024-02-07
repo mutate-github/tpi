@@ -49,8 +49,8 @@ fi
 init_msg()
 {
   a__="SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
-  p__="p | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
-  db__="db [ nls|option|properties ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
+  p__="p [PAR1 PAR2 ..] | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
+  db__="db [ nls|option|properties|fusage ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
@@ -75,7 +75,7 @@ init_msg()
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
-  scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
+  scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
@@ -1203,9 +1203,12 @@ logf
 
 parameters()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:upper:]' '[:lower:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
+#P1_=`echo $ALL | awk '{print $1}'`
+#P2_=`echo $ALL | awk '{print $2}' | tr '[:upper:]' '[:lower:]'`
+#P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
+
+P1_="$1"
+
 case "$P1_" in
 services)
 $SP <<EOF >$LOGF
@@ -1234,6 +1237,9 @@ SELECT * FROM dba_directories order by owner,directory_name;
 EOF
 ;;
 ph)
+P2_=$( tr '[:upper:]' '[:lower:]' <<<  "$2" )
+P3_=$( tr '[:lower:]' '[:upper:]' <<<  "$3" )
+
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
@@ -1248,7 +1254,16 @@ FROM  x\$ksppi a, x\$ksppcv b, x\$ksppsv c WHERE  a.indx = b.indx AND a.indx = c
 order by a.ksppinm;
 EOF
 ;;
-*)
+p)
+shift
+P2_="$( tr '[:upper:]' '[:lower:]' <<<  "$@" )"
+if ( grep -q ' ' <<< "$P2_" ) ; then 
+  P2_=$( echo "('"$P2_"')" | sed "s/ /','/g") 
+  S1_="name in $P2_"
+else 
+  S1_="name like '%"$P2_"%'"
+fi
+
 $SP <<EOF >$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 50
@@ -1258,8 +1273,7 @@ column isdefault for a9
 column ISMODIFIED for a10
 column value for a50
 column Description for a70
-select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$system_parameter where name like '%$P2_%';
--- show parameter $P2_
+select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$system_parameter where $S1_ order by name;
 EOF
 ;;
 esac
@@ -1276,7 +1290,7 @@ case "$P2_" in
 PROPERTIES)
 $SP <<EOF > $LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 240
 prompt
 prompt database_properties:
 set pages 50
@@ -1289,21 +1303,45 @@ EOF
 NLS)
 $SP <<'END' > $LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 240
 column parameter for a30
 column value for a40
-select * from nls_database_parameters;
+select * from nls_database_parameters order by parameter;
 END
 ;;
 OPTION)
 $SP <<'END' > $LOGF
 set lines 230
-set echo off feed off veri off tab off pages 40
+set echo off feed off veri off tab off pages 240
 column parameter for a50
 column value for a20
-select * from v$option;
+select * from v$option order by parameter;
 END
 ;;
+FUSAGE)
+$SP <<'END' > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 120
+prompt
+prompt DBA_FEATURE_USAGE_STATISTICS:
+column name for a70
+column verion for a10
+column detected_usages for 9999999
+column currently_used for 999999
+column first_usage_date for a20
+column last_usage_date for a20
+--select name,version,detected_usages,currently_used,first_usage_date,last_usage_date from DBA_FEATURE_USAGE_STATISTICS where version=(select version from v$instance) and  detected_usages>0 order by name;
+select u1.name, u1.version, u1.detected_usages, u1.currently_used,first_usage_date,last_usage_date
+from   dba_feature_usage_statistics u1
+where  u1.version = (select max(u2.version) from   dba_feature_usage_statistics u2 where  u2.name = u1.name)
+and    u1.detected_usages > 0
+and    u1.version=(select version from v$instance)
+and    u1.dbid = (select dbid from v$database)
+order by name;
+END
+;;
+
+
 *)
  SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
 SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
@@ -3422,7 +3460,7 @@ case "$P1_" in
 log)
 $SP <<EOF >$LOGF
 prompt dba_scheduler_job_log for job_name like '$P2_' and LOG_DATE > nvl('$P3_',24) hours
-set echo off feed off veri off tab off pages 70
+set echo off feed off veri off tab off pages 140
 set lines 230 pages 60 long 10000
 col LOG_ID for 999999999
 col LOG_DATE for a19
@@ -3440,7 +3478,7 @@ EOF
 run)
 $SP <<EOF >$LOGF
 prompt dba_scheduler_job_run_details for job_name like '$P2_' and ACTUAL_START_DATE > sysdate - (1*(nvl('$P3_',24)/24)) 
-set echo off feed off veri off tab off pages 70
+set echo off feed off veri off tab off pages 140
 set lines 230
 col owner for a25
 col job_name for a30
@@ -3456,9 +3494,33 @@ where job_name like '$P2_' and ACTUAL_START_DATE > sysdate - (1*(nvl('$P3_',24)/
 order by ACTUAL_START_DATE;
 EOF
 ;;
+autotask)
+$SP <<EOF >$LOGF
+set echo off feed off veri off tab off pages 140 timing off
+set lines 230
+col operation_name for a60
+col client_name for a60
+col status for a15
+select operation_name, status from dba_autotask_operation order by operation_name; 
+select client_name, status from dba_autotask_client order by client_name;
+column WINDOW_NAME for a20
+column duration for a20
+column REPEAT_INTERVAL for a70
+col LAST_START_DATE for a20
+select window_name,REPEAT_INTERVAL,duration,cast(LAST_START_DATE as date) LAST_START_DATE,ENABLED from dba_scheduler_windows;
+column CLIENT_NAME for a35
+column JOB_NAME for a25
+column JOB_STATUS for a10
+column JOB_START_TIME for a20
+column JOB_DURATION for a20
+column JOB_INFO for a80
+select client_name,JOB_NAME,JOB_STATUS,cast (JOB_START_TIME as date) JOB_START_TIME,JOB_DURATION, job_info from DBA_AUTOTASK_JOB_HISTORY
+where JOB_START_TIME > systimestamp - 3 and client_name='auto optimizer stats collection' order by JOB_START_TIME;
+EOF
+;;
 *)
 $SP <<EOF >$LOGF
-set echo off feed off veri off tab off pages 60
+set echo off feed off veri off tab off pages 140
 set lines 230
 col owner for a15
 col job_name for a30
