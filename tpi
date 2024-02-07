@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 06.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 07.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -1315,18 +1315,18 @@ SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
 
       col INSTALL_ID for 99 heading ID
       col action for a10
+      col action_time for a10
       col status for a9
       col flags for a2
-      col DESCRIPTION for a10
-      col LOGFILE    for a10
-      col RU_LOGFILE    for a10
-      col PATCH_DESCRIPTOR for a10
+      col DESCRIPTION for a28
+      col LOGFILE    for a27
+      col RU_LOGFILE    for a27
       col PATCH_DIRECTORY for a10 noprint
-      col SOURCE_BUILD_DESCRIPTION for a10
-      col TARGET_BUILD_DESCRIPTION for a10
+      col SOURCE_BUILD_DESCRIPTION for a15
+      col TARGET_BUILD_DESCRIPTION for a15
       col SOURCE_BUILD_TIMESTAMP for a10  noprint
       col TARGET_BUILD_TIMESTAMP for a10
-      select * from DBA_REGISTRY_SQLPATCH order by action_time;"
+      select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
  REL=$(db_version)
  VERSION="VERSION" ; BANNER="BANNER"
  case $REL in
@@ -1405,10 +1405,17 @@ sga()
 {
 $SP <<'EOF' >$LOGF
 set lines 230 numw 15
-set echo off feed off veri off tab off pages 60
+set echo off feed off veri off tab off pages 60 timing off
+prompt Size of total v$sga:
+SELECT round(sum(value)/1024/1024,2) TOTAL_SGA_MB FROM v$sga;
 col component for a40
 prompt Size of v$sga_dynamic_components :
-select COMPONENT,CURRENT_SIZE,MIN_SIZE,MAX_SIZE from v$sga_dynamic_components;
+BREAK ON REPORT
+COMPUTE sum OF CURRENT_SIZE_Mb on report
+COMPUTE sum OF MIN_SIZE_Mb on report
+COMPUTE sum OF MAX_SIZE_Mb on report
+select COMPONENT,CURRENT_SIZE/1024/1024 CURRENT_SIZE_Mb, MIN_SIZE/1024/1024 MIN_SIZE_Mb, MAX_SIZE/1024/1024 MAX_SIZE_Mb from v$sga_dynamic_components;
+
 
 prompt Size of db_cache_size:
 col name for a20
@@ -1417,10 +1424,15 @@ select name,block_size,resize_state,current_size,buffers,target_size,target_buff
 
 prompt 
 prompt Sizes in v$sgastat:
-col bytes for 999999999999
+col Mbytes for 999999999999
 col pool for a20
 select * from v$sgastat where pool is null;
-select * from v$sgastat where pool = 'shared pool' and (name in ('free memory', 'sql area', 'library cache', 'miscellaneous', 'row cache', 'KGH: NO ACCESS') );
+select to_number(p.value) value, v$sgastat.pool, v$sgastat.bytes,
+case when p.value<>0 then round((v$sgastat.bytes/p.value)*100,2) else round(to_number(p.value),2) end "Percent Free"
+from v$sgastat, v$system_parameter p
+where v$sgastat.name = 'free memory'
+and p.name = 'shared_pool_size';
+
 
 prompt
 prompt Sizes in v$sga_resize_ops:
@@ -1450,14 +1462,6 @@ select /*+ rule */ to_number(value) shared_pool_size,
                (select sum(250 * users_opening) sum_user_size
           from v$sqlarea), v$system_parameter
  where name = 'shared_pool_size';
-
-prompt
-prompt Pools of "free memory" size and free percent in v$sgastat:
-select to_number(p.value) value, v$sgastat.pool, v$sgastat.bytes,
-case when p.value<>0 then round((v$sgastat.bytes/p.value)*100,2) else round(to_number(p.value),2) end "Percent Free"
-from v$sgastat, v$system_parameter p
-where v$sgastat.name = 'free memory'
-and p.name = 'shared_pool_size';
 
 prompt 
 prompt Shared pool usage:
