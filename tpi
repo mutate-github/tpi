@@ -56,7 +56,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days] [ tbs [free] | temp | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
+  size__="size [days] [ tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
   arch__="arch - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -68,7 +68,7 @@ init_msg()
   i__="i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
-  u__="u USERNAME - dba_users information"
+  u__="u [ USERNAME | {sys|role|tab}  OBJECT_GRANTEE  ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
   profile__="profile [PROFILE] - profiles information"
   links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
@@ -2765,6 +2765,19 @@ logf
 }
 
 
+sysaux()
+{
+$SP <<'EOF' >$LOGF
+SET LINESIZE 230 pages 100
+col OCCUPANT_DESC for a70
+PROMPT "v$sysaux_occupants:"
+break on report
+COMPUTE SUM OF space_usage_kbytes on report
+select occupant_desc, space_usage_kbytes  from v$sysaux_occupants  where space_usage_kbytes > 0 order by space_usage_kbytes desc;
+EOF
+logf
+}
+
 
 df()
 {
@@ -3075,6 +3088,7 @@ P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
 case "$P2_" in
   TBS)      shift; shift; ALL=$*; tbs $ALL ;;
   TEMP)     temp ;;
+  SYSAUX)   sysaux ;;
   DF)       shift; shift; ALL=$*; df $ALL ;;
   MAXSEG)   shift; ALL=$*; maxseg $ALL ;;
   FRA)      fra ;;
@@ -3086,14 +3100,53 @@ esac
 
 user()
 {
-P1_=$1
+P1_="$1"
+P2_="$2"
+shift
+shift 
+P3_="$*"
 case "$(db_version)" in
 8|9|10|11)  CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile FROM dba_users where upper(username) like upper('$P1_');" 
             CMD2_="select username,sysdba from v\$pwfile_users where username like upper('$P1_');" ;;
 *)          CMD1_="SELECT username, ACCOUNT_STATUS,lock_date,expiry_date,default_tablespace,TEMPORARY_TABLESPACE,created, profile,cast(last_login as date) last_login FROM dba_users where upper(username) like upper('$P1_');" 
             CMD2_="select username,sysdba,sysoper,sysasm,sysbackup,sysdg,syskm,account_status,authentication_type from v\$pwfile_users where username like upper('$P1_');" ;;
 esac
-
+shopt -s nocasematch
+case "$P2_" in 
+sys)
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 50 timing off
+column grantee for a30
+column GRANTED_ROLE for a30
+column privilege for a35
+select * from dba_sys_privs s where privilege like upper('%$P3_%') and not exists (select 1 from dba_roles where role=grantee);
+EOF
+;;
+role)
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 50 timing off
+column grantee for a30
+column GRANTED_ROLE for a30
+column privilege for a35
+select * from dba_role_privs where granted_role like upper('%$P3_%');
+EOF
+;;
+tab)
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 50 timing off
+column table_name for a30
+column grantee for a30
+column grantor for a20
+column owner for a25
+column PRIVILEGE for a20
+column type for a15
+select * from dba_tab_privs where table_name like upper('%$P3_%');
+EOF
+;;
+*)
 $SP <<EOF >$LOGF
 set lines 300
 set echo off feed off veri off tab off pages 50 timing off
@@ -3124,7 +3177,7 @@ $CMD2_
 
 prompt
 prompt sys privs:
-column grantee for a20
+column grantee for a30
 column GRANTED_ROLE for a30
 column privilege for a35
 select * from dba_sys_privs where grantee=upper('$P1_') order by privilege;
@@ -3136,7 +3189,7 @@ select * from dba_role_privs where grantee=upper('$P1_') order by granted_role;
 prompt
 prompt tab privs:
 column table_name for a30
-column grantee for a20
+column grantee for a30
 column grantor for a20
 column owner for a25
 column PRIVILEGE for a20
@@ -3152,6 +3205,8 @@ break on report
 COMPUTE SUM OF Mbytes on report
 select tablespace_name, username, bytes/1024/1024 Mbytes, max_bytes, blocks, max_blocks from dba_ts_quotas where username=upper('$P1_') order by Mbytes desc;
 EOF
+;;
+esac
 logf
 }
 
