@@ -148,14 +148,12 @@ EOF_CREATE_F1
   rm $ONE_EXEC_F
   exec >> $logf 2>&1
 
-  rc=`sed '/^$/d' $logf | tail -1`
-#  echo "rc="$rc >> $logf
-  if ( grep "COMPLETED" <<< "$rc" ); then
-    BCK_STATUS=" completed with SUCCESS"
-    SUCCESS_LIST=$DB" "$SUCCESS_LIST
-  else
+  if ( grep -q "RMAN-" <<< $(cat $logf) ); then
     BCK_STATUS=" completed with FAILURE"
     FAILURE_LIST=$DB" "$FAILURE_LIST
+  else
+    BCK_STATUS=" completed with SUCCESS"
+    SUCCESS_LIST=$DB" "$SUCCESS_LIST
   fi
   HOST_DB=$HOST"/"$DB" "$HOST_DB
 
