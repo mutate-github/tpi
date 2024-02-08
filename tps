@@ -17,11 +17,11 @@ psql_="psql -q $db "
 
 init_msg()
 {
-  sess__="sess [ idle | active | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
   p__="p [parameter] - parameter from pg_file_settings and pg_settings"
+  sess__="sess [ PID | idle | active | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
   exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' "
   activity__="activity  - activity sessions in DB"
-  lock__="lock [all|dead|tree] - locks"
+  lock__="lock [ all | dead | tree | tree2 ] - locks"
   vacuum__="vacuum - vacuum activity"
   topsql__="topsql - top 20 sql"
   bloat__="bloat - bloat tables"
@@ -80,7 +80,20 @@ EOF
 sess()
 {
 P1_=$1
+echo "P1_: "$P1_
 case $P1_ in
+[0-9]*) 
+$psql_ <<EOF
+\timing
+\pset format wrapped
+\pset columns 230
+\pset linestyle unicode
+\x 
+\pset title "pg_stat_activity where pid = '$P1_'"
+SELECT * FROM pg_stat_activity WHERE pid = '$P1_' ;
+--LIMIT 50;
+EOF
+;;
 trx)
 P2_=$( if [ -z "$2" ]; then echo "60"; else echo "$2"; fi  )
 $psql_ <<EOF
@@ -171,7 +184,7 @@ EOF
 lock()
 {
 P1_=`echo $ALL | awk '{print $1}'`
-case "$P1" in
+case "$P1_" in
 all)
 $psql_ <<EOF
 --\x ON
@@ -265,6 +278,271 @@ SELECT (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
   JOIN pg_stat_activity a USING (pid)
   JOIN pg_stat_activity r ON r.pid=tree.root
  ORDER BY (now() - r.xact_start), path;
+EOF
+;;
+tree2)
+$psql_ <<EOF
+--\x ON
+\timing
+\pset format wrapped
+\pset columns 330
+\pset linestyle unicode
+WITH conflicts(lock, conflict) AS (VALUES
+    ('AccessShare', 'AccessExclusive'), ('RowShare', 'Exclusive'),
+    ('RowShare', 'AccessExclusive'), ('RowExclusive', 'Share'),
+    ('RowExclusive', 'ShareRowExclusive'), ('RowExclusive', 'Exclusive'),
+    ('RowExclusive', 'AccessExclusive'), ('ShareUpdateExclusive', 'ShareUpdateExclusive'),
+    ('ShareUpdateExclusive', 'Share'), ('ShareUpdateExclusive', 'ShareRowExclusive'),
+    ('ShareUpdateExclusive', 'Exclusive'), ('ShareUpdateExclusive', 'AccessExclusive'),
+    ('Share', 'RowExclusive'), ('Share', 'ShareUpdateExclusive'),
+    ('Share', 'ShareRowExclusive'), ('Share', 'Exclusive'),
+    ('Share', 'AccessExclusive'), ('ShareRowExclusive','RowExclusive'),
+    ('ShareRowExclusive', 'ShareUpdateExclusive'), ('ShareRowExclusive', 'Share'),
+    ('ShareRowExclusive', 'ShareRowExclusive'), ('ShareRowExclusive', 'Exclusive'),
+    ('ShareRowExclusive', 'AccessExclusive'), ('Exclusive', 'RowShare'),
+    ('Exclusive', 'RowExclusive'), ('Exclusive', 'ShareUpdateExclusive'),
+    ('Exclusive', 'Share'), ('Exclusive', 'ShareRowExclusive'),
+    ('Exclusive', 'Exclusive'), ('Exclusive', 'AccessExclusive'),
+    ('AccessExclusive', 'AccessShare'), ('AccessExclusive', 'RowShare'),
+    ('AccessExclusive', 'RowExclusive'), ('AccessExclusive', 'ShareUpdateExclusive'),
+    ('AccessExclusive', 'Share'), ('AccessExclusive', 'ShareRowExclusive'),
+    ('AccessExclusive','Exclusive'), ('AccessExclusive','AccessExclusive')
+),
+activity AS (
+    SELECT
+        datname,
+        pid,
+        usename,
+        application_name,
+        client_addr,
+        xact_start,
+        query_start,
+        state_change,
+        backend_xid,
+        backend_xmin,
+        state,
+        wait_event_type,
+        wait_event,
+        query
+    FROM pg_stat_activity
+    WHERE pid != pg_backend_pid()
+),
+locks AS (
+   SELECT
+        pid,
+        locktype,
+        granted,
+        relation::regclass AS relation,
+        left(mode,-4) AS mode,
+        ROW(locktype,database,relation::regclass,page,tuple,virtualxid,transactionid,classid,objid,objsubid) AS obj
+    FROM pg_locks
+),
+pairs AS (
+    SELECT
+        w.pid AS waiter,
+        l.pid AS locker,
+        l.obj,
+        l.mode,
+        l.relation
+    FROM locks AS w
+    JOIN locks AS l ON l.obj IS NOT DISTINCT FROM w.obj AND l.locktype = w.locktype AND NOT l.pid = w.pid AND l.granted
+    WHERE NOT w.granted
+),
+leaders AS (
+    SELECT
+        DISTINCT(locker),
+        coalesce(relation, (select max(relation) from locks where pid = locker)) AS relation,
+        mode
+    FROM (SELECT *, rank() OVER (PARTITION BY locker ORDER BY relation NULLS FIRST) AS pos FROM pairs) AS ss
+    WHERE pos = 1
+),
+lock_queue AS (
+    SELECT
+        array_agg(l.pid::text || '.' || l.mode order by p.query_start) AS queue,
+        rel.relation
+    FROM locks AS l
+    JOIN activity p ON p.pid = l.pid
+    JOIN activity a ON a.pid = l.pid,
+    LATERAL (SELECT coalesce(relation, max(relation)) AS relation FROM locks WHERE pid = l.pid AND relation IS NOT NULL GROUP BY relation) AS rel
+    WHERE NOT l.granted
+    GROUP BY rel.relation
+),
+push_root_on_lock_queue AS (
+    SELECT
+        l.relation,
+        array_prepend(p.locker::text || '.' || p.mode, queue) AS queue
+    FROM lock_queue AS l
+    JOIN leaders AS p ON l.relation = p.relation
+),
+lock_queue_element_num AS (
+    SELECT
+        relation,
+        a.element,
+        a.num
+    FROM push_root_on_lock_queue, unnest(queue) WITH ORDINALITY a(element, num)
+),
+main AS (
+    SELECT
+        a.relation,
+        split_part(a.element, '.', 1) AS prev_pid,
+        split_part(a.element, '.', 2) AS prev_mode,
+        split_part(b.element, '.', 1) AS pid,
+        split_part(b.element, '.', 2) AS mode,
+        a.num AS start,
+        b.num AS next,
+        CASE
+            WHEN EXISTS (SELECT * FROM conflicts AS c WHERE c.lock = split_part(a.element, '.', 2) AND c.conflict = split_part(b.element, '.', 2)) THEN true
+            ELSE false
+        END AS conflict
+    FROM lock_queue_element_num AS a
+    JOIN lock_queue_element_num b ON a.relation = b.relation
+    WHERE a.num < b.num
+    ORDER BY b.num DESC
+),
+tree AS (
+    SELECT
+        DISTINCT ON (pid, prev_pid)
+        *,
+        dense_rank() OVER (PARTITION BY relation ORDER BY start) - 1 AS level
+    FROM main
+),
+stat AS (
+    SELECT
+        m.pid,
+        p.locker,
+        array_agg(DISTINCT m.prev_pid || ':' || m.level) AS blocked_by
+    FROM pairs AS p
+    JOIN tree AS m ON p.waiter = m.pid::int
+    WHERE conflict
+    AND m.pid != m.prev_pid
+    GROUP BY m.pid, p.locker
+),
+/* sometimes we can miss some blockers in pairs due to the lock path, the query should be fix normally but for now this is workaround
+   TODO: fix pairs query to include all path
+*/
+sub AS (
+    SELECT
+        pidd,
+        count(pidd) AS blocked_cnt
+    FROM (
+        SELECT DISTINCT ON (pid) split_part(unnest(blocked_by), ':', 1) AS pidd
+        FROM stat AS s
+    ) AS blocked_cnt
+    WHERE NOT EXISTS (SELECT FROM pairs AS p WHERE p.locker = blocked_cnt.pidd::int)
+    GROUP BY pidd
+),
+result AS (
+    /* add details of waiters */
+    SELECT
+        DISTINCT(s.pid::int),
+        s.blocked_by,
+        (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
+        (clock_timestamp() - a.state_change)::interval(0) AS change_age,
+        CASE
+            WHEN s.blocked_by = '{}' THEN NULL::interval(0)
+            ELSE (clock_timestamp() - a.query_start)::interval(0)
+        END AS blocking_age,
+        a.backend_xid AS xid,
+        a.backend_xmin AS xmin,
+        replace(a.state, 'idle in transaction', 'idletx') AS state,
+        a.datname,
+        a.usename,
+        a.client_addr,
+        a.application_name,
+        a.wait_event_type || ':' || a.wait_event AS wait,
+        blocked.cnt AS blocked_cnt,
+        CASE
+            WHEN s.blocked_by = '{}' THEN true
+            ELSE false
+        END AS root,
+        trim(trailing ';' from format(
+            '%s %s%s',
+            '[' || s.pid::text || ']',
+            coalesce(repeat('.', array_length(s.blocked_by, 1)+1), '') || ' ',
+            left(query, 1000)
+        )) AS query
+    FROM stat AS s
+    JOIN activity AS a ON s.pid::int = a.pid,
+    LATERAL (
+        SELECT
+            coalesce((CASE
+                WHEN count(p.waiter) = 0 THEN (SELECT blocked_cnt FROM sub WHERE sub.pidd = s.pid UNION ALL SELECT 0 FROM sub WHERE NOT EXISTS (SELECT FROM sub WHERE sub.pidd = s.pid))
+                ELSE count(p.waiter)
+            END), 0) AS cnt
+    FROM pairs AS p WHERE p.locker = s.pid::int)AS blocked
+    UNION ALL
+    /* add details of lockers */
+    SELECT
+        DISTINCT(p.locker::int),
+        '{}'::text[] AS blocked_by,
+        (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
+        (clock_timestamp() - a.state_change)::interval(0) AS change_age,
+        NULL::interval AS blocking_age,
+        a.backend_xid AS xid,
+        a.backend_xmin AS xmin,
+        replace(state, 'idle in transaction', 'idletx') AS state,
+        a.datname,
+        a.usename,
+        a.client_addr,
+        a.application_name,
+        a.wait_event_type || ':' || a.wait_event AS wait,
+        blocked.cnt AS blocked_cnt,
+        true AS root,
+        trim(trailing ';' from format(
+            '%s %s%s',
+            '[' || p.locker::text || ']',
+            coalesce(repeat('.', 0), '') || ' ',
+            left(query, 1000)
+        )) AS query
+    FROM pairs AS p
+    JOIN activity AS a ON p.locker::int = a.pid,
+    LATERAL (SELECT count(t.prev_pid) AS cnt FROM tree t WHERE t.prev_pid = p.locker::text) blocked
+    WHERE NOT EXISTS (SELECT FROM stat AS s WHERE s.pid::int = p.locker)
+    /* every other pids not in locker and waiter pairs */
+    UNION ALL
+    SELECT
+        DISTINCT(a.pid),
+        '{}'::text[] AS blocked_by,
+        (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
+        (clock_timestamp() - a.state_change)::interval(0) AS change_age,
+        NULL::interval AS blocking_age,
+        a.backend_xid AS xid,
+        a.backend_xmin AS xmin,
+        replace(state, 'idle in transaction', 'idletx') AS state,
+        a.datname,
+        a.usename,
+        a.client_addr,
+        a.application_name,
+        a.wait_event_type || ':' || a.wait_event AS wait,
+        0::int AS blocked_cnt,
+        true AS root,
+        trim(trailing ';' from format(
+            '%s %s%s',
+            '[' || a.pid::text || ']',
+            coalesce(repeat('.', 0), '') || ' ',
+            left(query, 1000)
+        )) AS query
+    FROM activity AS a WHERE NOT EXISTS (SELECT FROM pairs AS p WHERE p.locker = a.pid OR p.waiter = a.pid)
+    ORDER by blocked_cnt DESC, root, pid
+)
+SELECT
+    pid,
+    blocked_by,
+    ts_age,
+    change_age,
+    blocking_age,
+    xid,
+    xmin,
+    state,
+    datname,
+    usename,
+    client_addr,
+    application_name,
+    wait,
+    blocked_cnt,
+    root,
+    query
+FROM result;
 EOF
 ;;
 *)

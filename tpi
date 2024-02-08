@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 07.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 08.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -49,7 +49,7 @@ fi
 init_msg()
 {
   a__="SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
-  p__="p [PAR1 PAR2 ..] | ph [PARAMETER] [FALSE] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
+  p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties|fusage ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
@@ -1237,8 +1237,14 @@ SELECT * FROM dba_directories order by owner,directory_name;
 EOF
 ;;
 ph)
-P2_=$( tr '[:upper:]' '[:lower:]' <<<  "$2" )
-P3_=$( tr '[:lower:]' '[:upper:]' <<<  "$3" )
+shift
+shopt -s nocasematch
+if ( grep -q "FALSE" <<< "$1" ); then 
+  S0_="and isdefault='FALSE'"
+  shift
+  P2_="FALSE"
+fi
+P1_=$( tr '[:upper:]' '[:lower:]' <<<  "$1" )
 
 $SP <<EOF >$LOGF
 set lines 230
@@ -1250,12 +1256,14 @@ column "DefSessVal" for a10
 column "Inst Value" for a40
 column "DefInstVal" for a10
 SELECT a.ksppinm  "Parameter", a.ksppdesc "Description", b.ksppstvl "Sess Value", b.ksppstdf "DefSessVal", c.ksppstvl "Inst Value", c.ksppstdf "DefInstVal"
-FROM  x\$ksppi a, x\$ksppcv b, x\$ksppsv c WHERE  a.indx = b.indx AND a.indx = c.indx AND a.ksppinm LIKE '%$P2_%' and c.ksppstdf like  nvl('$P3_','%')
+FROM  x\$ksppi a, x\$ksppcv b, x\$ksppsv c WHERE  a.indx = b.indx AND a.indx = c.indx AND a.ksppinm LIKE '%$P1_%' and c.ksppstdf like  nvl('$P2_','%')
 order by a.ksppinm;
 EOF
 ;;
 p)
 shift
+shopt -s nocasematch
+if ( grep -q "FALSE" <<< "$1" ); then S0_="and isdefault='FALSE'"; shift; fi
 P2_="$( tr '[:upper:]' '[:lower:]' <<<  "$@" )"
 if ( grep -q ' ' <<< "$P2_" ) ; then 
   P2_=$( echo "('"$P2_"')" | sed "s/ /','/g") 
@@ -1273,7 +1281,7 @@ column isdefault for a9
 column ISMODIFIED for a10
 column value for a50
 column Description for a70
-select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$system_parameter where $S1_ order by name;
+select name,decode(type,'1','Boolean',2,'String',3,'Integer',4,'Parameter file',5,'Reserved',6,'Big integer') type,value,isdefault,ISMODIFIED,description from v\$system_parameter where $S1_ $S0_ order by name;
 EOF
 ;;
 esac
@@ -1340,18 +1348,10 @@ and    u1.dbid = (select dbid from v$database)
 order by name;
 END
 ;;
-
-
 *)
  SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
-SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
-      column LOGFILE for a100
-      column DESCRIPTION for a40
-
-      col BUNDLE_DATA  for a10
-      col POST_LOGFILE  for a10 noprint
-
-      col INSTALL_ID for 99 heading ID
+SQL_TEXT12="prompt DBA_REGISTRY_SQLPATCH:
+      col INSTALL_ID for 99
       col action for a10
       col action_time for a10
       col status for a9
@@ -1364,13 +1364,14 @@ SQL_TEXT12_="prompt DBA_REGISTRY_SQLPATCH:
       col TARGET_BUILD_DESCRIPTION for a15
       col SOURCE_BUILD_TIMESTAMP for a10  noprint
       col TARGET_BUILD_TIMESTAMP for a10
-      select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
+"
  REL=$(db_version)
  VERSION="VERSION" ; BANNER="BANNER"
  case $REL in
-   9|10|11) SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
-   12) SQL_TEXT12=$SQL_TEXT12_ ;;
-   18|19|21) SQL_TEXT12=$SQL_TEXT12_ ; VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
+   9|10|11)  SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
+   12)       SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID VERSION, ACTION, STATUS, ACTION_TIME, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"  ;;
+   18|19|21) SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
+	      VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
   esac
 $SP <<EOF > $LOGF
 set lines 230 timing off
@@ -1432,12 +1433,82 @@ column BUNDLE_SERIES for a20
 prompt
 prompt REGISTRY\$HISTORY:
 select * from sys.registry\$history;
-$SQL_TEXT12
+$SQL_TEXT12_
+$SQL_TEXT_2
 END
 ;;
 esac
 logf
 }
+
+
+
+audit()
+{
+P1_=`echo $ALL | awk '{print $1}'`
+P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+$SP <<EOF > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 240
+select 'AUDIT '||m.name||decode(u.name,'PUBLIC',' ',' BY "'||u.name||'"')||
+       decode(nvl(a.success,0)  + (10 * nvl(a.failure,0)),
+       1, ' BY SESSION WHENEVER SUCCESSFUL ',
+       2, ' BY ACCESS WHENEVER SUCCESSFUL ',
+       10,' BY SESSION WHENEVER NOT SUCCESSFUL ',
+       11,' BY SESSION ',   -- default
+       20,' BY ACCESS WHENEVER NOT SUCCESSFUL ',
+       22,' BY ACCESS',' /* not possible */ ')||' ;'
+ "AUDIT STATEMENT"
+        FROM audit$ a, user$ u, sys.stmt_audit_option_map m
+        WHERE a.user# = u.user# AND a.option# = m.option#
+              and bitand(m.property, 1) != 1  and a.proxy# is null
+              and a.user# <> 0
+        UNION
+select 'AUDIT '||m.name||decode(u1.name,'PUBLIC',' ',' BY "'||u1.name||'"')||
+       ' ON BEHALF OF '|| decode(u2.name,'SYS','ANY',u2.name)||
+       decode(nvl(a.success,0)  + (10 * nvl(a.failure,0)),
+       1,' WHENEVER SUCCESSFUL ',
+       2,' WHENEVER SUCCESSFUL ',
+       10,' WHENEVER NOT SUCCESSFUL ',
+       11,' ',   -- default
+       20, ' WHENEVER NOT SUCCESSFUL ',
+       22, ' ',' /* not possible */ ')||';'
+ "AUDIT STATEMENT"
+     FROM audit$ a, user$ u1, user$ u2, sys.stmt_audit_option_map m
+     WHERE a.user# = u2.user# AND a.option# = m.option# and a.proxy# = u1.user#
+              and bitand(m.property, 1) != 1  and a.proxy# is not null
+UNION
+select 'AUDIT '||p.name||decode(u.name,'PUBLIC',' ',' BY "'||u.name||'"')||
+       decode(nvl(a.success,0)  + (10 * nvl(a.failure,0)),
+       1,' BY SESSION WHENEVER SUCCESSFUL ',
+       2,' BY ACCESS WHENEVER SUCCESSFUL ',
+       10,' BY SESSION WHENEVER NOT SUCCESSFUL ',
+       11,' BY SESSION ',   -- default
+       20, ' BY ACCESS WHENEVER NOT SUCCESSFUL ',
+       22, ' BY ACCESS',' /* not possible */ ')||' ;'
+ "AUDIT STATEMENT"
+        FROM audit$ a, user$ u, sys.system_privilege_map p
+        WHERE a.user# = u.user# AND a.option# = -p.privilege
+              and bitand(p.property, 1) != 1 and a.proxy# is null
+         and a.user# <> 0
+UNION
+select 'AUDIT '||p.name||decode(u1.name,'PUBLIC',' ',' BY "'||u1.name||'"')||
+       ' ON BEHALF OF '|| decode(u2.name,'SYS','ANY',u2.name)||
+       decode(nvl(a.success,0)  + (10 * nvl(a.failure,0)),
+       1,' WHENEVER SUCCESSFUL ',
+       2,' WHENEVER SUCCESSFUL ',
+       10,' WHENEVER NOT SUCCESSFUL ',
+       11,' ',   -- default
+       20, ' WHENEVER NOT SUCCESSFUL ',
+       22, ' ',' /* not possible */ ')||';'
+ "AUDIT STATEMENT"
+   FROM audit$ a, user$ u1, user$ u2, sys.system_privilege_map p
+   WHERE a.user# = u2.user# AND a.option# = -p.privilege and a.proxy# = u1.user#
+              and bitand(p.property, 1) != 1 and a.proxy# is not null;
+EOF
+logf
+}
+
 
 sga()
 {
@@ -6122,6 +6193,7 @@ case "$ID" in
 lock)      echo $lock__ ${reset}; lock $ALL ;;
 p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)        echo $db__ ${reset}; db ;;
+audit)     echo $audit__ ${reset}; audit $ALL ;;
 health)    shift; ALL=$* ; echo $health__ ${reset}; health $ALL ;;
 oratop)    shift; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
 sga)       echo $sga__ ${reset}; sga ;;
