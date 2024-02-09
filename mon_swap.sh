@@ -15,9 +15,23 @@ LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
 limPER=`$BASEDIR/iniget.sh $CONFIG swap limitPER`
+EXCLUDE=$($BASEDIR/iniget.sh $CONFIG exclude host:db:scripts)
+ME=$(cat /proc/$$/comm)
 
+echo "EXCLUDE: "$EXCLUDE
+echo "ME: "$ME
 
 for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+  echo "------------------------------------"
+  skip_outer_loop=0
+  for EXCL in $(xargs -n1 echo <<< $EXCLUDE); do
+     SCRIPTS=$(cut -d':' -f3- <<< $EXCL)
+     if [[ $(awk -F: '{print $1}' <<< $EXCL) = "$HOST" ]] && (grep -q "$ME" <<< "$SCRIPTS"); then 
+       echo "Find EXCLUDE HOST: $HOST   in   EXCL: $EXCL"
+       echo "Find EXCLUDE SCRIPT: $ME   in   SCRIPTS: $SCRIPTS" ; skip_outer_loop=1; break 
+     fi
+  done
+  if [ "$skip_outer_loop" -eq 1 ]; then echo "SKIP and continue outher loop!"; continue; fi
   LOGF=$LOGDIR/mon_swap_${HOST}.log
   LOGF_HEAD=$LOGDIR/mon_swap_${HOST}_head.log
   echo "HOST: "$HOST
