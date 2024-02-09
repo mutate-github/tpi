@@ -1,6 +1,6 @@
 [servers]
 host=aisprod
-#host=aisstb
+host=aisstb
 host=unit
 host=alpha
 host=beta
@@ -8,7 +8,7 @@ host=gw
 
 [exclude]
 #host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
-host:db:scripts=aisprod:%:mon_swap.sh:mon_tbs.sh
+host:db:scripts=aisprod:%:mon_swap.sh
 
 [aisprod]
 db=aisutf
