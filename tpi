@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 08.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 09.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -78,6 +78,7 @@ init_msg()
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
+  backup__="backup  [RMAN|DAYS] - backup RMAN v\$rman_configuration backup information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
@@ -96,8 +97,8 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph <param>] | a(order by u m o l w) | i | k | lock | p  . | db [nls|option|properties] | health [cr|hot] | oratop [h] | sga | pga | size [days] [ tbs [free] | temp | df [io|usage|lastseg [TBS]]|maxseg [TBS]|fra] | arch | redo [logs] | undo [recovery] | sesstat [STATNAME] | topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace | kill | exec | alert | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
-  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
+  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | in | k | lock | db [nls|option|properties|fusage] | audit | health [cr|hot] | oratop [h|dhsh[data]] | sga | pga | size [days] [ tbs [free] | temp | sysaux | df [io|usage|lastseg [TBS]]|maxseg [TBS]|fra] | arch | redo [logs] | undo [recovery] | sesstat [list|sess SESS_ID [STATNAME] | STATNAME ]  topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace [SID SERIAL LEVEL] [db on|off] | kill SID SERIAL | exec | alert [NOM] | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
+  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$backup__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
 fi
@@ -3120,7 +3121,7 @@ set echo off feed off veri off tab off pages 50 timing off
 column grantee for a30
 column GRANTED_ROLE for a30
 column privilege for a35
-select * from dba_sys_privs s where privilege like upper('%$P3_%') and not exists (select 1 from dba_roles where role=grantee);
+select * from dba_sys_privs s where privilege = upper('$P3_') and not exists (select 1 from dba_roles where role=grantee);
 EOF
 ;;
 role)
@@ -3130,7 +3131,7 @@ set echo off feed off veri off tab off pages 50 timing off
 column grantee for a30
 column GRANTED_ROLE for a30
 column privilege for a35
-select * from dba_role_privs where granted_role like upper('%$P3_%');
+select * from dba_role_privs where granted_role = upper('$P3_');
 EOF
 ;;
 tab)
@@ -3710,6 +3711,84 @@ select /*+rule*/ 'kill -9 '||p.spid spid, d_j.job,
    from v\$process p, v\$session s, dba_jobs_running j, dba_jobs d_j
    where p.addr = s.paddr and j.sid=s.sid and d_j.job(+)=j.job ;
 EOF
+logf
+}
+
+
+backup()
+{
+P1_=$1
+[ -z "$P1_" ] && P1_=7
+shopt -s nocasematch
+case "$P1_" in
+rman)
+$SP <<EOF >$LOGF
+set lines 250
+set echo off feed off veri off tab off pages 90
+col name for a60
+col value for a80
+select * from v\$rman_configuration order by conf#;
+EOF
+;;
+*)
+$SP <<EOF >$LOGF
+set lines 250
+set echo off feed off veri off tab off pages 90
+column filename for a90
+select filename,status from v\$block_change_tracking;
+PROMPT D - data file full backup, I - incremental backup, L - backup contains archived redo logs
+
+column OUTPUT_DEVICE_TYPE for a18
+column start_time for a20
+column end_time for a20
+column input_mbytes for 999999999
+column output_mbytes for 999999999
+column compress_ratio for 99999
+column status for a25
+column input_type for a10
+column dow for a10
+column time_taken_display for a18
+column cf for 9999
+column df for 9999
+column d for 9999
+column i0 for 9999
+column i1 for 9999
+select
+  j.session_recid sess, j.session_stamp,
+  to_char(j.start_time, 'yyyy-mm-dd hh24:mi:ss') start_time,
+  to_char(j.end_time, 'yyyy-mm-dd hh24:mi:ss') end_time,
+  (j.output_bytes/1024/1024) output_mbytes, j.status, j.input_type,
+  decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',
+                                     3, 'Tuesday', 4, 'Wednesday',
+                                     5, 'Thursday', 6, 'Friday',
+                                     7, 'Saturday') dow,
+  trunc(j.elapsed_seconds) ela_sec, j.time_taken_display,
+  x.cf, x.df, x.i0, x.i1, x.l --,ro.inst_id inst_id
+from V\$RMAN_BACKUP_JOB_DETAILS j
+  left outer join (select
+                     d.session_recid, d.session_stamp,
+                     sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) CF,
+                     sum(case when d.controlfile_included = 'NO' and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
+                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) D,
+                     sum(case when d.backup_type||d.incremental_level = 'I0' then d.pieces else 0 end) I0,
+                     sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
+                     sum(case when d.backup_type = 'L' then d.pieces else 0 end) L
+                   from
+                     V\$BACKUP_SET_DETAILS d
+                     join V\$BACKUP_SET s on s.set_stamp = d.set_stamp and s.set_count = d.set_count
+                   where s.input_file_scan_only = 'NO'
+                   group by d.session_recid, d.session_stamp) x
+    on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
+  left outer join (select o.session_recid, o.session_stamp, min(inst_id) inst_id
+                   from GV\$RMAN_OUTPUT o
+                   group by o.session_recid, o.session_stamp)
+    ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
+where j.start_time > trunc(sysdate)-14 
+--AND OUTPUT_DEVICE_TYPE NOT IN ('SBT_TAPE')
+order by j.start_time;
+EOF
+;;
+esac
 logf
 }
 
@@ -6279,6 +6358,7 @@ pipe)      shift; ALL=$*; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
 longops)   echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)       shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
+backup)    shift; ALL=$*; echo $backup__ ${reset}; backup $ALL ;;
 get_ddl)   shift; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace)     shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
 kill)      shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
