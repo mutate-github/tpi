@@ -32,7 +32,7 @@ host:db:set=aisprod:aisutf:%
 host:db:set=aisstb:aisutf:%
 host:db:set=unit:unit:%
 host:db:set=alpha:aisutf:%
-host:db:set=beta:aisutf:mon_disksp.sh:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
+host:db:set=beta:aisutf:mon_disksp.sh:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh:%
 host:db:set=gw:%:mon_disksp.sh:mon_swap.sh:mon_ping_ssh.sh
 
 [admins]
