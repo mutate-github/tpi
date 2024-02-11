@@ -1,12 +1,11 @@
 #!/bin/bash
 set -f
-# version 09.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 11.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
-
-PDB=`echo "$_P1_" | awk -F/ '{print $2}'`
-sid=`echo "$_P1_" | awk -F/ '{print $1}'`
+sid=$(awk -F/ '{print $1}' <<< "$_P1_")
+PDB=$(awk -F/ '{print $2}' <<< "$_P1_")
 if [ -n "$PDB" ]; then
   SET_PDB_="alter session set container=$PDB;"
 fi
@@ -19,32 +18,6 @@ fi
 #echo "tpi_P1_: "$_P1_
 #echo "tpi_P2_: "$_P2_
 #echo "tpi_@: "$@
-
-# case "$sid" in
-# jet|ja)                     . /etc/profile.ora ;;
-# aisutf*|unit*)              . ~/.ora_env ;;
-# askona*|aixtdb*|sbaskona)   . ~/.profile ;;
-# egais*|GOLD506*)            . ~/.bashrc ;;
-# unc*)                       . ~/${sid}_setenv.sh ;;
-# goldwhs)                    . ~/.bash_profile ;;
-# opndb)                      . ~/BRSKDB_setenv.sh ; login_str="encuser/encpwd@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
-# opndb*|obk*)                : ;;
-# INSIS*|insis*|alfa|ALFA)    : ;;
-#*) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
-#   #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
-#   #        if [ -f ~/.profile ]; then . ~/.profile ; fi 
-#   case `uname | awk -F_ '{print $1}'` in
-#      Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi 
-#              rc=`find . -maxdepth 1 -name "${sid}_setenv.sh" -print -quit`
-#              if [ -n "$rc" ]; then . ~/${sid}_setenv.sh ; fi
-#	      ;;
-#      AIX)   : # if [ -f ~/.profile ]; then . ~/.profile ; fi
-#              #if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi 
-#              ;;
-#      *) : ;;
-#   esac
-#;;
-#esac  > /dev/null 2>&1
 
 init_msg()
 {
@@ -78,7 +51,7 @@ init_msg()
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
-  backup__="backup  [RMAN|DAYS] - backup RMAN v\$rman_configuration backup information" 
+  rman__="rman [DAYS|cfg] - RMAN backups | v\$rman_configuration information" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
@@ -97,8 +70,8 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | in | k | lock | db [nls|option|properties|fusage] | audit | health [cr|hot] | oratop [h|dhsh[data]] | sga | pga | size [days] [ tbs [free] | temp | sysaux | df [io|usage|lastseg [TBS]]|maxseg [TBS]|fra] | arch | redo [logs] | undo [recovery] | sesstat [list|sess SESS_ID [STATNAME] | STATNAME ]  topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind [SQL] | pipe | longops [MESSAGE] [rman] | scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] | job [OWNER] | get_ddl TYPE OBJECT OWNER | trace [SID SERIAL LEVEL] [db on|off] | kill SID SERIAL | exec | alert [NOM] | report ash/awr | corrupt [DBA (number)] [FB (file) (block)] | sql | ash | dhash | spm"
-  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$backup__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
+  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm"
+  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$rman__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
 fi
@@ -116,7 +89,8 @@ ALL=$(echo $*)
 dec2ascii()
 {
   RES=""
-  for i in `echo $* | sed 's|/| |g'`; do
+#  for i in `echo $* | sed 's|/| |g'`; do
+  for i in $(sed 's|/| |g' <<< "$*"); do
     RES="$RES`printf \\\\$(printf '%03o' $i)`"
   done
   echo $RES
@@ -127,7 +101,8 @@ xor()
   KEY=$1
   shift
   RES=""
-  for i in `echo $* | sed 's|/| |g'`; do
+#  for i in `echo $* | sed 's|/| |g'`; do
+  for i in $(sed 's|/| |g' <<< "$*"); do
     RES="$RES/$(($i ^$KEY))"
   done
   echo $RES
@@ -3715,18 +3690,18 @@ logf
 }
 
 
-backup()
+rman()
 {
 P1_=$1
 [ -z "$P1_" ] && P1_=7
 shopt -s nocasematch
 case "$P1_" in
-rman)
+cfg)
 $SP <<EOF >$LOGF
 set lines 250
 set echo off feed off veri off tab off pages 90
-col name for a60
-col value for a80
+col name for a50
+col value for a100
 select * from v\$rman_configuration order by conf#;
 EOF
 ;;
@@ -6358,7 +6333,7 @@ pipe)      shift; ALL=$*; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
 longops)   echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)       shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
-backup)    shift; ALL=$*; echo $backup__ ${reset}; backup $ALL ;;
+rman)      shift; ALL=$*; echo $backup__ ${reset}; rman $ALL ;;
 get_ddl)   shift; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
 trace)     shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
 kill)      shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
