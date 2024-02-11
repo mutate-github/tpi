@@ -57,7 +57,7 @@ threshold=30
 # free space limit in %
 limitPER=93
 # free space limin in Gb
-limitGB=32
+limitGB=15
 
 [swap]
 limitPER=100
