@@ -15,12 +15,12 @@ dbprod|dbprog)              : ;;
    #        if [ -r ~/.bash_profile ]; then . ~/.bash_profile ; fi
    #        if [ -r ~/.profile ]; then . ~/.profile ; fi
    case $(uname | awk -F_ '{print $1}') in
-      Linux)  if [ -r ~/.bash_profile ]; then . ~/.bash_profile ; fi
+      Linux)  [ -r ~/.bash_profile ] && source ~/.bash_profile
               rc=$(find . -maxdepth 1 -name "${sid}_setenv.sh" -print -quit)
               if [ -n "$rc" ]; then . ~/${sid}_setenv.sh ; fi
               ;;
-      AIX)    if [ -r ~/.profile ]; then . ~/.profile ; fi
-              if [ -r ~/.bashrc ]; then . ~/.bashrc ; fi
+      AIX)    [ -r ~/.profile ] && source ~/.profile
+              [ -r ~/.bashrc ] && source ~/.bashrc
               ;;
       *)      ;;
    esac
