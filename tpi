@@ -89,9 +89,8 @@ ALL=$(echo $*)
 dec2ascii()
 {
   RES=""
-#  for i in `echo $* | sed 's|/| |g'`; do
   for i in $(sed 's|/| |g' <<< "$*"); do
-    RES="$RES`printf \\\\$(printf '%03o' $i)`"
+     RES="${RES}$(printf \\$(printf '%03o' $i))"
   done
   echo $RES
 }
@@ -101,7 +100,6 @@ xor()
   KEY=$1
   shift
   RES=""
-#  for i in `echo $* | sed 's|/| |g'`; do
   for i in $(sed 's|/| |g' <<< "$*"); do
     RES="$RES/$(($i ^$KEY))"
   done
@@ -109,10 +107,10 @@ xor()
 }
 
 if [ -n "$login_str" ]; then
-  ls1=$(echo $login_str | awk -F@ '{print $1}')
-  ls2=$(echo $login_str | awk -F@ '{print $2}')
-  ls1=`xor 127 $ls1`
-  ls1=`dec2ascii $ls1`
+  ls1=$(awk -F@ '{print $1}' <<< "$login_str")
+  ls2=$(awk -F@ '{print $2}' <<< "$login_str")
+  ls1=$(xor 127 $ls1)
+  ls1=$(dec2ascii $ls1)
   login_str=${ls1}"@"\'${ls2}\'
   SP="eval sqlplus -S $login_str"
 else
@@ -145,42 +143,46 @@ esac
 
 db_version()
 {
-VALUE=`$SP <<'END'
+VALUE=$($SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select substr(version,1,instr(version,'.')-1) from v$instance where rownum=1;
-END`
-echo $VALUE | tr -d '\r'
+END
+)
+tr -d '\r' <<< "$VALUE"
 }
 
 db_is_pdb()
 {
-VALUE=`$SP <<'END'
+VALUE=$($SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select value from v$system_parameter where name ='enable_pluggable_database';
-END`
-echo $VALUE | tr -d '\r'
+END
+)
+tr -d '\r' <<< "$VALUE"
 }
 
 db_is_open()
 {
-VALUE=`$SP <<'END'
+VALUE=$($SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select status from v$instance where rownum=1;
-END`
-echo $VALUE | tr -d '\r'
+END
+)
+tr -d '\r' <<< "$VALUE"
 }
 
 case $(db_is_open) in
 OPEN)
-NLS_VALUE=`$SP <<'END'
+NLS_VALUE=$($SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
-END`
+END
+)
 ;;
 *) : ;;
 esac
 
-NLS_VALUE=`echo $NLS_VALUE | tr -d '\r'`
+NLS_VALUE=$(tr -d '\r' <<< "$NLS_VALUE")
 NLS_LANG=AMERICAN_AMERICA.$NLS_VALUE
 # NLS_LANG=AMERICAN_AMERICA.AL32UTF8
 export NLS_LANG
@@ -264,15 +266,15 @@ SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
 
 active_sessions()
 {
-P1_=$1 #; echo "P1_: "$P1_
-P2_=$2 #; echo "P2_: "$P2_
+P1_="$1"
+P2_="$2"
 
 case "$P1_" in
-	access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
- k)    SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
- i)    SQL_STATUS="AND s.status in ('INACTIVE')  " ;;
- a)    SQL_STATUS="AND s.status like '%' " ;;
- *)    SQL_STATUS="AND s.status = 'ACTIVE' " ;;
+  access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
+       k)    SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
+      in)    SQL_STATUS="AND s.status in ('INACTIVE')  " ;;
+       a)    SQL_STATUS="AND s.status like '%' " ;;
+       *)    SQL_STATUS="AND s.status = 'ACTIVE' " ;;
 esac
 
 case "$(db_version)" in
@@ -468,8 +470,8 @@ logf
 
 lock()
 {
-P2_=`echo $ALL | awk '{print $2}'`
-P3_=`echo $ALL | awk '{print $3}'`
+P1_="$1"
+P2_="$2"
 SETP_="set echo off feed off veri off tab off 
 set lines 230 pages 100
 column Action format a10
@@ -491,7 +493,8 @@ PROMPT 4: Share (S) Share
 PROMPT 5: S/Row-X (SSX) Share/Row Exclusive
 PROMPT 6: Exclusive (X)"
 
-case "$P2_" in
+shopt -s nocasematch
+case "$P1_" in
 lib) $SP <<'END' > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -528,7 +531,7 @@ DECODE(w.request, 0, 'None', 1, 'Null', 2, 'Row-S (SS)', 3, 'Row-X (SX)', 4, 'Sh
 w.type, o.name, to_char(s1.last_call_et/60, '9999990.0') last_call_et
 FROM V\$LOCK w, sys.obj$ o, sys.v_\$session s1, sys.v_\$process p1
 WHERE (w.id1, w.id2, w.type) IN (SELECT id1, id2, type FROM V\$LOCK /* WHERE request>0*/)
-and upper(o.name) = upper('$P3_') and w.lmode not in (0,1)
+and upper(o.name) = upper('$P2_') and w.lmode not in (0,1)
 and o.obj# (+) = s1.row_wait_obj# and w.sid = S1.sid (+) and S1.paddr = P1.addr (+)
 ORDER BY w.id1, w. request, last_call_et desc;
 END
@@ -552,7 +555,7 @@ logf
 
 health()
 {
-P1_=`echo $ALL | awk '{print $1}'`
+P1_=$(awk '{print $1}' <<< "$ALL")
 case "$P1_" in 
 cr)
 $SP <<'EOF' >$LOGF
@@ -706,23 +709,23 @@ oratop()
 {
 case "$(db_version)" in
 8|9|10)   echo "Oracle Version 8, 9, 10 oratop not supporting..." ; exit ;;
-*)     : ; ;;
+*)        :  ;;
 esac
 
-P1_=`echo $ALL | awk '{print $1}'`
+P1_=$(awk '{print $1}' <<< "$ALL")
 case "$P1_" in
 dhsh)
 sysdate=$(date +%d/%m/%y\ %H:%M:%S)
 if [ $(is_number $(echo $* | awk -F"/" '{print $2}')) -eq 0 ]; then
- DD_=`date +%d/%m/%Y`
- HHB_=`date +%H`
+ DD_=$(date +%d/%m/%Y)
+ HHB_=$(date +%H)
  HHE_=72     # 3 days
  INTERVAL_BI_="begin_interval_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
 else
  shift
- DD_=`echo $* | awk -F- '{print $1}'`
- HHB_=`echo $* | awk -F- '{print $2}'`
- HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
+ DD_=$(awk -F- '{print $1}' <<< "$*")
+ HHB_=$(awk -F- '{print $2}' <<< "$*" )
+ HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
  HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
 # echo "$DD_   $HHB_    $HHE_   $HHR_"
  if [ -n "$HHR_" ]; then
@@ -732,8 +735,6 @@ else
  fi
 # echo "$INTERVAL_BI_"
 fi
-
-type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
 
 $SP <<EOF >$LOGF
 set lines 230 pages 80 tab off
@@ -1180,12 +1181,8 @@ logf
 
 parameters()
 {
-#P1_=`echo $ALL | awk '{print $1}'`
-#P2_=`echo $ALL | awk '{print $2}' | tr '[:upper:]' '[:lower:]'`
-#P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-
 P1_="$1"
-
+shopt -s nocasematch
 case "$P1_" in
 services)
 $SP <<EOF >$LOGF
@@ -1215,7 +1212,6 @@ EOF
 ;;
 ph)
 shift
-shopt -s nocasematch
 if ( grep -q "FALSE" <<< "$1" ); then 
   S0_="and isdefault='FALSE'"
   shift
@@ -1239,7 +1235,6 @@ EOF
 ;;
 p)
 shift
-shopt -s nocasematch
 if ( grep -q "FALSE" <<< "$1" ); then S0_="and isdefault='FALSE'"; shift; fi
 P2_="$( tr '[:upper:]' '[:lower:]' <<<  "$@" )"
 if ( grep -q ' ' <<< "$P2_" ) ; then 
@@ -1269,10 +1264,10 @@ logf
 
 db()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-case "$P2_" in
-PROPERTIES)
+P1_="$1"
+shopt -s nocasematch
+case "$P1_" in
+properties)
 $SP <<EOF > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 240
@@ -1285,7 +1280,7 @@ column DESCRIPTION for a55
 SELECT PROPERTY_NAME,PROPERTY_VALUE,DESCRIPTION FROM database_properties order by PROPERTY_NAME;
 EOF
 ;;
-NLS)
+nls)
 $SP <<'END' > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 240
@@ -1294,7 +1289,7 @@ column value for a40
 select * from nls_database_parameters order by parameter;
 END
 ;;
-OPTION)
+option)
 $SP <<'END' > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 240
@@ -1303,7 +1298,7 @@ column value for a20
 select * from v$option order by parameter;
 END
 ;;
-FUSAGE)
+fusage)
 $SP <<'END' > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 120
@@ -1422,8 +1417,6 @@ logf
 
 audit()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
 $SP <<EOF > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 240
@@ -1773,8 +1766,9 @@ logf
 
 object()
 {
-P1_=$(echo $ALL | awk '{print $1}')
-P2_=$(echo $ALL | awk '{print $2}')
+P1_="$1"
+P2_="$2"
+shopt -s nocasematch
 case "$P1_" in 
   invalid)  
 $SP <<EOF >$LOGF
@@ -1843,16 +1837,17 @@ logf
 
 table()
 {
-P2_=`echo $ALL | awk '{print $2}'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
+P1_="$1"
+P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ; SQL_TEXT2="" ;;
   *)   SQL_TEXT1=" t.compression, t.compress_for, " ; SQL_TEXT2=" , HISTOGRAM " ;;
 esac
 
-case "$P2_" in
+shopt -s nocasematch
+case "$P1_" in
 part)
 $SP <<EOF >$LOGF
 set lines 230 numw 6 pages 60
@@ -1875,7 +1870,7 @@ col INTERVAL for a30
 prompt dba_part_tables:
 select owner,table_name,partitioning_type,subpartitioning_type,partition_count,def_subpartition_count,partitioning_key_count,subpartitioning_key_count,
 status,def_tablespace_name,def_pct_free,def_pct_used,def_logging,def_compression,def_compress_for, interval from dba_part_tables
-where table_name='$P3_' and owner like nvl('$P4_','%') order by owner,TABLE_NAME;
+where table_name = '$P2_' and owner like nvl('$P3_','%') order by owner,TABLE_NAME;
 
 col table_owner for a20
 col table_name for a30
@@ -1900,7 +1895,7 @@ col segment_created for a4  heading "SCR"
 prompt dba_tab_partitions:
 select table_owner,table_name,partition_name,high_value,/*high_value_length,*/partition_position,tablespace_name,logging,compression,compress_for, 
 num_rows,blocks,/*empty_blocks,avg_space, chain_cnt,avg_row_len,sample_size,*/last_analyzed,interval,segment_created from DBA_TAB_PARTITIONS
-where table_name='$P3_' and table_owner like nvl('$P4_','%') order by table_owner,TABLE_NAME,partition_position;
+where table_name = '$P2_' and table_owner like nvl('$P3_','%') order by table_owner,TABLE_NAME,partition_position;
 
 set lines 230 
 set long 10000
@@ -1927,7 +1922,7 @@ col segment_created for a4  heading "SCR"
 prompt dba_tab_subpartitions:
 select table_owner,table_name,subpartition_name,high_value,/*high_value_length,*/subpartition_position,tablespace_name,logging,compression,compress_for, 
 num_rows,blocks,/*empty_blocks,avg_space, chain_cnt,avg_row_len,sample_size,*/last_analyzed,interval,segment_created  from DBA_TAB_SUBPARTITIONS
-where table_name='$P3_' and table_owner like nvl('$P4_','%') order by table_owner,TABLE_NAME,subpartition_position;
+where table_name = '$P2_' and table_owner like nvl('$P3_','%') order by table_owner,TABLE_NAME,subpartition_position;
 EOF
 ;;
 *)
@@ -1953,7 +1948,7 @@ column iot_type for a8
 select t.tablespace_name, owner, table_name, t.logging, t.cache,  num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
 last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
-from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P2_') and owner like nvl('$P3_','%') order by owner;
+from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner;
 
 prompt
 prompt indexes:
@@ -1966,7 +1961,7 @@ column distinct_keys for 99999999999
 column status for a10
 column VISIBILITY for a9
 select tablespace_name, owner, index_name, index_type, uniqueness, blevel, distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
-from dba_indexes where table_name like upper('$P2_') and owner like nvl('$P3_','%') order by owner,index_name;
+from dba_indexes where table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner,index_name;
 
 prompt
 prompt index_columns:
@@ -1974,7 +1969,7 @@ column index_owner for a20
 column index_name for a33
 column COLUMN_NAME for a30
 select index_owner,index_name,column_name,column_position,column_length,descend
-from dba_ind_columns where table_name like upper('$P2_') and table_owner like nvl('$P3_','%') order by index_owner,index_name,column_position;
+from dba_ind_columns where table_name like upper('$P1_') and table_owner like nvl('$P2_','%') order by index_owner,index_name,column_position;
 /*
 prompt
 prompt constraints:
@@ -1987,7 +1982,7 @@ col DEFERRABLE for a15
 col DEFERRED for a15
 col VALIDATED for a15
 select OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE, R_OWNER,R_CONSTRAINT_NAME, STATUS,DEFERRABLE,DEFERRED,VALIDATED,LAST_CHANGE,INVALID
-from dba_constraints where table_name = upper('$P2_') and owner like nvl('$P3_','%') order by owner,CONSTRAINT_NAME;
+from dba_constraints where table_name = upper('$P1_') and owner like nvl('$P2_','%') order by owner,CONSTRAINT_NAME;
 */
 prompt
 prompt columns statistic information:
@@ -2002,7 +1997,7 @@ col low_value for a15
 col high_value for a15
 col HISTOGRAM for a30
 select OWNER,COLUMN_NAME,NUM_DISTINCT,DENSITY,NUM_NULLS,NUM_BUCKETS,LAST_ANALYZED,SAMPLE_SIZE,GLOBAL_STATS,USER_STATS,AVG_COL_LEN $SQL_TEXT2
-from dba_tab_col_statistics where table_name like upper('$P2_') and owner like nvl('$P3_','%') order by owner,table_name,COLUMN_NAME;
+from dba_tab_col_statistics where table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner,table_name,COLUMN_NAME;
 EOF
 ;;
 esac
@@ -2012,12 +2007,13 @@ logf
 
 index()
 {
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
+P1_="$1"
+P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 
-case "$P2_" in
-PART)
+shopt -s nocasematch
+case "$P1_" in
+part)
 $SP <<EOF >$LOGF
 set lines 230 numw 6
 set echo off feed off veri off tab off pages 70
@@ -2033,7 +2029,7 @@ col DEF_TABLESPACE_NAME for a20 heading "DEF_TBS"
 col DEF_PCT_FREE for 99 heading "PCT_FR"
 prompt DBA_PART_INDEXES
 select owner,index_name,table_name,partitioning_type,subpartitioning_type,partition_count,partitioning_key_count,subpartitioning_key_count, def_tablespace_name,def_pct_free 
-from dba_part_indexes where (table_name='$P3_' or  index_name='$P3_') and owner like nvl('$P4_','%') order by owner,table_name,index_name;
+from dba_part_indexes where (table_name='$P2_' or  index_name='$P2_') and owner like nvl('$P3_','%') order by owner,table_name,index_name;
 
 col index_owner for a20
 col index_name for a30
@@ -2056,13 +2052,13 @@ col segment_created for a4  heading "SCR"
 prompt DBA_IND_PARTITIONS
 select index_owner,index_name,partition_name,high_value,/*high_value_length,*/ partition_position, status,tablespace_name, pct_free,compression,
 blevel, leaf_blocks,distinct_keys,num_rows,last_analyzed,global_stats,interval,segment_created 
-from DBA_IND_PARTITIONS where index_name='$P3_' and index_owner like nvl('$P4_','%') order by index_owner,index_name,partition_position;
+from DBA_IND_PARTITIONS where index_name='$P2_' and index_owner like nvl('$P3_','%') order by index_owner,index_name,partition_position;
 
 col subpartition_position for 999 heading "PPOS"
 prompt DBA_IND_SUBPARTITIONS
 select index_owner,index_name,partition_name,high_value,/*high_value_length,*/subpartition_position, status,tablespace_name, pct_free,compression,
 blevel, leaf_blocks,distinct_keys,num_rows,last_analyzed,global_stats,interval,segment_created 
-from DBA_IND_SUBPARTITIONS where index_name='$P3_' and index_owner like nvl('$P4_','%') order by index_owner,index_name,subpartition_position;
+from DBA_IND_SUBPARTITIONS where index_name='$P2_' and index_owner like nvl('$P3_','%') order by index_owner,index_name,subpartition_position;
 EOF
 ;;
 *)
@@ -2083,9 +2079,9 @@ column status for a10
 column partitioned for a4
 column degree for a2
 column VISIBILITY for a9
-prompt dba_indexes for index_name like $P2_ and owner like nvl('$P3_','%')
+prompt dba_indexes for index_name like $P1_ and owner like nvl('$P2_','%')
 select tablespace_name,table_name,owner,index_name,index_type,uniqueness,distinct_keys, status, num_rows, last_analyzed, compression, partitioned, degree, VISIBILITY
-from dba_indexes where owner like nvl('$P3_','%') and index_name like upper('$P2_') order by owner,index_name;
+from dba_indexes where owner like nvl('$P2_','%') and index_name like upper('$P1_') order by owner,index_name;
 
 set longc 100000000
 column index_owner for a30
@@ -2094,12 +2090,12 @@ column table_owner for a30
 column table_name for a30
 column column_expression for a50
 column column_position for 99
-prompt dba_ind_expressions for index_name like $P2_ and owner like nvl('$P3_','%')
-select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where table_owner like nvl('$P3_','%') and index_name like upper('$P2_') order by table_owner,table_name,index_name,column_position;
+prompt dba_ind_expressions for index_name like $P1_ and owner like nvl('$P2_','%')
+select index_owner,index_name,table_owner,table_name,column_expression,column_position from dba_ind_expressions where table_owner like nvl('$P2_','%') and index_name like upper('$P1_') order by table_owner,table_name,index_name,column_position;
 
 col cmd for a230
-prompt recompile cmd for  index_name like $P2_ and owner like nvl('$P3_','%')
-select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P3_','%') and index_name = upper('$P2_') and status='UNUSABLE';
+prompt recompile cmd for  index_name like $P1_ and owner like nvl('$P2_','%')
+select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P2_','%') and index_name = upper('$P1_') and status='UNUSABLE';
 EOF
 ;;
 esac
@@ -2110,12 +2106,10 @@ logf
 
 constraint()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-P4_=`echo $ALL | awk '{print $4}' | tr '[:lower:]' '[:upper:]'`
-
-#echo "P1_: "$P1_"  P2_: "$P2_"  P3_: "$P3_
+P1_="$1"
+P2_="$2"
+P3_="$3"
+P4_="$4"
 
 SET_COLUMNS="column owner for a17
 column table_name for a25
@@ -2130,42 +2124,43 @@ column delete_rule for a10
 column status for a9
 column deferrable for a14
 column deferred for a10
-column validated for a10
+column validated for a13
 column last_change for a19"
 
-case "$P2_" in
-T)
+shopt -s nocasematch
+case "$P1_" in
+t)
 $SP <<EOF >$LOGF
 set lines 230 pages 60
 set echo off feed off veri off tab off
 set longc 100000000
 prompt
-prompt dba_constraints dba_cons_columns for table: $P3_
+prompt dba_constraints dba_cons_columns for table: $P2_
 $SET_COLUMNS
 select col.owner,col.table_name,col.constraint_name,column_name,position,c.constraint_type,c.search_condition,
 c.r_owner,c.r_constraint_name,c.delete_rule,c.status, /*c.deferrable,c.deferred,*/ c.validated,c.last_change
 from DBA_CONS_COLUMNS col, dba_constraints c
 where c.owner=col.owner and c.table_name=col.table_name and c.constraint_name=col.constraint_name
 --and c.owner='DMS'
-and col.table_name='$P3_'
+and col.table_name='$P2_'
 order by col.table_name, col.constraint_name, col.position;
 EOF
 ;;
-PK)
+pk)
 $SP <<EOF >$LOGF
 set lines 230 pages 60
 column owner for a30
 column constraint_name for a30
 column table_name for a30
 PROMPT
-PROMPT What Foregin Key references to PK: $P3_
-select owner, constraint_name, table_name from all_constraints where constraint_type='R' and r_constraint_name='$P3_';
+PROMPT What Foregin Key references to PK: $P2_
+select owner, constraint_name, table_name from all_constraints where constraint_type='R' and r_constraint_name='$P2_';
 PROMPT
-PROMPT Script to disable the restriction that refers to the PK: $P3_:
-select 'alter table '||owner||'.'||table_name||' disable constraint '|| constraint_name||';' script from dba_constraints where constraint_type='R' and r_constraint_name='$P3_';
+PROMPT Script to disable the restriction that refers to the PK: $P2_:
+select 'alter table '||owner||'.'||table_name||' disable constraint '|| constraint_name||';' script from dba_constraints where constraint_type='R' and r_constraint_name='$P2_';
 EOF
 ;;
-FK)
+fk)
 $SP <<EOF >$LOGF
 set lines 230 pages 60
 column owner for a20
@@ -2173,7 +2168,7 @@ column table_name for a30
 column constraint_name for a30
 column columns for a22
 column create_index_ddl for a123
-PROMPT Tables with non-indexed foreign keys: Table: $P3_:
+PROMPT Tables with non-indexed foreign keys: Table: $P2_:
 SELECT   owner, table_name,
            constraint_name,
               cname1
@@ -2185,7 +2180,7 @@ SELECT   owner, table_name,
            || NVL2 (cname7, ',' || cname7, NULL)
            || NVL2 (cname8, ',' || cname8, NULL)
                columns,
-               'create index '||owner||'.'||'IDX_'||constraint_name||'_'||rownum||' on '||owner||'.'||table_name||'('||cname1|| NVL2 (cname2, ',' || cname2, NULL)|| NVL2 (cname3, ',' || cname3, NULL)|| NVL2 (cname4, ',' || cname4, NULL)|| NVL2 (cname5, ',' || cname5, NULL)|| NVL2 (cname6, ',' || cname6, NULL)|| NVL2 (cname7, ',' || cname7, NULL)|| NVL2 (cname8, ',' || cname8, NULL)||') tablespace '||(select  tablespace_name from dba_indexes where table_name like '$P3_' and owner like '%$P4_%' and rownum=1)||';' create_index_ddl
+               'create index '||owner||'.'||'IDX_'||constraint_name||'_'||rownum||' on '||owner||'.'||table_name||'('||cname1|| NVL2 (cname2, ',' || cname2, NULL)|| NVL2 (cname3, ',' || cname3, NULL)|| NVL2 (cname4, ',' || cname4, NULL)|| NVL2 (cname5, ',' || cname5, NULL)|| NVL2 (cname6, ',' || cname6, NULL)|| NVL2 (cname7, ',' || cname7, NULL)|| NVL2 (cname8, ',' || cname8, NULL)||') tablespace '||(select  tablespace_name from dba_indexes where table_name like '$P2_' and owner like '%$P3_%' and rownum=1)||';' create_index_ddl
     FROM   (  SELECT   b.owner, b.table_name,
                        b.constraint_name,
                        MAX (DECODE (position, 1, column_name, NULL)) cname1,
@@ -2202,13 +2197,13 @@ SELECT   owner, table_name,
                                  SUBSTR (column_name, 1, 30) column_name,
                                  position
                           FROM   dba_cons_columns) a, dba_constraints b
-               WHERE   a.constraint_name = b.constraint_name and b.owner like '%$P4_%'  and b.table_name like '$P3_'
+               WHERE   a.constraint_name = b.constraint_name and b.owner like '%$P3_%'  and b.table_name like '$P2_'
                        AND b.constraint_type = 'R'
             GROUP BY   b.owner, b.table_name, b.constraint_name) cons
    WHERE   col_cnt >
                ALL (  SELECT   COUNT ( * )
                         FROM   dba_ind_columns i
-                       WHERE   i.table_name = cons.table_name and i.table_owner like '%$P4_%' and i.table_name like '$P3_'
+                       WHERE   i.table_name = cons.table_name and i.table_owner like '%$P3_%' and i.table_name like '$P2_'
                                AND i.column_name IN
                                           (cname1,
                                            cname2,
@@ -2229,14 +2224,14 @@ set lines 230 pages 60
 set echo off feed off veri off tab off
 set longc 100000000
 prompt
-prompt dba_constraints dba_cons_columns for constraint: $P2_
+prompt dba_constraints dba_cons_columns for constraint: $P1_
 $SET_COLUMNS
 select col.owner,col.table_name,col.constraint_name,column_name,position,c.constraint_type,c.search_condition,
 c.r_owner,c.r_constraint_name,c.delete_rule,c.status, /*c.deferrable,c.deferred,*/ c.validated,c.last_change
 from DBA_CONS_COLUMNS col, dba_constraints c 
 where c.owner=col.owner and c.table_name=col.table_name and c.constraint_name=col.constraint_name
 --and c.owner='DMS' 
-and col.constraint_name='$P2_' 
+and col.constraint_name='$P1_'
 order by col.table_name, col.constraint_name, col.position;
 EOF
 ;;
@@ -2274,7 +2269,8 @@ logf
 
 redo()
 {
-P1_=`echo $* | awk '{print $1}'`
+P1_="$1"
+shopt -s nocasematch
 case "$P1_" in
 logs)
 $SP <<'EOF' >$LOGF
@@ -2335,7 +2331,8 @@ logf
 
 undo()
 {
-P1_=`echo $* | awk '{print $1}'`
+P1_="$1"
+shopt -s nocasematch
 case "$P1_" in
 recovery) 
 $SP <<EOF >$LOGF
@@ -2398,8 +2395,8 @@ logf
 
 sesstat()
 {
-P1_=`echo $* | awk '{print $1}'`
-P2_=`echo $* | awk '{print $2}'`
+P1_="$1"
+P2_="$2"
 SET_COL='set lines 230
 set echo off feed off veri off tab off pages 70
 col sid for 99999
@@ -2621,9 +2618,10 @@ logf
 
 tbs()
 {
-P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
+P1_="$1"
+shopt -s nocasematch
 case "$P1_" in
-FREE)
+free)
 $SP <<EOF >$LOGF
 set lines 230 pages 60
 set echo off feed off veri off tab off 
@@ -2757,10 +2755,11 @@ logf
 
 df()
 {
-P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
+P1_="$1"
+P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+shopt -s nocasematch
 case "$P1_" in
-IO)
+io)
 $SP <<'EOF' >$LOGF
 set lines 220
 set echo off feed off veri off tab off pages 80
@@ -2783,7 +2782,7 @@ group by df.file#, df.name, phyrds, phywrts, phyblkrd, phyblkwrt, readtim, write
 order by sum(phyrds+phywrts+phyblkrd+phyblkwrt+readtim) desc, df.name;
 EOF
 ;;
-USAGE)
+usage)
 $SP <<'EOF' >$LOGF
 set lines 220
 set echo off feed off veri off tab off pages 70
@@ -2819,7 +2818,7 @@ group by fs.FILE_ID, fs.tablespace_name, df.bytes, df.blocks
 order by fs.tablespace_name;
 EOF
 ;;
-LASTSEG)
+lastseg)
 echo $P2_
 if [ -z "$P2_" ];then
  P2_="%"
@@ -2905,7 +2904,7 @@ logf
 
 maxseg()
 {
-P1_=$(echo $* | awk '{print $2}')
+P1_="$1"
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1="" ;;
@@ -2974,10 +2973,6 @@ logf
 
 arch()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-
 $SP <<EOF >$LOGF
 set lines 230
 set pages 60
@@ -3058,18 +3053,18 @@ logf
 
 size()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-P3_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
-case "$P2_" in
-  TBS)      shift; shift; ALL=$*; tbs $ALL ;;
-  TEMP)     temp ;;
-  SYSAUX)   sysaux ;;
-  DF)       shift; shift; ALL=$*; df $ALL ;;
-  MAXSEG)   shift; ALL=$*; maxseg $ALL ;;
-  FRA)      fra ;;
-  GROWS)    grows $P3_ ;;
-  *)        dbsize $P2_ ;;
+P1_="$1"
+P2_="$2"
+shopt -s nocasematch
+case "$P1_" in
+  tbs)      shift; ALL=$*; tbs $ALL ;;
+  temp)     temp ;;
+  sysaux)   sysaux ;;
+  df)       shift; ALL=$*; df $ALL ;;
+  maxseg)   shift; ALL=$*; maxseg $ALL ;;
+  fra)      fra ;;
+  grows)    shift; ALL=$*; grows $ALL ;;
+  *)        dbsize $P1_ ;;
 esac
 }
 
@@ -3448,9 +3443,9 @@ logf
 
 longops()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
-case "$P2_" in
+P1_="$1"
+shopt -s nocasematch
+case "$P1_" in
 rman)
 $SP <<EOF >$LOGF
 set lines 230
@@ -3504,10 +3499,9 @@ and vrbjd.start_time >= (select max(start_time) from v\$rman_status where status
 EOF
 ;;
 *)
-  MESSAGE_=`echo $* | awk '{print $2}'`
-  case "$(is_number $MESSAGE_)" in
-    0) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$MESSAGE_%'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
-    1) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and a.sid = $MESSAGE_ and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+  case "$(is_number $P1_)" in
+    0) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and b.message like ''%$P1_%'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
+    1) SQL_="print_table('select b.* from v\$session a, v\$session_longops b where a.sid = b.sid and a.serial# = b.serial# and a.status=''ACTIVE'' and a.sid = ''$P1_'' and SOFAR<>TOTALWORK order by b.sid,b.start_time');" ;;
   esac
 $SP <<EOF >$LOGF
 set lines 230
@@ -3556,9 +3550,9 @@ logf
 
 scheduler()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
-P3_=`echo $ALL | awk '{print $3}'`
+P1_="$1"
+P2_="$2"
+P3_="$3"
 case "$P1_" in
 log)
 $SP <<EOF >$LOGF
@@ -3772,11 +3766,12 @@ get_ddl()
 {
 echo "usage: get_ddl TYPE OBJECT OWNER"
 if [ -n "$ALL" ]; then
-type_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
-object_=`echo $ALL | awk '{print $2}' | tr '[:lower:]' '[:upper:]'`
-owner_=`echo $ALL | awk '{print $3}' | tr '[:lower:]' '[:upper:]'`
+type_=$(tr '[:lower:]' '[:upper:]' <<< "$1")
+object_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+owner_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 echo "TYPE: "$type_"  OBJECT: "$object_"  OWNER: "$owner_
 
+shopt -s nocasematch
 case "$type_" in
  PACKAGE_SPEC)            o_type_='PACKAGE' ;;
  PACKAGE_BODY)            o_type_='PACKAGE BODY' ;;
@@ -3978,10 +3973,11 @@ fi
 psql()
 {
 if [ -z "$*" ]; then echo "No parameters"; return ; fi
-TEXT_=`echo $ALL | tr '[:upper:]' '[:lower:]'`
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
-P3_=`echo $ALL | awk '{print $3}'`
+TEXT_=$(tr '[:upper:]' '[:lower:]' <<< "$*")
+P1_="$1"
+P2_="$2"
+P3_="$3"
+shopt -s nocasematch
 case "$P1_" in
   sqlstat)
     ash sqlstat $P2_ $P3_
@@ -4000,8 +3996,8 @@ case "$P1_" in
 EOF
   ;;
   *)
-    LEN_=`expr length $P1_`
-    SQL_ID__=`echo $P1_ | tr -d '[:digit:][:lower:]'`
+    LEN_=$(expr length $P1_)
+    SQL_ID__=$(tr -d '[:digit:][:lower:]' <<< "$P1_")
     if [ -z "$SQL_ID__" -a $LEN_ -eq 13 ] ; then
       SQL_="SELECT sql_id||' '|| plan_hash_value SQL_ID_PHV, child_number CN, SQL_FULLTEXT, module||' / '|| action MA, SQL_PROFILE, SQL_PATCH, SQL_PLAN_BASELINE, LAST_LOAD_TIME, LAST_ACTIVE_TIME FROM v\$sql where sql_id = '$P1_';"
       echo " v\$sql where sql_id = "$P1_
@@ -4322,19 +4318,19 @@ EOF
 else
 
 sysdate=$(date +%d/%m/%y\ %H:%M:%S)
-if [ $(is_number $(echo $* | awk -F"/" '{print $1}'))  -eq 0 ]; then
- DD_=`date +%d/%m/%Y`
- HHB_=`date +%H`
+if [ $(is_number $(awk -F"/" '{print $1}' <<< "$*")) -eq 0 ]; then
+ DD_=$(date +%d/%m/%Y)
+ HHB_=$(date +%H)
  HHE_=1
  INTERVAL_="sample_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  INTERVAL_BT_="begin_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  INTERVAL_SQL_="sql_exec_start >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  INTERVAL_BI_="begin_interval_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
 else
- DD_=`echo $* | awk -F- '{print $1}'`
- HHB_=`echo $* | awk -F- '{print $2}'`
- HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
- HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
+ DD_=$(awk -F- '{print $1}' <<< "$*")
+ HHB_=$(awk -F- '{print $2}' <<< "$*")
+ HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
+ HHR_=$(awk '$1!~/:/{print $1}' <<< "$HHE_")
  if [ -n "$HHR_" ]; then
    INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '2' minute"
    INTERVAL_BT_="begin_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and begin_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour + interval '2' minute"
@@ -4350,7 +4346,7 @@ else
  fi
 fi
 
-type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
+type_=$(awk '{print $1}' <<< "$*")
 
 SET_COL='set lines 250 pages 80
 set long 1000000000 longc 1000000000
@@ -4386,6 +4382,7 @@ column OBJECT_NAME for a35
 column top_level_sql_id for a14
 column top_level_call_name for a20'
 
+shopt -s nocasematch
 case $type_ in
 event)
    $SP <<EOF >$LOGF
@@ -4397,9 +4394,9 @@ event)
 EOF
 ;;
 sess)
-P1_=`echo $* | awk '{print $2}'`
-P2_=`echo $* | awk '{print $3}'`
-P3_=`echo $* | awk '{print $4}'`
+P1_=$(awk '{print $2}' <<< "$*")
+P2_=$(awk '{print $3}' <<< "$*")
+P3_=$(awk '{print $4}' <<< "$*")
 if [ -n "$P1_"  -a -n "$P2_" -a "$P3_" = "all" ]; then
   $SP <<EOF >$LOGF
   PROMPT "Session from DBA_HIST_ACTIVE_SESS_HISTORY by filter: $INTERVAL_  for SID: $P1_  SERIAL: $P2_"
@@ -4459,9 +4456,9 @@ EOF
 fi
 ;;
 where)
-  FIELD_=`echo $* | awk '{print $2}'`
+  FIELD_=$(awk '{print $2}' <<< "$*")
   if [ -z "$FIELD_" ]; then FIELD_="program"; fi
-  PRG_=`echo $* | awk '{print $3}'`
+  PRG_=$(awk '{print $3}' <<< "$*")
   COND_="and $FIELD_ like '%$PRG_%'"
   $SP <<EOF >$LOGF
   PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_  for condition: $COND_"
@@ -4484,7 +4481,7 @@ where)
 EOF
 ;;
 sql)
-  P1_=$(echo $* | awk '{print $2}')
+  P1_=$(awk '{print $2}' <<< "$*")
   case "$P1_" in
   all)
    shift
@@ -4551,8 +4548,8 @@ EOF
 EOF
  ;;
  *)
- SQL_ID_=`echo $* | awk '{print $2}'`
- SQL_TEXT_=`shift; echo $* | tr '[:lower:]' '[:upper:]'`
+ SQL_ID_=$(awk '{print $2}' <<< "$*")
+ SQL_TEXT_=$(shift; tr '[:lower:]' '[:upper:]' <<< "$*")
  if [ -z "$SQL_ID_" ]; then
   $SP <<EOF >$LOGF
   PROMPT "Top 10 SQL from DBA_HIST_ACTIVE_SESS_HISTORY in $INTERVAL_"
@@ -4576,8 +4573,8 @@ EOF
   ) where rownum < 11) s, DBA_HIST_SQLTEXT h_txt where s.sql_id=h_txt.sql_id;
 EOF
 else
-  LEN_=`expr length $SQL_ID_`
-  SQL_ID__=`echo $SQL_ID_ | tr -d '[:digit:][:lower:]'`
+  LEN_=$(expr length $SQL_ID_)
+  SQL_ID__=$(tr -d '[:digit:][:lower:]' <<< "$SQL_ID_")
 if [ -z "$SQL_ID__" -a $LEN_ -eq 13 ] ; then
 # SQL_="select sql_id,sql_text from DBA_HIST_SQLTEXT where dbid=(select dbid from v\$database) and sql_id='$SQL_ID_';"
  SQL_="select cast(h.sample_time as date) sample_time, s.sql_id, sql_plan_hash_value, s.sql_text from DBA_HIST_SQLTEXT s, dba_hist_active_sess_history h where s.sql_id=h.sql_id and s.dbid=(select dbid from v\$database) and s.sql_id = '$SQL_ID_' and $INTERVAL_ and rownum<21 order by sample_time;"
@@ -4598,8 +4595,8 @@ fi
 esac
 ;;
 plan)
-  SQL_ID_=`echo $* | awk '{print $2}'`
-  PHV_=`echo $* | awk '{print $3}'`
+  SQL_ID_=$(awk '{print $2}' <<< "$*")
+  PHV_=$(echo $* | awk '{print $3}' <<< "$*")
   if [ "$PHV_" = "%" ]; then PHV_=''; fi
   shift
   shift
@@ -4637,9 +4634,9 @@ plan)
 EOF
 ;;
 sqlstat)
- SQL_ID_=`echo $* | awk '{print $2}'`
- P2_=`echo $* | awk '{print $3}'`
- if [ -n "$SQL_ID_" ]; then LEN_=`expr length $SQL_ID_`; fi
+ SQL_ID_=$(awk '{print $2}' <<< "$*")
+ P2_=$(awk '{print $3}' <<< "$*")
+ if [ -n "$SQL_ID_" ]; then LEN_=$(expr length $SQL_ID_); fi
  SQL_SQLSTAT="
  set lines 250 pages 80 feedback off
  column snap_id for 999999
@@ -4722,8 +4719,8 @@ EOF
 esac
 ;;
 growseg)
- TBS=`echo $* | awk '{print $2}'`
- SEG=`echo $* | awk '{print $3}'`
+ TBS=$(awk '{print $2}' <<< "$*")
+ SEG=$(awk '{print $3}' <<< "$*")
  if [ -z "$SEG" ]; then
    $SP <<EOF >$LOGF
    PROMPT "DBA_HIST_SEG_STAT: Most segments growth in $INTERVAL_BI_"
@@ -4782,8 +4779,8 @@ EOF
  fi
 ;;
 segstat)
-  OBJ_=`echo $* | awk '{print $2}'`
-  OWN_=`echo $* | awk '{print $3}'`
+  OBJ_=$(awk '{print $2}' <<< "$*")
+  OWN_=$(awk '{print $3}' <<< "$*")
   $SP <<EOF >$LOGF
   PROMPT "Segment statistics for OBJECTS with max BLOCK_CHANGED from AWR in $INTERVAL_BI_ for SEGMENT: $OBJ_ OWNER: $OWN_ 
   $SET_COL
@@ -4837,7 +4834,7 @@ cchart) awr_cchart dba_hist_active_sess_history
 tchart) awr_tchart dba_hist_active_sess_history
 ;;
 temp)
-  P1_=`echo $* | awk '{print $2}'`
+  P1_=$(awk '{print $2}' <<< "$*")
   awr_tempusage dba_hist_active_sess_history $P1_
 ;;
 *) echo "Nothing..." ;;
@@ -4870,17 +4867,17 @@ EOF
 
 else
  sysdate=$(date +%d/%m/%y\ %H:%M:%S)
- if [ $(is_number $(echo $* | awk -F"/" '{print $1}'))  -eq 0 ]; then
-   DD_=`date +%d/%m/%Y`
-   HHB_=`date +%H`
+ if [ $(is_number $(awk -F"/" '{print $1}' <<< "$*"))  -eq 0 ]; then
+   DD_=$(date +%d/%m/%Y)
+   HHB_=$(date +%H)
    HHE_=1
    INTERVAL_="sample_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
    INTERVAL_LA_="last_active_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  else
-   DD_=`echo $* | awk -F- '{print $1}'`
-   HHB_=`echo $* | awk -F- '{print $2}'`
-   HHE_=`echo $* | awk -F- '{print $3}' | cut -d' ' -f1`
-   HHR_=$(echo $HHE_ | awk '$1!~/:/{print $1}')
+   DD_=$(awk -F- '{print $1}' <<< "$*")
+   HHB_=$(awk -F- '{print $2}' <<< "$*")
+   HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
+   HHR_=$(awk '$1!~/:/{print $1}' <<< "$HHE_")
    if [ -n "$HHR_" ]; then
      INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour"
      shift
@@ -4891,10 +4888,10 @@ else
    INTERVAL_LA_="last_active_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi')"
  fi
 
-type_=`echo $* | awk '{print $1}' | tr '[:upper:]' '[:lower:]'`
-P1_=`echo $* | awk '{print $2}'`
-P2_=`echo $* | awk '{print $3}'`
-P3_=`echo $* | awk '{print $4}'`
+ type_=$((awk '{print $1}' | tr '[:upper:]' '[:lower:]') <<< "$*")
+ P1_=$(awk '{print $2}' <<< "$*")
+ P2_=$(awk '{print $3}' <<< "$*")
+ P3_=$(awk '{print $4}' <<< "$*")
 
 SET_COL='set lines 250 pages 70
 set long 1000000000 longc 1000000000
@@ -4930,6 +4927,7 @@ col entry_name for a45
 column top_level_sql_id for a14
 column top_level_call_name for a20'
 
+shopt -s nocasematch
 case "$type_" in
 event)
    $SP <<EOF >$LOGF
@@ -5004,9 +5002,9 @@ EOF
 fi
 ;;
 where)
-FIELD_=`echo $* | awk '{print $2}'`
+FIELD_=$(awk '{print $2}' <<< "$*")
 if [ -z "$FIELD_" ]; then FIELD_="program"; fi
-PRG_=`echo $* | awk '{print $3}'`
+PRG_=$(awk '{print $3}' <<< "$*")
 COND_="and $FIELD_ like '%$PRG_%'"
 $SP <<EOF >$LOGF
 PROMPT
@@ -5100,8 +5098,8 @@ EOF
 EOF
   ;;
   *)
-SQL_ID_=`echo $* | awk '{print $2}'`
-SQL_TEXT_=`shift; echo $* | tr '[:lower:]' '[:upper:]'`
+SQL_ID_=$(awk '{print $2}' <<< "$*")
+SQL_TEXT_=$(shift; tr '[:lower:]' '[:upper:]' <<< "$*")
 #echo "SQL_TEXT_="$SQL_TEXT_
 if [ -z "$SQL_ID_" ]; then
 $SP <<EOF >$LOGF
@@ -5127,8 +5125,8 @@ order by activity desc
 ) where rownum < 11) s, V\$SQLTEXT h_txt where s.sql_id=h_txt.sql_id order by activity desc, s.SQL_ID, s.Plan_hash, h_txt.piece;
 EOF
 else
-LEN_=`expr length $P1_`
-P1__=`echo $P1_ | tr -d '[:digit:][:lower:]'`
+LEN_=$(expr length $P1_)
+P1__=$(tr -d '[:digit:][:lower:]' <<< "$P1_")
 if [ -z "$P1__" -a $LEN_ -eq 13 ] ; then
  SQL_="SELECT ash.sql_id, a.plan_hash_value, a.sql_text,a.executions,round(a.disk_reads/decode(a.executions, 0, 1, a.executions),0) pio_per_exec,round(a.buffer_gets /decode(a.executions, 0, 1, a.executions),0) lio_per_exec, round(decode(EXECUTIONS, 0, cpu_time/1000000, round(cpu_time/EXECUTIONS/1000000, 4)),4) cpu_time, round(((elapsed_time / decode(executions, 0, 1, executions)) / 1000000),4) elapsed_time, decode(EXECUTIONS, 0, user_io_wait_time/1000000, round(user_io_wait_time/decode(executions, 0, 1, executions)/1000000, 4)) iowait FROM v\$active_session_history ash, v\$sqlarea a WHERE ash.sql_id = a.sql_id and $INTERVAL_ and ash.sql_plan_hash_value=a.plan_hash_value AND ash.sql_id = '$P1_' AND rownum=1;"
  PROMPT_="SQL_ID = $SQL_ID_"
@@ -5182,7 +5180,7 @@ col cpu_time for 999,999.9999 heading 'CPU_TIME\EX'
 col elapsed_time for 999,999.9999 heading 'ELA_TIME\EX'
 col iowait for 999999999 heading 'IOWAIT\EX'
 "
-if [ -n "$P1_" ]; then LEN_=`expr length $P1_` ; fi
+if [ -n "$P1_" ]; then LEN_=$(expr length $P1_) ; fi
 case "$LEN_" in
   13)
 $SP <<EOF >$LOGF
@@ -5274,11 +5272,11 @@ logf
 
 spm()
 {
-type_=`echo $* | awk '{print $1}'`
+type_=$(awk '{print $1}' <<< "$*")
 
 case "$type_" in
-    find)  P1_=`echo $* | awk '{print $2}'` ; P2_=`echo $* | awk '{print $3}'` ; COND1_=" and sql_handle like '$P1_' and plan_name like nvl('$P2_','%') " ; DAYS=10950 ;;
-  [0-9]*)  DAYS=$type_ ; shift ; type_=`echo $* | awk '{print $1}'` ;;
+  find)  P1_=$(awk '{print $2}' <<< "$*") ; P2_=$(awk '{print $3}' <<< "$*") ; COND1_=" and sql_handle like '$P1_' and plan_name like nvl('$P2_','%') " ; DAYS=10950 ;;
+  [0-9]*)  DAYS=$type_ ; shift ; type_=$(awk '{print $1}' <<< "$*") ;;
        *)  COND1_="" ; DAYS=7 ;;
 esac
 # echo "spm DAYS: "$DAYS
@@ -5424,7 +5422,7 @@ bllpfawr)
   plan_hash_value="$3"
   begin_snap="$4"
   end_snap="$5"
-  sqlset="tpi-$sql_id-`date +%d-%m-%Y`"
+  sqlset="tpi-$sql_id-$(date +%d-%m-%Y)"
   echo "sqlset="$sqlset
 $SP <<EOF >$LOGF
 set lines 230
@@ -5618,7 +5616,7 @@ sqltune)
      sql_id="$3"
      begin_snap="$4"
      end_snap="$5"
-     task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
+     task_name="tpi-${sql_id}-$(date +%d%m%y-%H%M)"
 SQL_="
 PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id begin_snap=$begin_snap end_snap=$end_snap task_name=$task_name from the AWR
 SET SERVEROUTPUT ON SIZE UNLIMITED;
@@ -5640,7 +5638,7 @@ END;
    ;;
    *)
      sql_id="$2"
-     task_name="tpi-${sql_id}-`date +%d%m%y-%H%M`"
+     task_name="tpi-${sql_id}-$(date +%d%m%y-%H%M)"
 SQL_="
 PROMPT Creating DBMS_SQLTUNE.CREATE_TUNING_TASK for sql_id=$sql_id task_name=$task_name from the cursor cache
 SET SERVEROUTPUT ON SIZE UNLIMITED;
@@ -5929,21 +5927,16 @@ logf
 
 trace()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
-
-SID_="$P1_"
-SERIAL_="$P2_"
-LEVEL_=`echo $ALL | awk '{print $3}'`
+P1_="$1"
+P2_="$2"
 
 case "$P1_" in
  db)  case "$P2_" in
-        on) SQL1_="execute dbms_monitor.database_trace_enable(waits=>TRUE, binds=>TRUE, instance_name=> '&instance');" ;;
+         on) SQL1_="execute dbms_monitor.database_trace_enable(waits=>TRUE, binds=>TRUE, instance_name=> '&instance');" ;;
         off) SQL1_="execute dbms_monitor.database_trace_disable(instance_name=> '&instance');" ;;
       esac
       $SP <<EOF >$LOGF
-        set lines 230
-        set echo off feed off veri off tab off pages 60
+        set lines 230 echo off feed off veri off tab off pages 60
         column instance_name new_value instance noprint
         select instance_name from v\$instance;
         prompt $SQL1_
@@ -5956,12 +5949,15 @@ case "$P1_" in
 EOF
  ;;
  *)
+SID_="$P1_"
+SERIAL_="$P2_"
+LEVEL_="$3"
+	
 if [ -n "$SID_" -a -n "$SERIAL_" -a -n "$LEVEL_" ]; then
  echo "SID: "$SID_"  SERIAL: "$SERIAL_"  LEVEL: "$LEVEL_
- DB_VER_=$(db_version)
 
- case $DB_VER_ in
-  8|9|10)       CMD1_="select u_dump.value || '/' || db_name.value || '_ora_' || v\$process.spid||nvl2(v\$process.traceid, '_' || v\$process.traceid, null )||'.trc' \"Trace File\" from v\$system_parameter u_dump cross join   v\$system_parameter db_name cross join v\$process join v\$session on v\$process.addr = v\$session.paddr where u_dump.name in ('user_dump_dest','background_dump_dest') and  db_name.name = 'db_name' and v\$session.sid=$SID_;"  ;;
+ case "$(db_version)" in
+  8|9|10)   CMD1_="select u_dump.value || '/' || db_name.value || '_ora_' || v\$process.spid||nvl2(v\$process.traceid, '_' || v\$process.traceid, null )||'.trc' \"Trace File\" from v\$system_parameter u_dump cross join   v\$system_parameter db_name cross join v\$process join v\$session on v\$process.addr = v\$session.paddr where u_dump.name in ('user_dump_dest','background_dump_dest') and  db_name.name = 'db_name' and v\$session.sid=$SID_;"  ;;
   *)  #CMD1_="SELECT VALUE||'/'||'$ORACLE_SID'||'_ora_'||&&SPID||'.trc' \"Trace File\" FROM V\$DIAG_INFO WHERE NAME = 'Diag Trace';" 
       CMD1_="select tracefile from v\$process where spid=&&SPID;" ;;
  esac
@@ -6008,8 +6004,8 @@ logf
 
 kill_()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
+P1_="$1"
+P2_="$2"
 if [ -n "$P1_" -a -n "$P2_" ]; then
 $SP <<EOF >$LOGF
 set lines 230
@@ -6025,8 +6021,8 @@ logf
 
 exec_()
 {
-P1_=`echo $ALL | awk '{print $1}'`
-P2_=`echo $ALL | awk '{print $2}'`
+P1_="$1"
+P2_="$2"
 set -f
 echo "ALL: "$ALL
 $SP <<EOF >$LOGF
@@ -6044,16 +6040,17 @@ logf
 
 alert()
 {
-NUM_=`echo $ALL | awk '{print $1}'`
+NUM_="$1"
 if [ -z "$NUM_" ]; then
  NUM_=100
 fi
 
-VALUEP=`$SP <<'END'
+VALUEP=$($SP <<'END'
 set pagesize 0 feedback off verify off heading off echo off timing off
 select substr(platform_name,1,instr(platform_name,' ',1,1)) from v$database;
-END`
-VALUEP=`echo $VALUEP | tr -d '\r'`
+END
+)
+VALUEP=$(tr -d '\r' <<< "$VALUEP")
 DB_VER_=$(db_version)
 case $VALUEP in
   Microsoft*) slash='\'
@@ -6098,11 +6095,12 @@ ORDER BY lineno;
 EOF
      ;;
   *) 
-VALUE=`$SP <<END
+VALUE=$($SP <<END
 set pagesize 0 feedback off verify off heading off echo off timing off
 $CMD1_
-END`
-VALUE=`echo $VALUE | tr -d '\r'`
+END
+)
+VALUE=$(tr -d '\r' <<< "$VALUE")
 echo $VALUE
 tail -$NUM_ $VALUE
   ;;
@@ -6115,17 +6113,17 @@ logf
 
 report()
 {
-type_=`echo $ALL | awk '{print $1}'`
-TXT_=`echo $ALL | awk '{print $2}'`
-DAY_=`echo $ALL | awk '{print $3}'`
-HH1_=`echo $ALL | awk '{print $4}'`
-HH2_=`echo $ALL | awk '{print $5}'`
+type_="$1"
+TXT_="$2"
+DAY_="$3"
+HH1_="$4"
+HH2_="$5"
 
-DAY2_=`echo $ALL | awk '{print $6}'`
-HH21_=`echo $ALL | awk '{print $7}'`
-HH22_=`echo $ALL | awk '{print $8}'`
+DAY2_="$6"
+HH21_="$7"
+HH22_="$8"
 
-SQL_ID_=`echo $ALL | awk '{print $6}'`
+SQL_ID_="$6"
 # DB_VER_=$(db_version)
 
 case "$TXT_" in
@@ -6201,13 +6199,14 @@ logf
 
 corrupt()
 {
-P1_=`echo $ALL | awk '{print $1}' | tr '[:lower:]' '[:upper:]'`
-P2_=`echo $ALL | awk '{print $2}'`
-P3_=`echo $ALL | awk '{print $3}'`
+P1_="$1"
+P2_="$2"
+P3_="$3"
 DB_VER=$(db_version)
 
+shopt -s nocasematch
 case "$P1_" in
-ROWID)
+rowid)
 $SP <<EOF >>$LOGF
 set lines 230 pages 100
 col rowid_ for a20
@@ -6221,7 +6220,7 @@ select '$P2_' as rowid_,
  from dual;
 EOF
 ;;
-DBA)
+dba)
 $SP <<EOF >>$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -6236,7 +6235,7 @@ column tablespace_name for a22
 select * from dba_extents where file_id=&&file and &&block between block_id and block_id+blocks-1;
 EOF
 ;;
-FB)
+fb)
 $SP <<EOF >>$LOGF
 set lines 230
 set echo off feed off veri off tab off pages 40
@@ -6280,66 +6279,65 @@ logf
 }
 
 export TERM=xterm
-U=`uname | awk -F_ '{print $1}'`
+U=$(awk -F_ '{print $1}' <<< $(uname))
 case "$U" in
- CYGWIN)  echo -n "DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  " ;;
- AIX)     echo -n "DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  " ;;
- *)
- red=`tput setaf 1`
- green=`tput setaf 2`
- yellow=`tput setaf 3`
- blue=`tput setaf 4`
- magneta=`tput setaf 5`
- cyan=`tput setaf 6`
- reset=`tput sgr0`
- echo -n ${green}"DB="$sid"  "`date +%d/%m/%y"-"%H:%M:%S`"  "$ls2"  "
+ CYGWIN) echo -n "DB="$sid"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  " ;;
+ AIX)    echo -n "DB="$sid"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  " ;;
+ *)       red=$(tput setaf 1)
+	 green=$(tput setaf 2)
+	 yellow=$(tput setaf 3)
+	 blue=$(tput setaf 4)
+	 magneta=$(tput setaf 5)
+	 cyan=$(tput setaf 6)
+	 reset=$(tput sgr0)
+	 echo -n ${green}"DB="$sid"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  "
  ;;
 esac
 
 
 # echo "ID: "$ID
 case "$ID" in
-""|a|k|in|access)  echo $a__ ${reset}; active_sessions $ALL ;;
-lock)      echo $lock__ ${reset}; lock $ALL ;;
-p|ph|services|dir)   echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
-db)        echo $db__ ${reset}; db ;;
-audit)     echo $audit__ ${reset}; audit $ALL ;;
-health)    shift; ALL=$* ; echo $health__ ${reset}; health $ALL ;;
-oratop)    shift; ALL=$* ; echo $oratop__ ${reset}; oratop $ALL ;;
-sga)       echo $sga__ ${reset}; sga ;;
-pga)       echo $pga__ ${reset}; pga ;;
-size)      echo $size__ ${reset}; size $ALL ;;
-arch)      echo $arch__ ${reset}; arch $ALL ;;
+""|a|k|in|access)   echo $a__ ${reset}; active_sessions $ALL ;;
+p|ph|services|dir)  echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
+db)        shift; ALL=$*; echo $db__ ${reset}; db $ALL ;;
+lock)      shift; ALL=$*; echo $lock__ ${reset}; lock $ALL ;;
+audit)     shift; ALL=$*; echo $audit__ ${reset}; audit $ALL ;;
+health)    shift; ALL=$*; echo $health__ ${reset}; health $ALL ;;
+oratop)    shift; ALL=$*; echo $oratop__ ${reset}; oratop $ALL ;;
+sga)       shift; ALL=$*; echo $sga__ ${reset}; sga $ALL ;;
+pga)       shift; ALL=$*; echo $pga__ ${reset}; pga $ALL ;;
+size)      shift; ALL=$*; echo $size__ ${reset}; size $ALL ;;
+arch)      shift; ALL=$*; echo $arch__ ${reset}; arch $ALL ;;
 tbs)       shift; ALL=$*; echo $size__ ${reset}; tbs $ALL ;;
 df)        shift; ALL=$*; echo $size__ ${reset}; df $ALL ;;
-maxseg)    shift; echo $size__ ", (TABLESPACE NAME = '"$ALL"'):" ${reset}; maxseg $ALL ;;
-fra)       echo $size__ ${reset}; fra ;;
-redo)      shift; ALL=$* ; echo $redo__ ${reset}; redo $ALL ;;
-undo)      shift; ALL=$* ; echo $undo__ ${reset}; undo $ALL ;;
-sesstat)   shift; ALL=$*;  echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
+maxseg)    shift; ALL=$*; echo $size__ ", (TABLESPACE NAME = '"$ALL"'):" ${reset}; maxseg $ALL ;;
+fra)       shift; ALL=$*; echo $size__ ${reset}; fra $ALL ;;
+redo)      shift; ALL=$*; echo $redo__ ${reset}; redo $ALL ;;
+undo)      shift; ALL=$*; echo $undo__ ${reset}; undo $ALL ;;
+sesstat)   shift; ALL=$*; echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
 topseg)    shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topseg $ALL ;;
 o)         shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
 s)         shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;
-t)         shift; echo $t__ ", PARAMETERS = " $ALL ${reset}; table "$ALL" ;;
-i)         shift; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
+t)         shift; ALL=$*; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL ;;
+i)         shift; ALL=$*; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
 l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
-c)         echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
+c)         shift; ALL=$*; echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
 u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
 profile)   shift; ALL=$*; echo $profile__  ${reset}; profile $ALL ;;
 links)     shift; ALL=$*; echo $links__ ${reset} ; links $ALL ;;
-latch)     echo $latch__ ${reset} ; latch ;;
+latch)     shift; ALL=$*; echo $latch__ ${reset} ; latch $ALL ;;
 bind)      shift; ALL=$*; echo $bind__ ", SQL like " $ALL ${reset}; bind $ALL ;;
 pipe)      shift; ALL=$*; echo $pipe__ ", PIPE = " $ALL ${reset}; pipe $ALL ;;
-longops)   echo $longops__ ${reset}; longops $ALL ;;
+longops)   shift; ALL=$*; echo $longops__ ${reset}; longops $ALL ;;
 scheduler) shift; ALL=$*; echo $scheduler__ ${reset}; scheduler $ALL ;;
 job)       shift; ALL=$*; echo $job__ ${reset}; job $ALL ;;
-rman)      shift; ALL=$*; echo $backup__ ${reset}; rman $ALL ;;
-get_ddl)   shift; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL  ;;
+rman)      shift; ALL=$*; echo $rman__ ${reset}; rman $ALL ;;
+get_ddl)   shift; ALL=$*; echo $get_ddl__ ", for: "$ALL ${reset} ; get_ddl $ALL ;;
 trace)     shift; ALL=$*; echo $trace__ ${reset}; trace $ALL ;;
 kill)      shift; ALL=$*; echo $kill__ ${reset}; kill_ $ALL ;;
 exec)      shift; ALL=$*; echo $exec__ ${reset}; exec_ $ALL ;;
 alert)     shift; ALL=$*; echo $alert__ ${reset}; alert $ALL ;;
-report)    shift; ALL=$*; echo $report__ ${reset}; report $ALL ;;
+report)    shift; ALL=$*; echo $report__ ${reset}; report $ALL ; echo $report__;;
 corrupt)   shift; ALL=$*; echo $corrupt__ ${reset}; corrupt $ALL ;;
 sql)       shift; ALL=$*; echo $sql__ ", for: "$ALL  ${reset}; psql $ALL  ;;
 ash)       shift; ALL=$*; echo $ash__ ", for: "$ALL  ${reset}; ash $ALL ; echo $ash__ ;;

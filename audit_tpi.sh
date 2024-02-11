@@ -49,8 +49,8 @@ echo '--------------------------------------------------------------------------
 rtpi $SRV $SID fra
 rtpi $SRV $SID p db_recovery_file_dest  db_flashback_retention_target
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID backup 7
-rtpi $SRV $SID exec 'SELECT \* FROM v$rman_configuration;'
+rtpi $SRV $SID rman cfg
+rtpi $SRV $SID rman 7
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 rtpi $SRV $SID u % sys ALTER SYSTEM
 rtpi $SRV $SID u % sys ALTER DATABASE
