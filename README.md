@@ -1,5 +1,5 @@
-Usage: /home/t.mukhametshin/start/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
-SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED | [access OBJECT] - active sess which accessing OBJECT
+Usage: /home/t.mukhametshin/start/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
+"" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V$SES_OPTIMIZER_ENV by [param_name]
 p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v$services, dba_directories
 db [ nls|option|properties|fusage ] - v$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information
 audit - DDL users audit
@@ -7,7 +7,7 @@ health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Mi
 oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V$SYSMETRIC_HISTORY V$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot
 sga - SGA information
 pga - PGA sessions information
-size [days] [ tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage
+size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set "_enable_space_preallocation"=0 )
 arch - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
 redo [logs] - redo information
 undo [recovery] - undo active transaction information, recovery information
@@ -19,7 +19,9 @@ t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, d
 i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information
 l LOB_NAME - dba_lobs information
 c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ] - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys
-u [ USERNAME | {sys|role|tab} OBJECT_GRANTEE ] - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information
+u [ USERNAME [{sys|role|tab} PRIVILEGE] ] - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information
+r [ {role|granted_role} ROLE ] - role_role_privs information
+trg [ "" | [TRIGGER_NAME] [TRIGGER_OWNER] | t [TABLE_NAME] [TABLE_OWNER] ] - dba_triggers information, "" - LOGON or STARTUP triggers
 profile [PROFILE] - profiles information
 links [LINK_NAME] - links information
 latch - latch information
@@ -33,7 +35,7 @@ rman [DAYS|cfg] - RMAN backups | v$rman_configuration information
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off
 kill SID SERIAL - Kill session
-exec - execute "SQL Commands" Note: Must be escaped with \ characters: * ; ' ! ( )
+exec - execute "SQL Commands" Note: Must be escaped with \ characters: * ; ' ! ( ) ( alter system set "_ash_sample_all"=true )
 alert [num] - tail -num alert_[sid].log, default num = 100
 report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports
 corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v$database_block_corruption v$nonlogged_block information

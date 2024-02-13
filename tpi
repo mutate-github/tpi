@@ -21,7 +21,7 @@ fi
 
 init_msg()
 {
-  a__="SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name] | a - Allsess, in - INACTIVE, k - KILLED  | [access OBJECT] - active sess which accessing OBJECT" 
+  a__="\"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
   p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties|fusage ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   audit__="audit - DDL users audit"
@@ -29,7 +29,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days] [ tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days) ] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage" 
+  size__="size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -41,7 +41,9 @@ init_msg()
   i__="i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
-  u__="u [ USERNAME | {sys|role|tab}  OBJECT_GRANTEE  ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
+  u__="u [ USERNAME [{sys|role|tab} PRIVILEGE] ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
+  r__="r [ {role|granted_role} ROLE  ] - role_role_privs information"
+  trg__="trg [ \"\" | [TRIGGER_NAME] [TRIGGER_OWNER] | t [TABLE_NAME] [TABLE_OWNER]  ]  - dba_triggers information, \"\" - LOGON or STARTUP triggers"
   profile__="profile [PROFILE] - profiles information"
   links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
@@ -55,7 +57,7 @@ init_msg()
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db on|off] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
-  exec__="exec - execute \"SQL Commands\"  Note: Must be escaped with \\ characters: * ; ' ! ( )"
+  exec__="exec - execute \"SQL Commands\"  Note: Must be escaped with \\ characters: * ; ' ! ( )      ( alter system set \"_ash_sample_all\"=true )"
   alert__="alert [num] - tail -num alert_[sid].log, default num = 100"
   report__="report [ash text|html -60] -for last hour, [awr text|html DD/MM/YYYY HH24_begin HH24_end], [awrdd text|html DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql text|html DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
   corrupt__="corrupt [ROWID] [DBA (number)] [FB (file) (block)] - Find object by ROWID, Find object by DBA, Find DB Object in dba_extents by file/block, v\$database_block_corruption v\$nonlogged_block information"
@@ -70,8 +72,8 @@ init_msg
 if [ -z "$sid" ]; then
   env | grep ORA
   ps -ef | grep [p]mon
-  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm"
-  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$rman__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
+  echo "Usage: $0 <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm"
+  echo -e $a__"\n"$p__"\n"$db__"\n"$audit__"\n"$health__"\n"$oratop__"\n"$sga__"\n"$pga__"\n"$size__"\n"$arch__"\n"$redo__"\n"$undo__"\n"$sesstat__"\n"$topseg__"\n"$o__"\n"$s__"\n"$t__"\n"$i__"\n"$l__"\n"$c__"\n"$u__"\n"$r__"\n"$trg__"\n"$profile__"\n"$links__"\n"$latch__"\n"$lock__"\n"$bind__"\n"$pipe__"\n"$longops__"\n"$scheduler__"\n"$job__"\n"$rman__"\n"$get_ddl__"\n"$trace__"\n"$kill__"\n"$exec__"\n"$alert__"\n"$report__"\n"$corrupt__"\n"$sql__"\n"$ash__"\n"$dhash__"\n"$spm__"\n"
   exit
   echo "NOT EXIT"
 fi
@@ -269,6 +271,7 @@ active_sessions()
 P1_="$1"
 P2_="$2"
 
+shopt -s nocasematch
 case "$P1_" in
   access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
        k)    SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
@@ -3091,7 +3094,7 @@ set echo off feed off veri off tab off pages 50 timing off
 column grantee for a30
 column GRANTED_ROLE for a30
 column privilege for a35
-select * from dba_sys_privs s where privilege = upper('$P3_') and not exists (select 1 from dba_roles where role=grantee);
+select * from dba_sys_privs s where grantee like upper('$P1_') and privilege like upper('$P3_') and not exists (select 1 from dba_roles where role=grantee);
 EOF
 ;;
 role)
@@ -3101,7 +3104,7 @@ set echo off feed off veri off tab off pages 50 timing off
 column grantee for a30
 column GRANTED_ROLE for a30
 column privilege for a35
-select * from dba_role_privs where granted_role = upper('$P3_');
+select * from dba_role_privs where grantee like upper('$P1_') and granted_role like upper('$P3_');
 EOF
 ;;
 tab)
@@ -3114,7 +3117,7 @@ column grantor for a20
 column owner for a25
 column PRIVILEGE for a20
 column type for a15
-select * from dba_tab_privs where table_name like upper('%$P3_%');
+select * from dba_tab_privs where grantee like upper('$P1_') and table_name like upper('%$P3_%');
 EOF
 ;;
 *)
@@ -3181,6 +3184,65 @@ esac
 logf
 }
 
+
+role()
+{
+P1_="$1"
+P2_="$2"
+shopt -s nocasematch
+case "$P1_" in
+  role)         COND1_="where role like upper('$P2_')" ;;
+  granted_role) COND1_="where granted_role like upper('$P2_')" ;;
+esac
+$SP <<EOF >$LOGF
+set lines 230 pages 80 echo off feed off veri off tab off
+col owner for a30
+select role,granted_role,admin_option from role_role_privs $COND1_ order by role,granted_role,admin_option;
+EOF
+logf
+}
+
+
+trigger()
+{
+P1_="$1"
+SETCOL="set lines 230 pages 80 echo off feed off veri off tab off
+col owner for a30
+col TRIGGER_NAME for a30
+col trigger_type for a20
+col triggering_event for a33
+col table_owner for a30
+col TABLE_NAME for a30
+col BASE_OBJECT_TYPE for a16 truncate
+col status for a20
+"
+shopt -s nocasematch
+case "$1" in
+"")
+$SP <<EOF >$LOGF
+$SETCOL
+select owner,trigger_name,trigger_type,triggering_event,base_object_type,table_owner,table_name,status from dba_triggers
+where (triggering_event like 'LOGON%' or triggering_event like 'START%') order by triggering_event, owner, trigger_name;
+EOF
+;;
+t) shift; P1_="$1"; P2_="$2"
+$SP <<EOF >$LOGF
+$SETCOL
+select owner,trigger_name,trigger_type,triggering_event,base_object_type,table_owner,table_name,status from dba_triggers
+where table_name like upper('$P1_') and table_owner like upper(nvl('$P2_','%')) order by triggering_event, owner, trigger_name;
+EOF
+;;
+*)
+P2_="$2"
+$SP <<EOF >$LOGF
+$SETCOL
+select owner,trigger_name,trigger_type,triggering_event,base_object_type,table_owner,table_name,status from dba_triggers
+where trigger_name like upper('$P1_') and owner like upper(nvl('$P2_','%')) order by triggering_event, owner, trigger_name;
+EOF
+;;
+esac
+logf
+}
 
 
 profile()
@@ -6038,8 +6100,7 @@ P2_="$2"
 set -f
 echo "ALL: "$ALL
 $SP <<EOF >$LOGF
-set lines 230
-set echo off feed off veri off tab off pages 60
+set lines 230 tab off echo on feed on veri on pages 60
 prompt Execute SQL command: "$ALL"
 $ALL
 /
@@ -6334,7 +6395,9 @@ t)         shift; ALL=$*; echo $t__ ", PARAMETERS = " $ALL ${reset}; table $ALL 
 i)         shift; ALL=$*; echo $i__ ", PARAMETERS = " $ALL ${reset}; index $ALL ;;
 l)         shift; ALL=$*; echo $l__ ", LOB_NAME = " $ALL ${reset}; lob $ALL ;;
 c)         shift; ALL=$*; echo $c__ ", PARAMETERS = " $ALL ${reset}; constraint $ALL ;;
-u)         shift; ALL=$*; echo $u__ ", USERNAME = " $ALL ${reset}; user $ALL ;;
+u)         shift; ALL=$*; echo $u__ ", PARAMETERS = " $ALL ${reset}; user $ALL ;;
+r)         shift; ALL=$*; echo $r__ ", PARAMETERS = " $ALL ${reset}; role $ALL ;;
+trg)       shift; ALL=$*; echo $trg__ $ALL ${reset}; trigger $ALL ;;
 profile)   shift; ALL=$*; echo $profile__  ${reset}; profile $ALL ;;
 links)     shift; ALL=$*; echo $links__ ${reset} ; links $ALL ;;
 latch)     shift; ALL=$*; echo $latch__ ${reset} ; latch $ALL ;;
