@@ -7,12 +7,11 @@ printf "usage: tpi ... oratop dhsh | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21
 printf "usage: tpi ... tchart      | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
 echo ""
 
-case "$#" in
-0|2) all_par="3 11 15 17 19 20 22 23 24" 
-   ;;
-*) all_par="$@"
-   ;;
-esac
+if [[ "$2" =~ "/" || "$#" -eq 0 ]]; then
+  all_par="3 11 15 17 19 20 22 23 24"
+else
+  all_par="$@"
+fi
 
 if [ -p /dev/stdin ]; then
   file="/tmp/$$_tmp.tmp"
@@ -37,7 +36,7 @@ scale=$(awk "BEGIN{print $limit/100}")
 
 tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
 # egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
-egrep "${date}" "${file}" | uniq >> ${file}.tmp
+egrep "^${date}" "${file}" | uniq >> ${file}.tmp
 rm /tmp/$$_tmp.tmp 2>/dev/null
 file=${file}.tmp
 
@@ -55,21 +54,21 @@ cat $file | awk '!/---/{print $'$col1'" "$'$col2'}' | xargs -n2 echo | while rea
    if [[ "$datewd" = "BEGIN_TIME" ]]; then
       printf "%-${limit}s" LEVELS
    fi
-   value=`awk "BEGIN{printf \"%3d\", ($value / ($max / 100)) * $scale}"`
+   value=$(awk "BEGIN{printf \"%3d\", ($value / ($max / 100)) * $scale}")
    if [[ "$value" -lt 1 && "$datewd" != "BEGIN_TIME" ]]; then value=1; fi
 #   echo $value " " $result
    printf ${histo:0:$value}"\n"
 done
 }
 
-awk '{print $1}' ${file} > /tmp/0.tmp
+awk '{print $1}' ${file} > /tmp/0_$$.tmp
 
-for i in $(echo "$all_par" | xargs -n1 echo); do
+for i in $(xargs -n1 echo <<< "$all_par"); do
   get_cols $i | awk '{printf $2" "$3"\n"}' > /tmp/${i}.tmp
   j=$j" "/tmp/${i}.tmp
 done
 
-paste /tmp/0.tmp $j | column -t
+paste /tmp/0_$$.tmp $j | column -t
 
-rm $file /tmp/0.tmp $j
+rm $file /tmp/0_$$.tmp $j
 
