@@ -20,6 +20,7 @@ echo "as p260unc2"
 scp tpi p260unc2:tal/
 fi
 
+git add README.md
 git add $*
 DT=`date`
 git commit -m "$DT"
