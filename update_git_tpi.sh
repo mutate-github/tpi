@@ -2,8 +2,7 @@
 
 #scp tpi 172.16.249.1:~/tal/
 #scp rtpi 172.16.249.1:~/tal/
-#./tpi | sed -n '/Usage/,$p' > README.md
-#scp README.md 172.16.249.1:~/tal/
+tpi | sed -n '/Usage:/,$p' > README.md
 
 if [ "$1" = "tpi" ]; then
 #askona
