@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 13.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 14.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -53,7 +53,7 @@ init_msg()
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
-  rman__="rman [DAYS|cfg] - RMAN backups | v\$rman_configuration information" 
+  rman__="rman [DAYS|cfg|last] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
@@ -3755,10 +3755,37 @@ case "$P1_" in
 cfg)
 $SP <<EOF >$LOGF
 set lines 250
-set echo off feed off veri off tab off pages 90
+set echo off feed off veri off tab off timing off pages 90
 col name for a50
 col value for a100
 select * from v\$rman_configuration order by conf#;
+EOF
+;;
+last)
+$SP <<EOF >$LOGF
+set lines 250
+set echo off feed off veri off tab off timing off pages 90
+WITH BACKUP_BACKUPSET AS /*BACKUP AS BACKUPSET RECORDS*/
+(select d.DBID, d.name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
+  from V\$DATABASE d,V\$RMAN_BACKUP_JOB_DETAILS j, V\$BACKUP_SET_DETAILS  s
+where d.dbid     = (select dbid from V\$DATABASE)
+  and s.session_recid (+)= j.session_recid 
+  and s.session_stamp (+)= j.session_stamp
+  and s.session_key   (+)= j.session_key
+  and j.end_time > sysdate-30
+  and j.status like 'COMPLETED%'
+group by d.DBID, d.name, input_type, incremental_level)
+select /*+ rule*/
+  dbid,
+  name,
+  max(decode(input_type,'DB FULL',hours,-1))                                     last_full,
+  max(decode(input_type,'DB INCR',decode(incremental_level,   0,hours,null),-1)) last_lev0,
+  max(decode(input_type,'DB INCR',decode(incremental_level,   1,hours,null),-1)) last_lev1,
+  max(decode(input_type,'DB INCR',decode(incremental_level,null,hours,null),-1)) last_bck,
+  max(decode(input_type,'ARCHIVELOG',hours,-1))                                  last_arch,
+  (select ceil((sysdate-max(completion_time))*24)  from  V\$BACKUP_SET_DETAILS where controlfile_included='YES') last_ctrl
+from (select * from BACKUP_BACKUPSET)
+group by dbid, name;
 EOF
 ;;
 *)
@@ -3768,7 +3795,6 @@ set echo off feed off veri off tab off pages 90
 column filename for a90
 select filename,status from v\$block_change_tracking;
 PROMPT D - data file full backup, I - incremental backup, L - backup contains archived redo logs
-
 column OUTPUT_DEVICE_TYPE for a18
 column start_time for a20
 column end_time for a20
@@ -3794,15 +3820,17 @@ select
                                      5, 'Thursday', 6, 'Friday',
                                      7, 'Saturday') dow,
   trunc(j.elapsed_seconds) ela_sec, j.time_taken_display,
-  x.cf, x.df, x.i0, x.i1, x.l --,ro.inst_id inst_id
+  x.cf, x.d0, x.i0, x.i1, x.i2, x.l --,ro.inst_id inst_id
 from V\$RMAN_BACKUP_JOB_DETAILS j
   left outer join (select
                      d.session_recid, d.session_stamp,
                      sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) CF,
-                     sum(case when d.controlfile_included = 'NO' and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
-                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) D,
+--                     sum(case when d.controlfile_included = 'NO' and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
+--                     sum(case when d.backup_type = 'D' then d.pieces else 0 end) DF,
+                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) D0,
                      sum(case when d.backup_type||d.incremental_level = 'I0' then d.pieces else 0 end) I0,
                      sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
+                     sum(case when d.backup_type||d.incremental_level = 'I2' then d.pieces else 0 end) I2,
                      sum(case when d.backup_type = 'L' then d.pieces else 0 end) L
                    from
                      V\$BACKUP_SET_DETAILS d
@@ -3814,7 +3842,7 @@ from V\$RMAN_BACKUP_JOB_DETAILS j
                    from GV\$RMAN_OUTPUT o
                    group by o.session_recid, o.session_stamp)
     ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
-where j.start_time > trunc(sysdate)-14 
+where j.start_time > trunc(sysdate)-7
 --AND OUTPUT_DEVICE_TYPE NOT IN ('SBT_TAPE')
 order by j.start_time;
 EOF
@@ -4527,7 +4555,7 @@ where)
   $SET_COL
   select * from (
   select /*session_id sid,"SESSION_SERIAL#" serial,*/ username,
---   sql_id,sql_plan_hash_value,
+   sql_id,sql_plan_hash_value,
     nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */  -- program||' \ '||module||' \ '||action||' \ '||machine PMAM,
     sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
     sum(decode(session_state,'ON CPU',wait_time))/1000000     "CPU",
@@ -4542,7 +4570,7 @@ where)
   $COND_
   --and program like '%$PRG_%'
   group by /*session_id,"SESSION_SERIAL#",*/ username,
---  sql_id,sql_plan_hash_value,
+  sql_id,sql_plan_hash_value,
   event --, /* top_level_sql_id, top_level_call_name, */  session_state,program,module,action,machine 
   order by activity desc
   ) where rownum<31;
@@ -5079,7 +5107,7 @@ PROMPT
 PROMPT "Stat top 30 session_state from V\$ACTIVE_SESSION_HISTORY for condition: $COND_ and $INTERVAL_"
 $SET_COL
 select * from (
-select /*session_id sid,"SESSION_SERIAL#" serial,*/username,
+select session_id sid,"SESSION_SERIAL#" serial, username,
    sql_id,sql_plan_hash_value,
    nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */   /* program, session_state, */ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
    sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
@@ -5097,11 +5125,12 @@ from v\$active_session_history h, dba_users u where h.user_id=u.user_id
   --and program like '%$PRG_%'
   --and module like '%$PRG_%'
   --and action like '%$PRG_%'
-group by /*session_id,"SESSION_SERIAL#",*/ username,
+group by session_id,"SESSION_SERIAL#",
+  username,
   sql_id,sql_plan_hash_value,
   event, /* top_level_sql_id, top_level_call_name, */ program,module,action,machine
 order by activity desc
-) where rownum < 31;
+) where rownum < 51;
 EOF
 ;;
 sql)

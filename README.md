@@ -31,7 +31,7 @@ pipe [PIPE_NAME] - pipes information, read PIPE_NAME
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time
 scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]
 job [OWNER] - dba_jobs information
-rman [DAYS|cfg] - RMAN backups | v$rman_configuration information
+rman [DAYS|cfg|last] - RMAN backups | v$rman_configuration information | last - hours passed since the last backup
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off
 kill SID SERIAL - Kill session

@@ -20,6 +20,11 @@ db=jet
 [nas]
 db=jet
 
+[exclude]
+#host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
+host:db:scripts=aisprod:%:mon_swap.sh
+
+
 [mail]
 #script=mmail
 script=tgmail
@@ -109,6 +114,10 @@ exclude=ORA-27037
 
 # backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 [backup]
+hours_since_lvl0=170
+hours_since_lvl1=170
+hours_since_arch=4
+hours_since_ctrl=4
 level0=Sun
 level1=Tue,Thu,Sat
 level2=Mon,Wed,Fri
