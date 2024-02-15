@@ -16,7 +16,7 @@ topseg [SEGMENT_NAME] [OWNER] - top 20 segments statistics information from V$SE
 o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information
 s SEGMENT_NAME [OWNER] - dba_segments information
 t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information
-i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld
+i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate [TABLE_NAME|%] [TABLE_OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld
 l LOB_NAME - dba_lobs information
 c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ] - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys
 u [ USERNAME [{sys|role|tab} PRIVILEGE] ] - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information

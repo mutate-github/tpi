@@ -38,7 +38,7 @@ init_msg()
   o__="o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information" 
   s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
   t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
-  i__="i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld" 
+  i__="i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate [TABLE_NAME|%] [TABLE_OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u [ USERNAME [{sys|role|tab} PRIVILEGE] ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
@@ -2220,8 +2220,10 @@ P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 shopt -s nocasematch
 case "$P1_" in
 candidate)
+[[ -n "$P2_" && "$P2_" != "%" ]] && TABLE_="$2" || TABLE_="%"
+[[ -n "$P3_" && "$P3_" != "%" ]] && OWNER_="$3" || OWNER_="%"
 $SP <<EOF >$LOGF
-set lines 250 pages 10000 timing on
+set lines 250 pages 10000  echo off feed off veri off tab off timing off
 CREATE OR REPLACE FUNCTION index_saving_function(index_owner IN VARCHAR2, index_name VARCHAR2)
 RETURN NUMBER
 AUTHID current_user
@@ -2254,24 +2256,35 @@ BEGIN
 END;
 /
 alter session set "_optimizer_cartesian_enabled"=false;
-column owner for a20
-column index_name for a35
-column cmd for a120
-column percent_gain for 99999999
-column bytes_MB for 99999999
-select /*+ NO_QUERY_TRANSFORMATION */ cmd, owner, index_name, bytes_MB, index_saving_function(owner,index_name) percent_gain from (
-  SELECT i.owner,i.index_name, 'alter index '||i.owner||'.'||i.index_name||' rebuild online;' cmd, s.bytes/1024/1024 bytes_MB
-  FROM dba_indexes i, dba_segments s 
-  WHERE i.owner=s.owner and i.index_name=s.segment_name and s.bytes/1024/1024 > 50
-  and i.owner like '%' --and table_name in ('J$1110','J$1102','X$JOURNAL','J$3501','J$1104','J$1109','J$1120','J$11033','J$11038','J$1112','J$11071','J$11072','J$9700' )
-  and i.owner not in ('SYS','SYSTEM','OUTLN','DBSNMP','ORDSYS','ORDPLUGINS','MDSYS','CTXSYS','MTSSYS','WMSYS')
---  and s.tablespace_name='APEX_7388326897049623'
-  and index_type = 'NORMAL' and temporary='N'
-  and last_analyzed IS NOT NULL
-  and partitioned='NO'
-  and num_rows > 100000
-) where index_saving_function(owner,index_name) > 30
-order by percent_gain desc, bytes_MB desc;
+set timing on
+prompt set echo on timing on
+prompt alter session set ddl_lock_timeout=360;;
+prompt alter session force parallel ddl parallel 16;;
+prompt alter session set "_scn_wait_interface_max_timeout_secs"=1;;
+prompt --CMD                                                                                         OWNER.TABLE_NAME                              OWNER.INDEX_NAME                                     BYTES_MB    PERCENT_GAIN
+prompt -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+set serveroutput on
+begin
+for i in (select /*+ NO_QUERY_TRANSFORMATION */ cmd, owner, index_name, table_owner, table_name, bytes_MB, index_saving_function(owner,index_name) percent_gain from (
+      SELECT i.owner,i.index_name, i.table_owner, i.table_name, 'alter index '||i.owner||'.'||i.index_name||' rebuild online; ' cmd, s.bytes/1024/1024 bytes_MB
+      FROM dba_indexes i, dba_segments s 
+      WHERE i.owner=s.owner and i.index_name=s.segment_name and s.bytes/1024/1024 > 50
+      and i.owner like '$OWNER_' --and table_name in ('J$1110','J$1102','X$JOURNAL','J$3501','J$1104','J$1109','J$1120','J$11033','J$11038','J$1112','J$11071','J$11072','J$9700' )
+      and table_name like '$TABLE_'
+      and i.owner not in ('SYS','SYSTEM','OUTLN','DBSNMP','ORDSYS','ORDPLUGINS','MDSYS','CTXSYS','MTSSYS','WMSYS')
+--    and s.tablespace_name='APEX_7388326897049623'
+      and index_type = 'NORMAL' and temporary='N'
+      and last_analyzed IS NOT NULL
+      and partitioned='NO'
+      and num_rows > 100000
+       ) where index_saving_function(owner,index_name) > 30
+      order by bytes_MB, percent_gain desc) loop
+     dbms_output.put_line(rpad('--',90)|| rpad('--  '||i.TABLE_OWNER||'.'||i.TABLE_NAME,50)||rpad(i.OWNER||'.'||i.INDEX_NAME,50)||' '||lpad(i.BYTES_MB,10)||' '||lpad(i.PERCENT_GAIN,5) );
+     dbms_output.put_line(rpad('alter index '||i.owner||'.'||i.index_name||' rebuild online;',90));
+     dbms_output.put_line(rpad('alter index '||i.owner||'.'||i.index_name||' noparallel;',90));
+end loop;
+end;
+/
 EOF
 ;;
 part)
