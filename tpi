@@ -38,7 +38,7 @@ init_msg()
   o__="o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information" 
   s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
   t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
-  i__="i [part] INDEX_NAME|TABLE_NAME [OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information" 
+  i__="i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld" 
   l__="l LOB_NAME - dba_lobs information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u [ USERNAME [{sys|role|tab} PRIVILEGE] ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
@@ -4031,7 +4031,7 @@ select name,
   max(decode(input_type,'ARCHIVELOG',hours,-1))                                  last_arch,
   (select ceil((sysdate-max(completion_time))*24)  from  V\$BACKUP_SET_DETAILS where controlfile_included='YES') last_ctrl
 from (
-select /*+ rule */(select name from v\$database) name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
+select /*+ rule */ (select name from v\$database) name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
   from V\$RMAN_BACKUP_JOB_DETAILS j, V\$BACKUP_SET_DETAILS  s
 where s.session_recid = j.session_recid
   and s.session_stamp = j.session_stamp
