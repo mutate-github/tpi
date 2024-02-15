@@ -68,25 +68,27 @@ for HDS in `echo "$HDSLST" | xargs -n1 echo`; do
 HOST_STB_DB=`echo $HOST_STB_SE | awk -F: '{print $1}'`
 HOST_STB_STB=`echo $HOST_STB_SE | awk -F: '{print $2}'`
 if [ -n "$HOST_STB_SE" -a "$HOST_STB_DB" = "$DB" ]; then
-  VALUE_STB=`cat << EOF | ssh oracle@$HOST_STB_STB "/bin/bash -s $HOST_STB_DB"
+  VALUE_STB=$(cat << EOF | ssh oracle@$HOST_STB_STB "/bin/bash -s $HOST_STB_DB"
 #!/bin/bash
-sid=\\$1
+sid=\$1
 $SET_ENV
-export ORACLE_SID=\\$sid
+export ORACLE_SID=\$sid
   sqlplus -S '/as sysdba' <<- 'END'
-  set pagesize 0 feedback off verify off heading off echo off
-  select max(fhrba_Seq) from x\\$kcvfh;
+  set pagesize 0 feedback off verify off heading off echo off timing off
+  select max(fhrba_Seq) from x\$kcvfh;
 END
-EOF`
+EOF
+)
  VALUE_STB=`echo $VALUE_STB | sed -e 's/^ //'`
  VALUE_STB=`expr $VALUE_STB - 1`
- LOGS="until logseq=$VALUE_STB"
+ LOGS="until logseq=$VALUE_STB not backed up 1 times"
  if [ -z "$VALUE_STB" ]; then
    echo "standby don't answer, then:  until logseq=0"
-   LOGS="until logseq=0"
+   LOGS="until logseq=0 not backed up 1 times"
  fi
 else
-  LOGS="until time 'sysdate'"
+#   LOGS="until time 'sysdate' not backed up 1 times"
+   LOGS="all"
 fi
 echo "LOGS: "$LOGS
 
@@ -114,7 +116,7 @@ run{
   allocate channel cpu1 type disk;
   allocate channel cpu2 type disk;
 #  backup AS COMPRESSED BACKUPSET archivelog until time 'sysdate' not backed up 1 times format '/$NAS/$DB/logs_%d_%t_%U' delete input tag 'ARCHIVELOGS';
-  backup AS COMPRESSED BACKUPSET archivelog $LOGS not backed up 1 times format '/$NAS/$DB/logs_%d_%t_%U' delete input tag 'ARCHIVELOGS';
+  backup AS COMPRESSED BACKUPSET archivelog $LOGS format '/$NAS/$DB/logs_%d_%t_%U' delete input tag 'ARCHIVELOGS';
 }
 EOF
 echo "FINISH ARCHIVELOGS BACKUP > \$INF_STR at `date`"
