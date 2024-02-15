@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 14.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
+# version 15.02.2024 by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi
 
 # echo "tpi: "$* 
 _P1_=$1
@@ -3769,15 +3769,13 @@ WITH BACKUP_BACKUPSET AS /*BACKUP AS BACKUPSET RECORDS*/
 (select d.DBID, d.name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
   from V\$DATABASE d,V\$RMAN_BACKUP_JOB_DETAILS j, V\$BACKUP_SET_DETAILS  s
 where d.dbid     = (select dbid from V\$DATABASE)
-  and s.session_recid (+)= j.session_recid 
-  and s.session_stamp (+)= j.session_stamp
-  and s.session_key   (+)= j.session_key
+  and s.session_recid = j.session_recid 
+  and s.session_stamp = j.session_stamp
+  and s.session_key   = j.session_key
   and j.end_time > sysdate-30
   and j.status like 'COMPLETED%'
 group by d.DBID, d.name, input_type, incremental_level)
-select /*+ rule*/
-  dbid,
-  name,
+select /*+ rule */ dbid, name,
   max(decode(input_type,'DB FULL',hours,-1))                                     last_full,
   max(decode(input_type,'DB INCR',decode(incremental_level,   0,hours,null),-1)) last_lev0,
   max(decode(input_type,'DB INCR',decode(incremental_level,   1,hours,null),-1)) last_lev1,
