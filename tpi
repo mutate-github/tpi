@@ -24,7 +24,7 @@ init_msg()
   a__="\"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
   p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties|fusage ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
-  audit__="audit - DDL users audit"
+  audit__="audit [logon] - DDL users audit, logon - check all users for simple password"
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
@@ -1420,6 +1420,207 @@ logf
 
 audit()
 {
+P1_="$1"
+case "$P1_" in
+logon)
+LST='
+ADAMS/wood
+ADMIN/jetspeed
+ADMIN/welcome
+ADMINISTRATOR/admin
+ALHRO/xxx
+ALHRW/xxx
+ANDY/swordfish
+ANONYMOUS/invalid
+APPLSYS/apps
+APPLSYS/fnd
+APPLSYSPUB/fndpub
+APPLSYSPUB/pub
+APPLYSYSPUB/fndpub
+APPLYSYSPUB/pub
+APPLYSYSPUB/unknown
+APPS_MRC/apps
+APPUSER/apppassword
+ATM/sampleatm
+AURORA$JIS$UTILITY$/invalid
+AURORA$ORB$UNAUTHENTICATED/invalid
+BLAKE/paper
+BRUGERNAVN/adgangskode
+BRUKERNAVN/password
+CALVIN/hobbes
+CDEMO82/cdemo83
+CDEMO82/unknown
+CIS/zwerg
+CISINFO/zwerg
+CLARK/cloth
+CLKANA/unknown
+CLKRT/unknown
+CQSCHEMAUSER/password
+CQUSERDBUSER/password
+CTXSYS/change_on_install
+CTXSYS/unknown
+DATA_SCHEMA/laskjdf098ksdaf09
+DBI/mumblefratz
+DCM/unknown
+DDIC/199220706
+DIANE/passwo1
+DISCOVERER5/unknown
+DPF/dpfpass
+DSGATEWAY/unknown
+EARLYWATCH/support
+EJSADMIN/ejsadmin_password
+ESTOREUSER/estore
+FOO/bar
+FROSTY/snowman
+HR/change_on_install
+HR/unknown
+INTERNAL/oracle
+INTERNAL/sys_stnt
+IP/dip
+IX/change_on_install
+JAKE/passwo4
+JILL/passwo2
+JONES/steel
+JWARD/airoplane
+LIBRARIAN/shelves
+MARK/passwo3
+MASCARM/manager
+MASTER/password
+MDDEMO_CLERK/clerk
+MDDEMO_CLERK/mgr
+MDDEMO_MGR/mgr
+MMO2/mmo3
+MMO2/unknown
+MODTEST/yes
+MTS_USER/mts_password
+NNEUL/nneulpass
+NOMEUTENTE/password
+NOME_UTILIZADOR/senha
+NOM_UTILISATEUR/mot_de_passe
+NUME_UTILIZATOR/parol
+OAIHUB902/unknown
+OAS_PUBLIC/unknown
+OCM_DB_ADMIN/unknown
+ODM_MTR/mtrpw
+OE/change_on_install
+OE/unknown
+OEM_REPOSITORY/unknown
+OLAPSVR/instance
+OLAPSYS/manager
+OMWB_EMULATION/oracle
+ORACACHE/unknown
+ORADBA/oradbapass
+ORANGE/unknown
+ORCLADMIN/welcome
+ORD_SERVER/ods
+OSE$HTTP$ADMIN/invalid
+OSSAQ_HOST/unknown
+OSSAQ_PUB/unknown
+OSSAQ_SUB/unknown
+OWF_MGR/unknown
+PLSQL/supersecret
+PM/change_on_install
+PM/unknown
+PORTAL/unknown
+PORTAL30/portal31
+PORTAL_APP/unknown
+PORTAL_DEMO/unknown
+PORTAL_PUBLIC/unknown
+QS/change_on_install
+QS/unknown
+QS_ADM/change_on_install
+QS_ADM/unknown
+QS_CB/change_on_install
+QS_CB/unknown
+QS_CBADM/change_on_install
+QS_CBADM/unknown
+QS_CS/change_on_install
+QS_CS/unknown
+QS_ES/change_on_install
+QS_ES/unknown
+QS_OS/change_on_install
+QS_OS/unknown
+QS_WS/change_on_install
+QS_WS/unknown
+REPORTS_USER/oem_temp
+REP_MANAGER/demo
+REP_OWNER/demo
+REP_USER/demo
+SAP/06071992
+SAP/sapr3
+SAPR3/sap
+SCOTT/tiger
+SCOTT/tigger
+SH/change_on_install
+SH/unknown
+SLIDE/slidepw
+SPOT/pots
+STRAT_USER/strat_passwd
+SYS/0racle
+SYS/change_on_install
+SYS/manager
+SYS/oracle
+SYS/syspass
+SYSADMIN/unknown
+SYSMAN/oem_temp
+SYSTEM/0racle
+SYSTEM/change_on_install
+SYSTEM/manager
+SYSTEM/oracle
+SYSTEM/systempass
+TALBOT/mt6ch5
+TEC/tectec
+TEST/passwd
+THINSAMPLE/thinsamplepw
+TRACESVR/trace
+UDDISYS/unknown
+USER_NAME/password
+USUARIO/clave
+UTLBSTATU/utlestat
+VIF_DEVELOPER/vif_dev_pwd
+VPD_ADMIN/akf7d98s2
+VRR1/unknown
+VRR1/vrr2
+WEBSYS/manager
+WEBUSER/your_pass
+WIRELESS/unknown
+WKPROXY/change_on_install
+WKPROXY/unknown
+WKSYS/change_on_install
+WK_PROXY/unknown
+WK_SYS/unknown
+XDB/change_on_install
+'
+FNAME="tpi_check_passwd.sh"
+if [ -n "${ls2}" ]; then
+  TNS="@\"${ls2}"
+else 
+  TNS="\""
+  COND1="and username <> 'SYS'"
+fi
+echo "set lines 350 pages 0 echo off termout off feedback off" >> login.sql
+$SP  <<EOF > /dev/null 
+set lines 350 pages 0 echo off termout off feedback off echo off timing off
+col cmd for a350
+spool $FNAME
+select q'[echo "select ']'||username||'/'||lower(username)||' - CONNECTED'' from dual;" | sqlplus -S '||username||'/'||lower(username)||'${TNS}'||decode(username,'SYS',' as sysdba')||'"' cmd  from dba_users  where account_status='OPEN' $COND1 order by username;
+spool off
+EOF
+
+for U in $LST; do
+  username=$(echo $U | awk -F"/" '{print $1}')
+  if [ "$username" = "SYS" ]; then
+      echo "echo 'select "${U}" cmd dual;' | sqlplus -S ${U}${TNS} as sysdba\"" >> $FNAME
+  else
+     echo "echo 'select "${U}" cmd dual;' | sqlplus -S ${U}${TNS}\"" >> $FNAME
+  fi
+done
+
+chmod u+x $FNAME
+./$FNAME | egrep ' \- CONNECTED'  > $LOGF
+rm $FNAME login.sql
+;;
+*)
 $SP <<EOF > $LOGF
 set lines 230
 set echo off feed off veri off tab off pages 240
@@ -1479,6 +1680,8 @@ select 'AUDIT '||p.name||decode(u1.name,'PUBLIC',' ',' BY "'||u1.name||'"')||
    WHERE a.user# = u2.user# AND a.option# = -p.privilege and a.proxy# = u1.user#
               and bitand(p.property, 1) != 1 and a.proxy# is not null;
 EOF
+;;
+esac
 logf
 }
 
@@ -2016,6 +2219,61 @@ P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 
 shopt -s nocasematch
 case "$P1_" in
+candidate)
+$SP <<EOF >$LOGF
+set lines 250 pages 10000 timing on
+CREATE OR REPLACE FUNCTION index_saving_function(index_owner IN VARCHAR2, index_name VARCHAR2)
+RETURN NUMBER
+AUTHID current_user
+AS
+  unformatted_blocks NUMBER;
+  unformatted_bytes NUMBER;
+  fs1_blocks NUMBER;
+  fs1_bytes NUMBER;
+  fs2_blocks NUMBER;
+  fs2_bytes NUMBER;
+  fs3_blocks NUMBER;
+  fs3_bytes NUMBER;
+  fs4_blocks NUMBER;
+  fs4_bytes NUMBER;
+  full_blocks NUMBER;
+  full_bytes NUMBER;
+  dbms_space_bytes NUMBER;
+  used_bytes NUMBER;
+  alloc_bytes NUMBER;
+BEGIN
+  dbms_space.space_usage(UPPER(index_owner), UPPER(index_name), 'INDEX', unformatted_blocks, unformatted_bytes, fs1_blocks, fs1_bytes, fs2_blocks,
+  fs2_bytes, fs3_blocks, fs3_bytes, fs4_blocks, fs4_bytes, full_blocks, full_bytes);
+  dbms_space_bytes:=unformatted_bytes+fs1_bytes+fs2_bytes+fs3_bytes+fs4_bytes+full_bytes;
+  dbms_space.create_index_cost(dbms_metadata.get_ddl('INDEX', UPPER(index_name), UPPER(index_owner)), used_bytes, alloc_bytes);
+  IF (dbms_space_bytes <> 0) THEN
+    RETURN trunc(100 * (dbms_space_bytes - alloc_bytes) / dbms_space_bytes);
+  ELSE
+    RETURN 0;
+  END IF;
+END;
+/
+alter session set "_optimizer_cartesian_enabled"=false;
+column owner for a20
+column index_name for a35
+column cmd for a120
+column percent_gain for 99999999
+column bytes_MB for 99999999
+select /*+ NO_QUERY_TRANSFORMATION */ cmd, owner, index_name, bytes_MB, index_saving_function(owner,index_name) percent_gain from (
+  SELECT i.owner,i.index_name, 'alter index '||i.owner||'.'||i.index_name||' rebuild online;' cmd, s.bytes/1024/1024 bytes_MB
+  FROM dba_indexes i, dba_segments s 
+  WHERE i.owner=s.owner and i.index_name=s.segment_name and s.bytes/1024/1024 > 50
+  and i.owner like '%' --and table_name in ('J$1110','J$1102','X$JOURNAL','J$3501','J$1104','J$1109','J$1120','J$11033','J$11038','J$1112','J$11071','J$11072','J$9700' )
+  and i.owner not in ('SYS','SYSTEM','OUTLN','DBSNMP','ORDSYS','ORDPLUGINS','MDSYS','CTXSYS','MTSSYS','WMSYS')
+--  and s.tablespace_name='APEX_7388326897049623'
+  and index_type = 'NORMAL' and temporary='N'
+  and last_analyzed IS NOT NULL
+  and partitioned='NO'
+  and num_rows > 100000
+) where index_saving_function(owner,index_name) > 30
+order by percent_gain desc, bytes_MB desc;
+EOF
+;;
 part)
 $SP <<EOF >$LOGF
 set lines 230 numw 6
@@ -3764,26 +4022,25 @@ EOF
 last)
 $SP <<EOF >$LOGF
 set lines 250
-set echo off feed off veri off tab off timing off pages 90
-WITH BACKUP_BACKUPSET AS /*BACKUP AS BACKUPSET RECORDS*/
-(select d.DBID, d.name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
-  from V\$DATABASE d,V\$RMAN_BACKUP_JOB_DETAILS j, V\$BACKUP_SET_DETAILS  s
-where d.dbid     = (select dbid from V\$DATABASE)
-  and s.session_recid = j.session_recid 
-  and s.session_stamp = j.session_stamp
-  and s.session_key   = j.session_key
-  and j.end_time > sysdate-30
-  and j.status like 'COMPLETED%'
-group by d.DBID, d.name, input_type, incremental_level)
-select /*+ rule */ dbid, name,
+set echo off feed off veri off tab off timing off pages 9
+select name,
   max(decode(input_type,'DB FULL',hours,-1))                                     last_full,
   max(decode(input_type,'DB INCR',decode(incremental_level,   0,hours,null),-1)) last_lev0,
   max(decode(input_type,'DB INCR',decode(incremental_level,   1,hours,null),-1)) last_lev1,
   max(decode(input_type,'DB INCR',decode(incremental_level,null,hours,null),-1)) last_bck,
   max(decode(input_type,'ARCHIVELOG',hours,-1))                                  last_arch,
   (select ceil((sysdate-max(completion_time))*24)  from  V\$BACKUP_SET_DETAILS where controlfile_included='YES') last_ctrl
-from (select * from BACKUP_BACKUPSET)
-group by dbid, name;
+from (
+select /*+ rule */(select name from v\$database) name, input_type, incremental_level, max(END_TIME) last, ceil((sysdate - max(END_TIME))*24) hours
+  from V\$RMAN_BACKUP_JOB_DETAILS j, V\$BACKUP_SET_DETAILS  s
+where s.session_recid = j.session_recid
+  and s.session_stamp = j.session_stamp
+  and s.session_key   = j.session_key
+  and j.end_time > sysdate-30
+  and j.status like 'COMPLETED%'
+group by input_type, incremental_level
+)
+group by name;
 EOF
 ;;
 *)

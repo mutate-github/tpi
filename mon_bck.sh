@@ -26,20 +26,17 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
   DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
   for DB in  `echo "$DBS" | xargs -n1 echo`; do
     echo "DB="$DB
-#    LOGF=$LOGDIR/mon_bck_${HOST}_${DB}.log
-
     for HDS in $(xargs -n1 echo <<< $HOST_DB_SET); do
       BHOST=`echo $HDS | awk -F: '{print $1}'`
       BDB=`echo $HDS | awk -F: '{print $2}'`
       if [[ $HOST = $BHOST && $DB = $BDB ]]; then
-        $WRTPI $HOST $DB rman last | grep -i " $DB "
-        hours=($($WRTPI $HOST $DB rman last | grep -i " $DB "))
-        LAST_FULL="${hours[2]}"
-        LAST_LEV0="${hours[3]}"
-        LAST_LEV1="${hours[4]}"
-        LAST_BCK="${hours[5]}"
-        LAST_ARCH="${hours[6]}"
-        LAST_CTRL="${hours[7]}"
+        hours=($($WRTPI $HOST $DB rman last | awk -v DB=$DB 'BEGIN{IGNORECASE=1}/^.+[0-9] .+[0-9] .+[0-9] .+[0-9] .+[0-9] .+[0-9]$/{ if ($0 ~ DB) print }'))
+        LAST_FULL="${hours[1]}"
+        LAST_LEV0="${hours[2]}"
+        LAST_LEV1="${hours[3]}"
+        LAST_BCK="${hours[4]}"
+        LAST_ARCH="${hours[5]}"
+        LAST_CTRL="${hours[6]}"
 
         echo "LF: $LAST_FULL  L0: $LAST_LEV0  L1: $LAST_LEV1  LB: $LAST_BCK  LA:$LAST_ARCH LC: $LAST_CTRL " 
         echo "HSL0: $hours_since_lvl0  HSL1: $hours_since_lvl1  HSARCH: $hours_since_arch  HSCTRL: $hours_since_ctrl"
@@ -77,8 +74,8 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     done
   done
 done
-#      DBID NAME       LAST_FULL  LAST_LEV0  LAST_LEV1   LAST_BCK  LAST_ARCH  LAST_CTRL
-#3135862854 RZMURM            -1         62         16         16          1          1
+#NAME       LAST_FULL  LAST_LEV0  LAST_LEV1   LAST_BCK  LAST_ARCH  LAST_CTRL
+#MPRD              -1        111         11         11          1          1
 
 #[backup]
 #hours_since_lvl0=120
