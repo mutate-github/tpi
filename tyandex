@@ -1,9 +1,13 @@
 #!/bin/bash
 set -f
 
-# sender=t.mukhametshin@db-service.ru
-sender=dba.almaty@gmail.com
-gapp=vngogoshxiqchxsz
+# for t.mukhametshin@db-service.ru
+#sender=t.mukhametshin@db-service.ru
+#gapp=vngogoshxiqchxsz
+#gapp=lqmshqloajirlbrp
+# for m.mutate@yandex.ru
+sender=m.mutate@yandex.ru
+gapp=frwpbgyrpbtahuqw
 
 if [ $# -lt 1 ]; then
   echo "Usage: $0 [-s subject] email [-a attachment_file]"
@@ -37,9 +41,11 @@ msg=${msg%x}
 #$TLGRM_CMD mark0 $TLGRM_CHT "sender: $sender  
 #\`$msg\`"
 
+# curl --url "smtps://smtp.yandex.ru:465" --ssl-reqd --mail-from "update@mydomain.ru" --mail-rcpt "update@mydomain.ru" --upload-file fileforsending.txt --user "update@mydomain.ru:PASSWORD" --insecure
+
 if [ -z "$file" ]; then 
     #    --mail-rcpt $receiver \
-    curl -s --url 'smtps://smtp.yandex.ru:465' --ssl-reqd \
+    curl -s --url 'smtp://smtp.yandex.ru:465' --ssl-reqd \
     --mail-from $sender \
     $receiver \
     --user $sender:$gapp \
