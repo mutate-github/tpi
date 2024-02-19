@@ -183,7 +183,7 @@ EOF
 
 lock()
 {
-P1_=`echo $ALL | awk '{print $1}'`
+P1_=$(awk '{print $1}' <<< $ALL)
 case "$P1_" in
 all)
 $psql_ <<EOF
@@ -972,7 +972,7 @@ EOF
 
 table()
 {
-P1_=`echo $ALL | awk '{print $1}'`
+P1_=$(awk '{print $1}' <<< $ALL)
 echo "table: " $P1_
 $psql_ <<EOF
 --\x ON
@@ -1085,7 +1085,7 @@ sess)       echo $sess__ ; sess $ALL ;;
 p)          echo $p__ ;     p $ALL ;;
 exec)       echo -e $exec__ ;  execute $ALL ;;
 activity)   echo $activity__; activity $ALL ;;
-lock)        echo $lock__ ;  lock $ALL ;;
+lock)       echo $lock__ ;  lock $ALL ;;
 vacuum)     echo $vacuum__ ; vacuum $ALL ;;
 topsql)     echo $topsql__  ; topsql $ALL ;;
 bloat)      echo $bloat__  ; bloat $ALL ;;

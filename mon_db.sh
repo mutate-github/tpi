@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -14,12 +14,12 @@ echo "Using config: ${CONFIG}"
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
-  for DB in  `echo "$DBS" | xargs -n1 echo`; do
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_db_${HOST}_${DB}.log
     $WRTPI $HOST $DB db | sed -n '/v$instance:/,/v$database:/p' | egrep -v '\----|v\$database:' | sed '/^$/d' > $LOGF

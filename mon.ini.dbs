@@ -13,7 +13,7 @@ host=mp
 host=mp2
 host=md
 host=mu
-host=p260unc2
+#host=p260unc2
 host=askona04
 
 [mp]
@@ -113,6 +113,8 @@ prefix=DBS
 # host:db:set=%:%:%
 # host:db:set=aisprod:aisutf:mon_db.sh:mon_disksp.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_tbs.sh:mon_alert.sh
 host:db:set=mp:%:%
+host:db:set=dca-stock-db:%:%
+host:db:set=srv-olapwhs01-dca:%:%
 
 [admins]
 email=dba.almaty@gmail.com
@@ -159,7 +161,7 @@ repeat_at=08
 
 [fra]
 # FRA limit in %
-limitPER=4
+limitPER=80
 
 [alert]
 part_of_day=24
@@ -195,4 +197,7 @@ host:db:set=kikdb02:EPS:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:creditc:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=kikdb02:KIKOPDR:u15:REDUNDANCY:1:nocatalog:0
 host:db:set=mp:mprd:u15:REDUNDANCY:1:nocatalog:0
+host:db:set=mp2:mprd:u15:REDUNDANCY:1:nocatalog:0
+host:db:set=md:mdev:u15:REDUNDANCY:1:nocatalog:0
+host:db:set=mu:muat:u15:REDUNDANCY:1:nocatalog:0
 

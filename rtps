@@ -6,7 +6,7 @@ shift
 args="$@"
 args=$(echo $args | sed -e 's|\$|\\$|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e 's|"|\\"|g')
 
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 wtps="$BASEDIR/tps"
 
 

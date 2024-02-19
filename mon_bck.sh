@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -14,21 +14,21 @@ echo "Using config: ${CONFIG}"
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
-HOST_DB_SET=`$BASEDIR/iniget.sh $CONFIG backup host:db:set`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
+HOST_DB_SET=$($BASEDIR/iniget.sh $CONFIG backup host:db:set)
 hours_since_lvl0=$($BASEDIR/iniget.sh $CONFIG backup hours_since_lvl0)
 hours_since_lvl1=$($BASEDIR/iniget.sh $CONFIG backup hours_since_lvl1)
 hours_since_arch=$($BASEDIR/iniget.sh $CONFIG backup hours_since_arch)
 hours_since_ctrl=$($BASEDIR/iniget.sh $CONFIG backup hours_since_ctrl)
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
-  for DB in  `echo "$DBS" | xargs -n1 echo`; do
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
     for HDS in $(xargs -n1 echo <<< $HOST_DB_SET); do
-      BHOST=`echo $HDS | awk -F: '{print $1}'`
-      BDB=`echo $HDS | awk -F: '{print $2}'`
+      BHOST=$(awk -F: '{print $1}' <<< $HDS)
+      BDB=$(awk -F: '{print $2}' <<< $HDS)
       if [[ $HOST = $BHOST && $DB = $BDB ]]; then
         hours=($($WRTPI $HOST $DB rman last | awk -v DB=$DB 'BEGIN{IGNORECASE=1}/^.+[0-9] .+[0-9] .+[0-9] .+[0-9] .+[0-9] .+[0-9]$/{ if ($0 ~ DB) print }'))
         LAST_FULL="${hours[1]}"

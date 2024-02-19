@@ -6,7 +6,7 @@ set -f
 #set -x
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -21,13 +21,13 @@ export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
-LINES=`$BASEDIR/iniget.sh $CONFIG alert lines`
-EXCLUDE=`$BASEDIR/iniget.sh $CONFIG alert exclude`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
+LINES=$($BASEDIR/iniget.sh $CONFIG alert lines)
+EXCLUDE=$($BASEDIR/iniget.sh $CONFIG alert exclude)
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
-  for DB in `echo "$DBS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
     LOGF=$LOGDIR/mon_alert_${HOST}_${DB}.log
     LOGF_HEAD=$LOGDIR/mon_alert_${HOST}_${DB}_head.log
     LASTALERTTIME=$LOGDIR/mon_alert_${HOST}_${DB}_lastalerttime.tmp
@@ -35,7 +35,7 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
     echo $EXCLUDE > $EXCLFILE
     AWKFILE=$LOGDIR/mon_alert_${HOST}_${DB}_awkfile.awk
 
-    echo "START HOST="$HOST "DB="$DB "at: "`date`
+    echo "START HOST="$HOST "DB="$DB "at: "$(date)
     $WRTPI $HOST $DB alert $LINES > $LOGF
     sed -i '1d' $LOGF
     head -1 $LOGF > $LOGF_HEAD
@@ -121,7 +121,7 @@ if [ "$ERRCT" -gt 1 ]; then
  cat $LOGF_HEAD | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "ALERT_LOG warning:"
 fi
 
-# rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
+rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
 # rm $LASTALERTTIME
 
   done    # DB

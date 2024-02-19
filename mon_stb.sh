@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -16,17 +16,17 @@ echo "Using config: ${CONFIG}"
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
-SEQ_GAP=`$BASEDIR/iniget.sh $CONFIG standby seq_gap`
-LAG_MINUTES=`$BASEDIR/iniget.sh $CONFIG standby lag_minutes`
-REPEAT_MINUTES=`$BASEDIR/iniget.sh $CONFIG standby repeat_minutes`
-REPEAT_AT=`$BASEDIR/iniget.sh $CONFIG standby repeat_at`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
+SEQ_GAP=$($BASEDIR/iniget.sh $CONFIG standby seq_gap)
+LAG_MINUTES=$($BASEDIR/iniget.sh $CONFIG standby lag_minutes)
+REPEAT_MINUTES=$($BASEDIR/iniget.sh $CONFIG standby repeat_minutes)
+REPEAT_AT=$($BASEDIR/iniget.sh $CONFIG standby repeat_at)
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   echo "DBS="$DBS
-  for DB in  `echo "$DBS" | xargs -n1 echo`; do
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
     LOG_FILE=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_$$.log
     $WRTPI $HOST $DB arch | awk '/LAG_MINUTES/,/Elapsed/' | egrep -v "Elapsed" > $LOG_FILE
@@ -35,52 +35,52 @@ for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
       TRG_FILE_LAG_MINUTES=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_lag_minutes.log
 
       echo "GAP: " $SEQ_GAP_NOW"  LAG: " $LAG_MINUTES_NOW
-      LAG_MINUTES_NOW=`echo "$LAG_MINUTES_NOW/1" | bc`
+      LAG_MINUTES_NOW=$(bc <<< "$LAG_MINUTES_NOW/1")
       if [ -s $TRG_FILE_SEQ_GAP ]; then
         if [ "$SEQ_GAP_NOW" -lt "$SEQ_GAP" ]; then
-          SEQ_GAP_WAS=`cat $TRG_FILE_SEQ_GAP`
+          SEQ_GAP_WAS=$(<$TRG_FILE_SEQ_GAP)
           rm $TRG_FILE_SEQ_GAP
-          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- RECOVER: `date +%H:%M:%S-%d/%m/%y` was ${SEQ_GAP_WAS}, now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
+          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- RECOVER: $(date +%H:%M:%S-%d/%m/%y) was ${SEQ_GAP_WAS}, now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
           echo "SEQ_GAP recover host: "${HOST} " database: "${DB}
         fi
       else
         if [ "$SEQ_GAP_NOW" -ge "$SEQ_GAP" ]; then
           echo "$SEQ_GAP_NOW" > "$TRG_FILE_SEQ_GAP"
-          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER: `date +%H:%M:%S-%d/%m/%y` now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
+          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER: $(date +%H:%M:%S-%d/%m/%y) now ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
           echo "SEQ_GAP trigger host: "${HOST} " database: "${DB}
         fi
       fi
 
       if [ -s $TRG_FILE_LAG_MINUTES ]; then
         if [ "$LAG_MINUTES_NOW" -lt "$LAG_MINUTES" ]; then
-          LAG_MINUTES_WAS=`cat $TRG_FILE_LAG_MINUTES`
+          LAG_MINUTES_WAS=$(<$TRG_FILE_LAG_MINUTES)
           rm $TRG_FILE_LAG_MINUTES
-          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- RECOVER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} was ${LAG_MINUTES_WAS}, now ${LAG_MINUTES_NOW} minuted behind (LAG_MINUTES limit = $LAG_MINUTES min)"
+          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- RECOVER: $(date +%H:%M:%S-%d/%m/%y) standby dest_id: ${DEST_ID} was ${LAG_MINUTES_WAS}, now ${LAG_MINUTES_NOW} minuted behind (LAG_MINUTES limit = $LAG_MINUTES min)"
           echo "LAG_MINUTES recover host: "${HOST} " database: "${DB}
         fi
       else
         if [ "$LAG_MINUTES_NOW" -ge "$LAG_MINUTES" ]; then
           echo "$LAG_MINUTES_NOW" > "$TRG_FILE_LAG_MINUTES"
-          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} is ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)"
+          cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER: $(date +%H:%M:%S-%d/%m/%y) standby dest_id: ${DEST_ID} is ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)"
           echo "LAG_MINUTES trigger host: "${HOST} " database: "${DB}
         fi
       fi
 
       # find old trg_files more then at $REPEAT_AT minutes
-      HH=`date +%H`
+      HH=$(date +%H)
       case "$HH" in
       "${REPEAT_AT}")
-         FF=`find "$TRG_FILE_SEQ_GAP" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l`
+         FF=$(find "$TRG_FILE_SEQ_GAP" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l)
          if [ "$FF" -eq 1 ]; then
-           CNT=`head -1 $TRG_FILE_SEQ_GAP`
-           cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` more ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
+           CNT=$(head -1 $TRG_FILE_SEQ_GAP)
+           cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) more ${SEQ_GAP_NOW} archivelogs not applyed to standby dest_id: ${DEST_ID} (SEQ_GAP limit = $SEQ_GAP logs)"
            echo "SEQ_GAP repeat trigger host: "${HOST} " database: "${DB}
          fi
 
-         FF=`find "$TRG_FILE_LAG_MINUTES" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l`
+         FF=$(find "$TRG_FILE_LAG_MINUTES" -mmin $REPEAT_MINUTES 2>/dev/null | wc -l)
          if [ "$FF" -eq 1 ]; then
-           CNT=`head -1 $TRG_FILE_LAG_MINUTES`
-           cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: `date +%H:%M:%S-%d/%m/%y` standby dest_id: ${DEST_ID} more ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)"
+           CNT=$(head -1 $TRG_FILE_LAG_MINUTES)
+           cat $LOG_FILE | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) standby dest_id: ${DEST_ID} more ${LAG_MINUTES_NOW} minutes behind (LAG_MINUTES limit = $LAG_MINUTES min)"
            echo "LAG_MINUTES repeat trigger host: "${HOST} " database: "${DB}
          fi
       ;;

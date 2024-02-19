@@ -16,7 +16,7 @@ echo "ALL: "$ALL
 msg=$(cat; echo x)
 msg=${msg%x}
 
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 MAILS=$($BASEDIR/iniget.sh $CONFIG mail script)

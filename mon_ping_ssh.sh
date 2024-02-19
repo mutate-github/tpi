@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -11,9 +11,9 @@ if [ -n "$CLIENT" ]; then
 fi
 echo "Using config: ${CONFIG}"
 
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   MSG=""
   ping -w3 -W 10 $HOST
   if [ $? -eq 0 ]; then

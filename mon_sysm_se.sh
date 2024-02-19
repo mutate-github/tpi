@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -13,9 +13,9 @@ echo "Using config: ${CONFIG}"
 
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 SET_ENV_F="$BASEDIR/set_env"
-SET_ENV=`cat $SET_ENV_F`
+SET_ENV=$(<$SET_ENV_F)
 ONE_EXEC_F=$BASEDIR/one_exec_mon_sysm_se_${me}.sh
 
 cat << EOF_CREATE_F > $ONE_EXEC_F
@@ -152,10 +152,10 @@ ORDER BY   dbtm DESC;
 EOS
 EOF_CREATE_F
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
 #  echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
-  for DB in  `echo "$DBS" | xargs -n1 echo`; do
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
 #    echo "DB="$DB
     LOGF=$LOGDIR/mon_sysm_se_db_${HOST}_${DB}.log
     cat $ONE_EXEC_F | ssh oracle@$HOST "/bin/bash -s $DB" >> $LOGF

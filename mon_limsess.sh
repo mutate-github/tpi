@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -14,16 +14,15 @@ echo "Using config: ${CONFIG}"
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
 WRTPI="$BASEDIR/rtpi"
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 SET_ENV_F="$BASEDIR/set_env"
-SET_ENV=`cat $SET_ENV_F`
+SET_ENV=$(<$SET_ENV_F)
 PERCENT=80
 
-
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
-  DBS=`$BASEDIR/iniget.sh $CONFIG $HOST db`
-  for DB in  `echo "$DBS" | xargs -n1 echo`; do
+  DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
+  for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
 
 VALUE=$(echo -e "#!/bin/bash

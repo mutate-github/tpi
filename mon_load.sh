@@ -2,7 +2,7 @@
 set -f
 
 CLIENT="$1"
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 CONFIG="mon.ini"
 if [ -n "$CLIENT" ]; then
   shift
@@ -13,15 +13,15 @@ echo "Using config: ${CONFIG}"
 
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
-HOSTS=`$BASEDIR/iniget.sh $CONFIG servers host`
-limPER=`$BASEDIR/iniget.sh $CONFIG load limitPER`
+HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
+limPER=$($BASEDIR/iniget.sh $CONFIG load limitPER)
 
 
-for HOST in `echo "$HOSTS" | xargs -n1 echo`; do
+for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   LOGF=$LOGDIR/mon_swap_${HOST}.log
   LOGF_HEAD=$LOGDIR/mon_swap_${HOST}_head.log
   echo "HOST: "$HOST
-  OS=`ssh $HOST "uname"`
+  OS=$(ssh $HOST "uname")
   case "$OS" in
    Linux)
           ssh "$HOST" "cat /proc/loadavg | awk '{printf (\"%3.0f\", \$2)}'" > $LOGF
