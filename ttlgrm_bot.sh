@@ -19,7 +19,6 @@ msg=${msg%x}
 BASEDIR=$(dirname $0)
 TLGRM_CMD=$($BASEDIR/iniget.sh $CONFIG telegram cmd)
 TLGRM_CHT=$($BASEDIR/iniget.sh $CONFIG telegram chat_id)
-$TLGRM_CMD mark0 $TLGRM_CHT "sender: \`${MPREFIX} ${HOST}/${DB} ${ALL}\`
-\`\`\`
+$TLGRM_CMD mark0 $TLGRM_CHT "\`\`\` sender: ${MPREFIX} ${HOST}/${DB} ${ALL}
 ${msg} \`\`\`"
 
