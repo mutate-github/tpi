@@ -15,9 +15,9 @@ shift
 PARAM="$@"
 PARAM=$(echo $PARAM | sed -e "s/'/\\\'/g" -e 's|(|\\(|g' -e 's|)|\\)|g' )
 
-BASEDIR=`dirname $0`
+BASEDIR=$(dirname $0)
 SET_ENV_F="$BASEDIR/set_env"
-SET_ENV=`cat $SET_ENV_F`
+SET_ENV=$(<$SET_ENV_F)
 
 echo "SRV: $SRV     SID: $SID    SCRIPT: $SCRIPT     PARAM: $PARAM"
 
