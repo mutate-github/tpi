@@ -2,9 +2,10 @@
 set -f
 
 printf "usage: ./diagram.sh sysmetric_h.log 25/11/23-0[89]  3 11 15 17 19 20 22 23 24 \n"
-printf "usage: tpi ... oratop h    | diagram.sh  3 11 15 17 19 20 22 23 24 \n"
-printf "usage: tpi ... oratop dhsh | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24 \n"
-printf "usage: tpi ... tchart      | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
+printf "usage: tpi ... oratop h     | diagram.sh  3 11 15 17 19 20 22 23 24 \n"
+printf "usage: tpi ... oratop dhsh  | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24 \n"
+printf "usage: tpi ... tchart       | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
+printf "usage: tpi ... dhash iostat | diagram.sh  2 3 4 5 6 7 8 9 10 11 12 13 \n"
 echo ""
 
 if [[ "$2" =~ "/" || "$#" -eq 0 ]]; then
@@ -24,7 +25,7 @@ else
   shift
   shift
   if [[ "$#" -ne 0 ]]; then  all_par="$@"; fi
-  if [[ "$#" -eq 0 ]]; then  exit; fi
+  if [[ "$#" -eq 0 ]]; then  : ; fi
   # col1="$3"
   # col2="$4"
 fi
@@ -35,6 +36,7 @@ histo="|=======================================================================+
 scale=$(awk "BEGIN{print $limit/100}")
 
 tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
+if [[ "$#" -eq 0 ]]; then all_par=$(seq 2 $(awk '{print NF}' ${file}.tmp)); echo "debug all_par: " $all_par; fi
 # egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
 egrep "^${date}" "${file}" | uniq >> ${file}.tmp
 rm /tmp/$$_tmp.tmp 2>/dev/null
