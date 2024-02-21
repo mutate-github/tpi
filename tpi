@@ -2371,7 +2371,7 @@ select index_owner,index_name,table_owner,table_name,column_expression,column_po
 
 col cmd for a230
 prompt recompile cmd for  index_name like $P1_ and owner like nvl('$P2_','%')
-select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P2_','%') and index_name = upper('$P1_') and status='UNUSABLE';
+select 'ALTER INDEX "'||owner||'"."'||index_name||'" REBUILD online;'cmd from dba_indexes where owner like nvl('$P2_','%') and index_name like upper('$P1_') and status='UNUSABLE';
 EOF
 ;;
 esac
