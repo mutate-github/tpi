@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="21.02.24"
+TPIVER="22.02.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -25,7 +25,7 @@ init_msg()
   a__="\"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
   p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties|fusage ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
-  audit__="audit [logon] - DDL users audit, logon - check all users for simple password"
+  audit__="audit [login | maxcon [dd/mm/yy-HH:MI-HH:MI(hours)] [CNT] | 1017 [dd/mm/yy-HH:MI-HH:MI(hours)] [USR] | obj [dd/mm/yy-HH:MI-HH:MI(hours)] [OBJ] ] - DDL users audit, login - check all users for simple password, maxcon - max of db connections above CNT (def 100) for a period (def 1H), 1017 - failed login, obj - obj audit"
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
@@ -1423,8 +1423,89 @@ logf
 audit()
 {
 P1_="$1"
+shift
+sysdate=$(date +%d/%m/%y\ %H:%M:%S)
+if [ $(is_number $(awk -F"/" '{print $1}' <<< "$*")) -eq 0 ]; then
+ DD_=$(date +%d/%m/%Y)
+ HHB_=$(date +%H)
+ HHE_=1
+ INTERVAL_="between to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour and sysdate"
+else
+ DD_=$(awk -F- '{print $1}' <<< "$*")
+ HHB_=$(awk -F- '{print $2}' <<< "$*")
+ HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
+ HHR_=$(awk '$1!~/:/{print $1}' <<< "$HHE_")
+ if [ -n "$HHR_" ]; then
+   INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour +  interval '2' minute"
+ else
+   INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
+ fi
+fi
+
+
 case "$P1_" in
-logon)
+1017)
+[[ -n "$2" ]] && USR_="$2" || USR_="%"
+$SP <<EOF > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 240 numw 6
+column OS_USERNAME for a20
+column USERNAME for a30
+column USERHOST for a30
+column TERMINAL for a30
+column dd for a20
+PROMPT "dba_audit_trail for username like $USR_ and returncode in ('1017','28000') for a period $INTERVAL_ :"
+select username, os_username, userhost, terminal, cast(timestamp as date) date_time, action_name, returncode from dba_audit_trail 
+where username like '$USR_'
+--and userhost='VL20-SRV64'
+and timestamp $INTERVAL_
+and returncode in ('1017','28000') 
+and returncode <> '0'
+order by date_time;
+EOF
+;;
+obj)
+[[ -n "$2" ]] && OBJ_="$2" || OBJ_="%"
+$SP <<EOF > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 240 numw 6
+column date_time for a20
+column owner for a20
+column obj_name for a35
+column action_name  for a17
+column OS_USERNAME for a20
+column USERNAME for a30
+column USERHOST for a30
+column TERMINAL for a30
+PROMPT "dba_audit_trail for obj_name like $OBJ_ for a period $INTERVAL_ :"
+select cast(timestamp as date) date_time, owner||'.'||obj_name obj_name, action_name, username, os_username, userhost, terminal
+from dba_audit_trail
+where obj_name like upper('$OBJ_')
+and timestamp $INTERVAL_
+order by date_time;
+EOF
+;;
+maxcon)
+[[ -n "$2" ]] && CNT_="$2" || CNT_="100"
+$SP <<EOF > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 240 numw 6
+col OS_USERNAME for a30
+col USERNAME for a20
+col USERHOST  for a40
+col TERMINAL for a20
+col hh24 for a15
+PROMPT "dba_audit_trail where from the db connections above $CNT_ for a period $INTERVAL_ grouped by hour:"
+select username,os_username,userhost,terminal, to_char(cast(timestamp as date), 'dd/mm/yyyy hh24') hh24, count(*) count
+from dba_audit_trail
+where timestamp $INTERVAL_
+and action=100
+group by username,os_username,userhost,terminal,to_char(cast(timestamp as date), 'dd/mm/yyyy hh24') 
+having count(*) >= $CNT_
+order by hh24, count desc;
+EOF
+;;
+login)
 LST='
 ADAMS/wood
 ADMIN/jetspeed
@@ -1618,6 +1699,7 @@ for U in $LST; do
   fi
 done
 
+echo "Wait... Check users for account_status='OPEN' and simple password:"
 chmod u+x $FNAME
 ./$FNAME | egrep ' \- CONNECTED'  > $LOGF
 rm $FNAME login.sql
