@@ -35,7 +35,7 @@ limit=15
 histo="|=======================================================================+"
 scale=$(awk "BEGIN{print $limit/100}")
 
-tail -100 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
+tail -10000 "${file}" | grep "BEGIN_TIME" | uniq > ${file}.tmp
 if [[ "$#" -eq 0 ]]; then all_par=$(seq 2 $(awk '{print NF}' ${file}.tmp)); echo "debug all_par: " $all_par; fi
 # egrep "${date}" "${file}" | sort -n | uniq >> ${file}.tmp
 egrep "^${date}" "${file}" | uniq >> ${file}.tmp
