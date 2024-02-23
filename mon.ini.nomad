@@ -118,7 +118,7 @@ exclude=ORA-27037
 [backup]
 hours_since_lvl0=170
 hours_since_lvl1=170
-hours_since_arch=4
+hours_since_arch=6
 hours_since_ctrl=12
 level0=Sun
 level1=Tue,Thu,Sat
