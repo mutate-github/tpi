@@ -5393,7 +5393,7 @@ col PHREMBPS for 999999 heading "16|PREMBPS"
 col PHWRMBPS for 999999 heading "17|PWRMBPS"
 col PHREIOPS for 999999 heading "18|PREIOPS"
 col PHWRIOPS for 999999 heading "19|PWRIOPS"
-col ENQTXMS for 9999999 heading "20|ENQTXMS"
+col ENQTXMS for 99999999 heading "20|ENQTXMS"
 col ENQTMMS for 9999999 heading "21|ENQTMMS"
 col TRANMIN for 999999 heading "22|TRANMIN"
 col ROLLMIN for 999999 heading "23|ROLLMIN"
@@ -5643,27 +5643,27 @@ select TO_CHAR(aas.begin_time,'DD/MM/YY-HH24:MI:SS') begin_time, aas.instance_nu
 nvl(READLAT.READLAT,0) READLAT, nvl(LFPWLAT.LFPWLAT,0) LFPWLAT, nvl(LFSYLAT.LFSYLAT,0) LFSYLAT, nvl(PHYRE.PHYREMBT,0) PHYREMBT, nvl(PHYWR.PHYWRMBT,0) PHYWRMBT, nvl(PHREMbps.PHREMbps,0) PHREMbps, nvl(PHWRMbps.PHWRMbps,0) PHWRMbps, nvl(PHREIOPS.PHREIOPS,0) PHREIOPS, nvl(PHWRIOPS.PHWRIOPS,0) PHWRIOPS, 
 nvl(ENQTXms.ENQTXms,0) ENQTXms, nvl(ENQTMms.ENQTMms,0) ENQTMms, nvl(TRAN.TRANMIN,0) TRANMIN, nvl(ROLL.ROLLMIN,0) ROLLMIN
 from AAS, DBTM, DBCPU, LOAD, LOADW, LIO, REDO, DBBLC, PGA, READLAT, LFPWLAT, LFSYLAT, PHYRE, PHYWR, PHREIOPS, PHWRIOPS, PHREMbps, PHWRMbps, ENQTXms, ENQTMms, TRAN, ROLL
-where AAS.begin_time=DBTM.begin_time and AAS.instance_number=DBTM.instance_number
-  and AAS.begin_time=DBCPU.begin_time and AAS.instance_number=DBCPU.instance_number
-  and AAS.begin_time=LOAD.begin_time and AAS.instance_number=LOAD.instance_number
-  and AAS.begin_time=LOADW.begin_time and AAS.instance_number=LOADW.instance_number
-  and AAS.begin_time=LIO.begin_time and AAS.instance_number=LIO.instance_number
-  and AAS.begin_time=REDO.begin_time and AAS.instance_number=REDO.instance_number
-  and AAS.begin_time=DBBLC.begin_time and AAS.instance_number=DBBLC.instance_number
-  and AAS.begin_time=PGA.begin_time and AAS.instance_number=PGA.instance_number
-  and AAS.begin_time=READLAT.begin_time and AAS.instance_number=READLAT.instance_number
-  and AAS.begin_time=LFPWLAT.begin_time and AAS.instance_number=LFPWLAT.instance_number
-  and AAS.begin_time=LFSYLAT.begin_time and AAS.instance_number=LFSYLAT.instance_number
-  and AAS.begin_time=PHYRE.begin_time and AAS.instance_number=PHYRE.instance_number
-  and AAS.begin_time=PHYWR.begin_time and AAS.instance_number=PHYWR.instance_number
-  and AAS.begin_time=PHREMbps.begin_time and AAS.instance_number=PHREMbps.instance_number
-  and AAS.begin_time=PHWRMbps.begin_time and AAS.instance_number=PHWRMbps.instance_number
-  and AAS.begin_time=PHREIOPS.begin_time and AAS.instance_number=PHREIOPS.instance_number
-  and AAS.begin_time=PHWRIOPS.begin_time and AAS.instance_number=PHWRIOPS.instance_number
-  and AAS.begin_time=ENQTXms.begin_time and AAS.instance_number=ENQTXms.instance_number
-  and AAS.begin_time=ENQTMms.begin_time and AAS.instance_number=ENQTMms.instance_number
-  and AAS.begin_time=TRAN.begin_time and AAS.instance_number=TRAN.instance_number
-  and AAS.begin_time=ROLL.begin_time and AAS.instance_number=ROLL.instance_number
+where AAS.begin_time=DBTM.begin_time (+) and AAS.instance_number=DBTM.instance_number (+)
+  and AAS.begin_time=DBCPU.begin_time (+) and AAS.instance_number=DBCPU.instance_number (+)
+  and AAS.begin_time=LOAD.begin_time (+) and AAS.instance_number=LOAD.instance_number (+)
+  and AAS.begin_time=LOADW.begin_time (+) and AAS.instance_number=LOADW.instance_number (+)
+  and AAS.begin_time=LIO.begin_time (+) and AAS.instance_number=LIO.instance_number (+)
+  and AAS.begin_time=REDO.begin_time (+) and AAS.instance_number=REDO.instance_number (+)
+  and AAS.begin_time=DBBLC.begin_time (+) and AAS.instance_number=DBBLC.instance_number (+)
+  and AAS.begin_time=PGA.begin_time (+) and AAS.instance_number=PGA.instance_number (+)
+  and AAS.begin_time=READLAT.begin_time (+) and AAS.instance_number=READLAT.instance_number (+)
+  and AAS.begin_time=LFPWLAT.begin_time (+) and AAS.instance_number=LFPWLAT.instance_number (+)
+  and AAS.begin_time=LFSYLAT.begin_time (+) and AAS.instance_number=LFSYLAT.instance_number (+)
+  and AAS.begin_time=PHYRE.begin_time (+) and AAS.instance_number=PHYRE.instance_number (+)
+  and AAS.begin_time=PHYWR.begin_time (+) and AAS.instance_number=PHYWR.instance_number (+)
+  and AAS.begin_time=PHREMbps.begin_time (+) and AAS.instance_number=PHREMbps.instance_number (+)
+  and AAS.begin_time=PHWRMbps.begin_time (+) and AAS.instance_number=PHWRMbps.instance_number (+)
+  and AAS.begin_time=PHREIOPS.begin_time (+) and AAS.instance_number=PHREIOPS.instance_number (+)
+  and AAS.begin_time=PHWRIOPS.begin_time (+) and AAS.instance_number=PHWRIOPS.instance_number (+)
+  and AAS.begin_time=ENQTXms.begin_time (+) and AAS.instance_number=ENQTXms.instance_number (+)
+  and AAS.begin_time=ENQTMms.begin_time (+) and AAS.instance_number=ENQTMms.instance_number (+)
+  and AAS.begin_time=TRAN.begin_time (+) and AAS.instance_number=TRAN.instance_number (+)
+  and AAS.begin_time=ROLL.begin_time (+) and AAS.instance_number=ROLL.instance_number (+)
 order by begin_time;
 EOF
 ;;
