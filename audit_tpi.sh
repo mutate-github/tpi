@@ -94,6 +94,7 @@ rtpi $SRV $SID dhash event
 rtpi $SRV $SID dhash $DT mchart
 echo "rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16"
 rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16
+rtpi $SRV $SID dhash $DT3 awrinfo | diagram.sh 
 rtpi $SRV $SID dhash $DT3 iostat | diagram.sh
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 rtpi $SRV $SID dhash $DT sql
