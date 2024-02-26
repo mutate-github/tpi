@@ -27,7 +27,7 @@ host:db:scripts=aisprod:%:mon_swap.sh
 
 [mail]
 #script=mmail
-script=tgmail
+script=tgmail_html
 #script=tyandex
 prefix=IPOTEKA->
 # % - mask send mail for all host or db or scripts
