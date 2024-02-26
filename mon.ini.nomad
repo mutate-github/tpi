@@ -27,7 +27,7 @@ db=aisutf
 
 [mail]
 # script=mmail.nomad
-script=tgmail
+script=tgmail_html
 # script=tyandex
 prefix=NOMAD->
 # % - mask send mail for all host or db or scripts
