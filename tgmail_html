@@ -39,7 +39,7 @@ msg=${msg%x}
 
 html_msg="<html>
 <head>
-<meta http-equiv='Content-Type' content='text/html; charset=windows-1251'>
+<meta http-equiv='Content-Type' content='text/html'>
 <title>SQL*Plus Output</title>
 <style> html { font-family: consolas, monospace; font-size: 9pt; background-color: #dce1e9; } table, td, th { text-align: left; vertical-align: top; border: 1px solid #808090; background: white; padding: .5em .6em; } table { border-collapse: collapse; margin-top: 1.2em; /* space above table itself */ margin-bottom: 1.2em; border-width: 3px; margin-bottom: 1em; } td { margin: .2em; font-size: 80%; } th { background: #f0f4fd; font-weight: bold; font-size: 95%; margin: .2em; padding-bottom: .4em; } </style>
 </head>
@@ -60,7 +60,7 @@ if [ -z "$file" ]; then
      -T <(echo -e "From: ${sender}
 To: ${receiver_}
 Subject:${sub}
-Content-Type: text/html; charset=windows-1251
+Content-Type: text/html
 ${html_msg}"
 )
 echo "Mail sent."
