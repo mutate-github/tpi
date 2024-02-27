@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="24.02.24"
+TPIVER="27.02.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2078,7 +2078,7 @@ select owner, object_name, object_type,status from dba_objects where status!='VA
 ttitle left "recompile commands for invalid objects owner like nvl(upper('$P2_'),'%') :"
 column cmd for a230
 select 'alter '||decode(object_type,'PACKAGE BODY','PACKAGE',object_type)||' "'||owner||'"."'|| object_name||'" '||decode(object_type,'PACKAGE BODY','COMPILE BODY','COMPILE')||';' cmd from dba_objects
-where status <> 'VALID' and owner like nvl(upper('$P2_'),'%') and (object_type like 'PACKAGE%' or object_type in ('PROCEDURE','FUNCTION','VIEW','JAVA CLASS','TRIGGER'));
+where status <> 'VALID' and owner like nvl(upper('$P2_'),'%') and (object_type like 'PACKAGE%' or object_type in ('PROCEDURE','FUNCTION','VIEW','JAVA CLASS','TRIGGER','MATERIALIZED VIEW'));
 EOF
 ;;
   ddl)
