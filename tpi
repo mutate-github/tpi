@@ -5225,32 +5225,34 @@ segstat)
   $SET_COL
   set lines 230 pages 90 numw 9
   col owner for a20
-  col SNAP_TIME for a15
-  col LogRead_Mb for 999999999
-  col BufBusWait for 999999999
-  col DbBlCh_Mb for 9999999
-  col PhRead_Mb for 9999999
-  col PhWrite_Mb for 9999999
-  col PhReadDir_Mb for 9999999
-  col PhWriteDir_Mb for 9999999
+  col SNAP_TIME for a15 heading "BEGIN_TIME"
+  col LogRe_Bl for 999999999
+  col BufBusWa for 999999999
+  col DbBlCh_Bl for 9999999
+  col PhRe_Bl for 9999999
+  col PhWre_Bl for 9999999
+  col PhReDirBl for 9999999
+  col PhWrDirBl for 9999999
   col ITL_W for 999999999
   col RowLckWait for 999999999
   col BUF_BUS_W for 999999999
+  col SpacAllocTotal_MB for 99999999999
   col SpacAlloc_Mb for 99999999999
   BREAK ON REPORT
   COMPUTE SUM LABEL 'SUM' OF block_changed on report
-  SELECT   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24') snap_time,
+  SELECT   TO_CHAR(begin_interval_time, 'dd/mm/yy-hh24:mi') snap_time,
            dhso.owner, dhso.object_name, dhso.object_type,
-           SUM (LOGICAL_READS_DELTA)/1024/1024 "LogRead_Mb",
-           SUM (BUFFER_BUSY_WAITS_DELTA) "BufBusWait",
-           SUM (DB_BLOCK_CHANGES_DELTA)/1024/1024 "DbBlCh_Mb",
-           SUM (PHYSICAL_READS_DELTA)/1024/1024 "PhRead_Mb",
-           SUM (PHYSICAL_WRITES_DELTA)/1024/1024 "PhWrite_Mb",
-           SUM (PHYSICAL_READS_DIRECT_DELTA)/1024/1024 "PhReadDir_Mb",
-           SUM (PHYSICAL_WRITES_DIRECT_DELTA)/1024/1024 "PhWriteDir_Mb",
-           SUM (ITL_WAITS_DELTA) ITL_W,
-           SUM (ROW_LOCK_WAITS_DELTA) "RowLckWait",
-           SUM (SPACE_ALLOCATED_DELTA)/1024/1024 "SpacAlloc_Mb"
+           SUM(LOGICAL_READS_DELTA) "LogRe_Bl",
+           SUM(BUFFER_BUSY_WAITS_DELTA) "BufBusWa",
+           SUM(DB_BLOCK_CHANGES_DELTA) "DbBlCh_Bl",
+           SUM(PHYSICAL_READS_DELTA) "PhRe_Bl",
+           SUM(PHYSICAL_WRITES_DELTA) "PhWr_Bl",
+           SUM(PHYSICAL_READS_DIRECT_DELTA) "PhReDirBl",
+           SUM(PHYSICAL_WRITES_DIRECT_DELTA) "PhWrDirBl",
+           SUM(ITL_WAITS_DELTA) ITL_W,
+           SUM(ROW_LOCK_WAITS_DELTA) "RowLckWait",
+           SUM(Space_Allocated_Total)/1024/1024 "SpacAllocTotal_MB",
+           SUM(SPACE_ALLOCATED_DELTA)/1024/1024 "SpacAlloc_Mb"
    FROM   dba_hist_seg_stat dhss,
            dba_hist_seg_stat_obj dhso,
            dba_hist_snapshot dhs
@@ -5261,7 +5263,7 @@ segstat)
 	   AND begin_interval_time $INTERVAL_
 	   and object_name like nvl(trim('$OBJ_'),'%')
 	   and owner like nvl(trim('$OWN_'),'%')
-  GROUP BY   TO_CHAR (begin_interval_time, 'yyyy/mm/dd hh24'), dhso.owner, dhso.object_name, dhso.object_type
+  GROUP BY  begin_interval_time, dhso.owner, dhso.object_name, dhso.object_type
   --  HAVING   SUM (LOGICAL_READS_DELTA) > nvl(trim('$SIZE_'), 0)
   ORDER BY   snap_time;
 EOF
