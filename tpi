@@ -5702,23 +5702,19 @@ else
    HHB_=$(date +%H)
    HHE_=1
    INTERVAL_="between to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour and sysdate"
-#   INTERVAL_LA_="last_active_time >= to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour"
  else
    DD_=$(awk -F- '{print $1}' <<< "$*")
    HHB_=$(awk -F- '{print $2}' <<< "$*")
    HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
    HHR_=$(awk '$1!~/:/{print $1}' <<< "$HHE_")
+   echo "DD_: $DD_   HHB_: $HHB_  HHE_: $HHE_  HHR_: $HHR_ "
    if [ -n "$HHR_" ]; then
      INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour"
-#     INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') + interval '$HHR_' hour"
      shift
    else
      INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and to_date('$DD_ $HHE_','dd/mm/yy hh24:mi')"
-#     INTERVAL_="sample_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sample_time <= to_date('$DD_ $HHE_','dd/mm/yy hh24:mi')"
      shift
    fi
-   INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and sysdate"
-#   INTERVAL_LA_="last_active_time >= to_date('$DD_ $HHB_','dd/mm/yy hh24:mi')"
  fi
 
  type_=$((awk '{print $1}' | tr '[:upper:]' '[:lower:]') <<< "$*")
