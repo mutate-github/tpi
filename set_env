@@ -1,3 +1,4 @@
+shopt -s nocasematch
 case "$sid" in
 cft*|kik*|bd*|prov*)        [ -r ~/db12kik.env ] && source ~/db12kik.env ;;
 EPS*|creditc)               [ -r ~/db12.env ] && source ~/db12.env ;;
@@ -6,10 +7,10 @@ jet|ja)                     [ -r /etc/profile.ora ] && source /etc/profile.ora ;
 aisutf*|unit*|crm)          [ -r ~/.ora_env ] && source ~/.ora_env ;;
 askona*|aixtdb*|sbaskona)   [ -r ~/.profile ] && source ~/.profile ;;
 egais*|GOLD506*)            [ -r ~/.bashrc ] && source ~/.bashrc ;;
-unc*)                       [ -r ~/${sid}_setenv.sh ] && source ~/${sid}_setenv.sh ;;
+unc*|UKVDEV)                [ -r ~/${sid}_setenv.sh ] && source ~/${sid}_setenv.sh ;;
 # opndb)                    [ -r ~/BRSKDB_setenv.sh && source ~/BRSKDB_setenv.sh ; login_str="tal/tal@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb*|obk*)                : ;;
-INSIS*|insis*|alfa|ALFA)    : ;;
+INSIS*|alfa)                : ;;
 dbprod|dbprog)              : ;;
 *) #        if [ -r ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -r ~/.bash_profile ]; then . ~/.bash_profile ; fi

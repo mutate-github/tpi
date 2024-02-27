@@ -18,28 +18,6 @@ export DEBUG=1
 me=$$
 one_exec_f="one_exec_switchover_${me}.sh"
 
-#sid=$3
-#set_env="case \"\$sid\" in
-#kik*|bd*|cft*|prov)       . ~/db12kik.env ;;
-#EPS*|creditc)             . ~/db12.env ;;
-#KIKOPDR)                  . ~/db11.env ;;
-#jet|ja)                   . /etc/profile.ora ;;
-#aisutf*|unit*)            . ~/.ora_env ;;
-#askona|aixtdb|sbaskona)   . ~/.profile ;;
-#GOLD506*|egais*)          . ~/.bashrc ;;
-#goldwhs)                  . ~/.bash_profile ;;
-#*) #        if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
-#   #        if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi
-##           if [ -f ~/.profile ]; then . ~/.profile ; fi
-#   case `uname | awk -F_ '{print $1}'` in
-#      Linux)  if [ -f ~/.bash_profile ]; then . ~/.bash_profile ; fi ;;
-#      AIX)    if [ -f ~/.profile ]; then . ~/.profile ; fi
-#              if [ -f ~/.bashrc ]; then . ~/.bashrc ; fi
-#              ;;
-#      *) ;;
-#   esac
-#;;
-#esac"
 
 next_step()
 {
