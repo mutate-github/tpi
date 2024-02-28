@@ -5228,16 +5228,16 @@ segstat)
   col SNAP_TIME for a15 heading "BEGIN_TIME"
   col LogRe_Bl for 999999999
   col BufBusWa for 999999999
-  col DbBlCh_Bl for 9999999
+  col DbBlCh_Bl for 999999999
   col PhRe_Bl for 9999999
   col PhWre_Bl for 9999999
   col PhReDirBl for 9999999
   col PhWrDirBl for 9999999
-  col ITL_W for 999999999
-  col RowLckWait for 999999999
-  col BUF_BUS_W for 999999999
-  col SpacAllocTotal_MB for 99999999999
-  col SpacAlloc_Mb for 99999999999
+  col ITL_W for 9999999
+  col RowLckWait for 9999999
+  col BUF_BUS_W for 9999999
+  col SpacAllocTotal_MB for 999999999
+  col SpacAlloc_Mb for 999999999
   BREAK ON REPORT
   COMPUTE SUM LABEL 'SUM' OF block_changed on report
   SELECT   TO_CHAR(begin_interval_time, 'dd/mm/yy-hh24:mi') snap_time,
