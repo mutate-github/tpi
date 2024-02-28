@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="27.02.24"
+TPIVER="28.02.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -4666,7 +4666,7 @@ awr_tchart()
 {
 view_=$1
 if [ "$view_" = "dba_hist_active_sess_history" ]; then
-        S1_="*10"
+    S1_="*10"
 fi
 $SP <<EOF >$LOGF
 set lines 250 pages 100 tab off
@@ -4707,7 +4707,7 @@ SELECT
 FROM
   (SELECT
      TRUNC(sample_time,'MI') AS sample_time,
-     round(count(*)/60,2) aas,
+     round(count(*)/60,2) $S1_ AS aas,
      SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',0,1),0))/60 $S1_ AS cpu,
      SUM(DECODE(session_state,'ON CPU',DECODE(session_type,'BACKGROUND',1,0),0))/60 $S1_ AS bcpu,
      SUM(DECODE(wait_class,'Scheduler',1,0))/60 $S1_ AS scheduler,
