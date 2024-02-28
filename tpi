@@ -85,6 +85,7 @@ export ORACLE_SID
 #export NLS_LANG
 shift
 ID="$1"
+# echo "ID: "$ID
 # ALL=$*
 ALL=$(echo $*)
 # echo "tpi ALL: "$ALL

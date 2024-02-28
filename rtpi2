@@ -19,7 +19,7 @@ BASEDIR=`dirname $0`
 wtpi="$BASEDIR/tpi"
 SET_ENV_F="$BASEDIR/set_env"
 [ -r $SET_ENV_F ] && source $SET_ENV_F
-# echo "host: $P1_  sid: $sid  args: $args"
+echo "host: $P1_  sid: $sid  args: $args"
 #for tnsnames connection through .tpi_login file
 #format .tpi_login file: server sid encusername/encpassword@tns_alias
 BASEDIR=`dirname $0`
@@ -28,7 +28,7 @@ if [ "$BASEDIR" = "/bin" ]; then
 fi
 login_str=$(awk '{IGNORECASE=1}/^'$P1_' +'$sid' +.*/{print substr($0,index($0,$3))}' $BASEDIR/.tpi_login 2>/dev/null | head -1)
 chmod 600 $BASEDIR/.tpi_login 2>/dev/null
-# echo "rtpi_login_str: "$login_str
+echo "rtpi_login_str: "$login_str
 
 shopt -s nocasematch
 case "${P1_}:${sid}" in
@@ -38,15 +38,13 @@ case "${P1_}:${sid}" in
   storgco:*|ikb:*)                                                                   $wtpi $sid $login_str $args ;;
   p260unc2:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   p260unc4:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/uncunc_setenv.sh ]; then . ~/uncunc_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
-  z14-0975-tfdb:obklocal)                                                            cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
-  z14-0976-tfdb:middle)                                                              cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   [z]14-*:*|kem-ora01:*|brnsk-oracle-phenix:*|abkh-oracle-phenix:*)                  cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   z11-00341-otbd:opndb|SMOK-ORA01:obk|obkt:*|p750alife:*|alfa:*)                     cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
 #  mdstock2:PSTOCK)                                                                  cat $wtpi | ssh oracle$P1_ "[ -r ~/.bash_profile ] && source ~/.bash_profile ; /bin/bash -s $sid $args" ;;
-  z11-0090[78]-insis:*INS*)                                                          cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
+  z11-0090[78]-insis:INSIS*)                                                         cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   SRV-ORA*:dbpro*)                                                                   cat $wtpi | ssh mp ". ~/.ora_env; /bin/bash -s $sid '" $login_str "' $args" ;;
-#  aisprod:aisutf)                                                                    $wtpi $sid $login_str $argsl ;;
-#  beta:aisutf)                                                                       $wtpi $sid $login_str $argsl ;;
+  aisprod:aisutf)                                                                    $wtpi $sid $login_str $argsl ;;
+#  beta:aisutf)                                                                       $wtpi $sid $login_str $args ;;
   ais*:*|unit*:*|alpha:*|beta:*|crm:*)                                               cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
   jet:*|ja:*)                                                                        cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
 #  cft*:*|kik*:*|bd*:*|prov*:*)                                                       cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
