@@ -2,11 +2,12 @@
 set -f
 
 printf "usage: ./diagram.sh sysmetric_h.log 25/11/23-0[89]  3 11 15 17 19 20 22 23 24 \n"
-printf "usage: tpi ... oratop h      | diagram.sh  3 11 15 17 19 20 22 23 24 \n"
-printf "usage: tpi ... oratop dhsh   | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24 \n"
-printf "usage: tpi ... dhash tchart  | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
-printf "usage: tpi ... dhash iostat  | diagram.sh  2 3 4 5 6 7 8 9 10 11 12 13 \n"
-printf "usage: tpi ... dhash awrinfo | diagram.sh  2 7 8 9 10 11 12 13 16 17 20 21 22 23 \n"
+printf "usage: tpi ... oratop h          | diagram.sh  3 11 15 17 19 20 22 23 24 \n"
+printf "usage: tpi ... oratop dhsh       | diagram.sh  2 5 6 9 10 11 13 14 15 17 18 21 23 24 \n"
+printf "usage: tpi ... dhash tchart      | diagram.sh  2 3 6 7 8 9 10 13 16 \n"
+printf "usage: tpi ... dhash iostat      | diagram.sh  2 3 4 5 6 7 8 9 10 11 12 13 \n"
+printf "usage: tpi ... dhash segstat . . | diagram.sh  5 6 7 8 9 10 11 12 13 14 15 \n"
+printf "usage: tpi ... dhash awrinfo     | diagram.sh  2 7 8 9 10 11 12 13 16 17 20 21 22 23 \n"
 echo ""
 
 if [[ "$2" =~ "/" || "$#" -eq 0 ]]; then
