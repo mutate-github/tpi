@@ -5295,18 +5295,18 @@ prompt  dba_hist_iostat_filetype param 'Archive Log' 'Control File' 'Data File' 
 set lines 230 pages 190 numw 9 tab off
 col begin_time for a17 heading "1|BEGIN_TIME"
 col filetype_name for a17 noprint
-col TRE_MBS for 999999.00 heading "2|TRE_MBS"
-col TRE_IOPS for 999999.00 heading "3|TRE_IOPS"
-col TWR_MBS for 999999.00 heading "4|TWR_MBS"
-col TWR_IOPS for 999999.00 heading "5|TWR_IOPS"
-col SRE_MBS for 999999.00 heading "6|SRE_MBS"
-col SRE_IOPS for 999999.00 heading "7|SRE_IOPS"
-col SWR_MBS for 999999.00 heading "8|SWR_MBS"
-col SWR_IOPS for 999999.00 heading "9|SWR_IOPS"
-col SMRE_LAT for 999999.00 heading "10|SMRE_LAT"
-col SMWR_LAT for 999999.00 heading "11|SMWR_LAT"
-col LARE_LAT for 999999.00 heading "12|LARE_LAT"
-col LAWR_LAT for 999999.00 heading "13|LAWR_LAT"
+col TRE_MBS for 999990D99 heading "2|TRE_MBS"
+col TRE_IOPS for 999990D99 heading "3|TRE_IOPS"
+col TWR_MBS for 999990D99 heading "4|TWR_MBS"
+col TWR_IOPS for 999990D99 heading "5|TWR_IOPS"
+col SRE_MBS for 999990D99 heading "6|SRE_MBS"
+col SRE_IOPS for 999990D99 heading "7|SRE_IOPS"
+col SWR_MBS for 999990D99 heading "8|SWR_MBS"
+col SWR_IOPS for 999990D99 heading "9|SWR_IOPS"
+col SMRE_LAT for 999990D99 heading "10|SMRE_LAT"
+col SMWR_LAT for 999990D99 heading "11|SMWR_LAT"
+col LARE_LAT for 999990D99 heading "12|LARE_LAT"
+col LAWR_LAT for 999990D99 heading "13|LAWR_LAT"
 select * from  
 (
 select
