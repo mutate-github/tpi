@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="28.02.24"
+TPIVER="29.02.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -4723,7 +4723,7 @@ FROM
      SUM(DECODE(wait_class,'Cluster',1,0))/60 $S1_ AS clust,
      SUM(DECODE(wait_class,'Other',1,0))/60 $S1_ AS other
    FROM $view_
-   WHERE sample_time $INTERVAL_ and session_type='FOREGROUND'
+   WHERE sample_time $INTERVAL_ and session_type in ('FOREGROUND','USER')
    GROUP BY TRUNC(sample_time,'MI')) ash
 ORDER BY begin_time;
 EOF
