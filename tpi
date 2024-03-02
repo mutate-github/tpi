@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="29.02.24"
+TPIVER="02.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -5227,8 +5227,9 @@ segstat)
   $SET_COL
   set lines 230 pages 90 numw 9
   col owner for a20
+  col object_type for a20
   col SNAP_TIME for a15 heading "1|BEGIN_TIME"
-  col LogRe_Bl for 999999999 heading "5|LogRe_Bl"
+  col LogRe_Bl for 9999999999 heading "5|LogRe_Bl"
   col BufBusWa for 999999999 heading "6|BufBusWa"
   col DbBlCh_Bl for 999999999 heading "7|DbBlCh_Bl"
   col PhRe_Bl for 99999999 heading "8|PhRe_Bl"
@@ -5242,7 +5243,9 @@ segstat)
   BREAK ON REPORT
   COMPUTE SUM LABEL 'SUM' OF block_changed on report
   SELECT   TO_CHAR(begin_interval_time, 'dd/mm/yy-hh24:mi') snap_time,
-           dhso.owner, dhso.object_name, dhso.object_type,
+           replace(dhso.owner, ' ','_') owner,
+           replace(dhso.object_name, ' ', '_') object_name,
+           replace(dhso.object_type, ' ', '_') object_type,
            SUM(LOGICAL_READS_DELTA) "LogRe_Bl",
            SUM(BUFFER_BUSY_WAITS_DELTA) "BufBusWa",
            SUM(DB_BLOCK_CHANGES_DELTA) "DbBlCh_Bl",

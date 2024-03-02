@@ -54,7 +54,7 @@ if [[ -z "$max" || "$rc" -eq 1 ]]; then max=1; fi
 
 cat $file | awk '!/---/{print $'$col1'" "$'$col2'}' | xargs -n2 echo | while read datewd value ; do
    printf "%-20s" $datewd
-   printf "%-10s" $value
+   printf "%-11s" $value
    if [[ "$datewd" = "BEGIN_TIME" ]]; then
       printf "%-${limit}s" LEVELS
    fi

@@ -80,9 +80,6 @@ echo '--------------------------------------------------------------------------
 echo "rtpi $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24"
 rtpi $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-echo "rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
-rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
-echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 rtpi $SRV $SID ash 
 rtpi $SRV $SID ash event
 rtpi $SRV $SID ash mchart
@@ -94,8 +91,14 @@ rtpi $SRV $SID dhash event
 rtpi $SRV $SID dhash $DT mchart
 echo "rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16"
 rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo "rtpi $SRV $SID dhash $DT3 awrinfo"
 rtpi $SRV $SID dhash $DT3 awrinfo | diagram.sh 
+echo "rtpi $SRV $SID dhash $DT3 iostat"
 rtpi $SRV $SID dhash $DT3 iostat | diagram.sh
+echo "rtpi $SRV $SID dhash $DT segstat"
+rtpi $SRV $SID dhash $DT segstat 
+echo "rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
+rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 rtpi $SRV $SID dhash $DT sql
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
