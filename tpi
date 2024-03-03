@@ -4550,7 +4550,7 @@ col pct2 format 999
 col pct3 format 999
 col first format  a15 truncate
 col second format  a27 truncate
---col third format  a27 truncate
+ col third format  a27 truncate
 PROMPT "Top activity chart from $view_ in sample_time $INTERVAL_"
 select to_char(start_time,'dd/mm/yy-hh24:mi') begin_time,
        --samples,
@@ -4564,8 +4564,8 @@ select to_char(start_time,'dd/mm/yy-hh24:mi') begin_time,
        --round(spct * (total/&v_secs),2) aas2,
        spct*100 pct2,
        decode(spct,null,null,second) second,
---       tpct*100 pct3,
---       decode(tpct,null,null,third) third,
+         tpct*100 pct3,
+         decode(tpct,null,null,third) third,
        substr(
          substr(
            &cc  rpad('&C',round((cpu*&v_bars)/&v_secs),'&C') ||
