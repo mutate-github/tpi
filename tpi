@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="02.03.24"
+TPIVER="05.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -31,7 +31,7 @@ init_msg()
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
   size__="size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
-  arch__="arch - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
+  arch__="arch [scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
   sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
@@ -54,7 +54,7 @@ init_msg()
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
-  rman__="rman [DAYS|cfg|last] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup" 
+  rman__="rman [DAYS|cfg|last|arch SEQUENCE ] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup" 
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
@@ -3332,14 +3332,47 @@ logf
 
 arch()
 {
-$SP <<EOF >$LOGF
-set lines 230
-set pages 60
+P1_="$1"
+P2_="$2"
+case $P1_ in
+scn)
+CUR_SCN_="SELECT dbms_flashback.get_system_change_number as current_scn, sysdate FROM DUAL;"
+case "$P2_" in
+ */*) SQL_="prompt v\$archived_log:
+select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where to_date('$P2_','dd/mm/yy-hh24:mi') between FIRST_TIME and NEXT_TIME order by recid;"
+ ;;
+ *[0-9]*) SQL_="$CUR_SCN_
+prompt scn_to_timestamp:
+select $P2_ as scn, cast(scn_to_timestamp($P2_) as date) scn_date from dual;
+prompt v\$archived_log:
+select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where $P2_ between FIRST_CHANGE# and NEXT_CHANGE# order by recid;"
+ ;;
+ '') SQL_="$CUR_SCN_"
+ ;;
+esac
 
-ttitle left "V\$LOG :"
-col bytes for 999999999999
-column status for a12
-select group#,thread#,sequence#,bytes,archived,status from v\$log;
+$SP <<EOF >>$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 40 numwidth 15 timing off
+col scn_date for a20
+col name for a70
+col dest_id for 999999
+col SEQUENCE# for 99999999
+col size_mb for 999999
+col creator for a4
+col registrar for a4
+col standby_dest for a4
+col archived for a4
+col applied for a4
+col deleted for a4
+col status for a4
+col completion_time for a20
+$SQL_
+EOF
+;;
+*)
+$SP <<EOF >$LOGF
+set lines 230 pages 60 tab off timing off
 
 column "Archive_dest" for a50
 ttitle left "V\$ARCHIVE_DEST :"
@@ -3406,6 +3439,8 @@ select thread#, sequence#, process, pid, status, block# from gv\$managed_standby
 --ttitle left "V\$STANDBY_LOG :"
 --select group#,thread#,sequence#,bytes,used,archived,status from v\$standby_log;
 EOF
+;;
+esac
 logf
 }
 
@@ -4104,7 +4139,8 @@ logf
 
 rman()
 {
-P1_=$1
+P1_="$1"
+P2_="$2"
 [ -z "$P1_" ] && P1_=7
 shopt -s nocasematch
 case "$P1_" in
@@ -4139,6 +4175,14 @@ where s.session_recid = j.session_recid
 group by input_type, incremental_level
 )
 group by name;
+EOF
+;;
+arch)
+$SP <<EOF >$LOGF
+set lines 250
+set echo off feed off veri off tab off timing off pages 9
+select SEQUENCE#,start_time,end_time,output_device_type,input_type,elapsed_seconds from V\$BACKUP_ARCHIVELOG_DETAILS bad, V\$RMAN_BACKUP_JOB_DETAILS  bj where
+bj.session_recid=bad.session_recid and bj.session_stamp=bad.session_stamp and "SEQUENCE#"=$P2_;
 EOF
 ;;
 *)

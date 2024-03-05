@@ -8,7 +8,7 @@ oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instanc
 sga - SGA information
 pga - PGA sessions information
 size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set "_enable_space_preallocation"=0 )
-arch - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
+arch [scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
 redo [logs] - redo information
 undo [recovery] - undo active transaction information, recovery information
 sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME
@@ -31,7 +31,7 @@ pipe [PIPE_NAME] - pipes information, read PIPE_NAME
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time
 scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]
 job [OWNER] - dba_jobs information
-rman [DAYS|cfg|last] - RMAN backups | v$rman_configuration information | last - hours passed since the last backup
+rman [DAYS|cfg|last|arch SEQUENCE ] - RMAN backups | v$rman_configuration information | last - hours passed since the last backup
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off
 kill SID SERIAL - Kill session
