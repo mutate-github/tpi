@@ -1950,7 +1950,7 @@ set echo off feed off veri off tab off pages 80
 column owner for a20
 column segment_name for a30
 column segment_type for a15
-column PARTITION_NAME for a50
+column PARTITION_NAME for a20
 column SEGMENT_SUBTYPE for a15
 column max_size for 999,999,999,999
 column tablespace_name for a22
@@ -1968,8 +1968,8 @@ select tablespace_name, owner, segment_name, table_name, column_name, partitione
 from dba_lobs where table_name like upper('$P1_') and owner like nvl(trim('$P2_'),'%');
 
 ttitle left "Lob segment name from DBA_SEGMENTS, DBA_LOBS:"
-column index_name for a30
-select s.tablespace_name, s.owner, s.segment_name, s.PARTITION_NAME, l.INDEX_NAME, s.segment_type, s.SEGMENT_SUBTYPE, s.bytes/(1024*1024) size_Mb, s.blocks, s.max_size
+column index_name for a25
+select s.tablespace_name, s.owner, s.segment_name, s.PARTITION_NAME, l.table_name, l.column_name, l.INDEX_NAME, s.segment_type, s.SEGMENT_SUBTYPE, s.bytes/(1024*1024) size_Mb --, s.blocks, s.max_size
 from dba_segments s, dba_lobs l where s.owner=l.owner and s.segment_name=l.segment_name and l.table_name like upper('$P1_') and s.owner like nvl(trim('$P2_'),'%')
 order by owner, segment_name, segment_type, PARTITION_NAME;
 EOF
