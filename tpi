@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="05.03.24"
+TPIVER="10.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -4141,7 +4141,7 @@ rman()
 {
 P1_="$1"
 P2_="$2"
-[ -z "$P1_" ] && P1_=7
+[[ -z "$P1_" ]] && P1_=7
 shopt -s nocasematch
 case "$P1_" in
 cfg)
@@ -4239,7 +4239,7 @@ from V\$RMAN_BACKUP_JOB_DETAILS j
                    from GV\$RMAN_OUTPUT o
                    group by o.session_recid, o.session_stamp)
     ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
-where j.start_time > trunc(sysdate)-7
+where j.start_time > trunc(sysdate)-$P1_
 --AND OUTPUT_DEVICE_TYPE NOT IN ('SBT_TAPE')
 order by j.start_time;
 EOF
