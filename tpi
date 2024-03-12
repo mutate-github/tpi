@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="10.03.24"
+TPIVER="12.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -31,7 +31,7 @@ init_msg()
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
   size__="size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
-  arch__="arch [scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
+  arch__="arch [seq [SCN|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
   sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
@@ -178,9 +178,14 @@ tr -d '\r' <<< "$VALUE"
 case $(db_is_open) in
 OPEN)
 NLS_VALUE=$($SP <<'END'
-set pagesize 0 feedback off verify off heading off echo off timing off
+set pagesize 0 feedback off verify off heading off echo off timing off tab off
 select case when value like '%UTF%' then value else 'CL8MSWIN1251' end from nls_database_parameters where parameter='NLS_CHARACTERSET';
 END
+)
+SYSDATE=$($SP <<'ENDS'
+set pagesize 0 feedback off verify off heading off echo off timing off tab off
+select to_char(sysdate,'dd/mm/yy-hh24:mi:ss') from dual;
+ENDS
 )
 ;;
 *) : ;;
@@ -219,7 +224,7 @@ end;
 /
 */
 alter session set statistics_level=basic;
-alter session set nls_date_format='dd/mm/yyyy hh24:mi:ss';
+alter session set nls_date_format='dd/mm/yy hh24:mi:ss';
 --alter session set optimizer_features_enable = '10.2.0.4';
 --alter session set optimizer_index_cost_adj = 100;
 --alter session set optimizer_index_caching  = 10;
@@ -3334,51 +3339,63 @@ arch()
 {
 P1_="$1"
 P2_="$2"
-case $P1_ in
-scn)
-CUR_SCN_="SELECT dbms_flashback.get_system_change_number as current_scn, sysdate FROM DUAL;"
-case "$P2_" in
- */*) SQL_="prompt v\$archived_log:
-select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where to_date('$P2_','dd/mm/yy-hh24:mi') between FIRST_TIME and NEXT_TIME order by recid;"
- ;;
- *[0-9]*) SQL_="$CUR_SCN_
-prompt scn_to_timestamp:
-select $P2_ as scn, cast(scn_to_timestamp($P2_) as date) scn_date from dual;
-prompt v\$archived_log:
-select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where $P2_ between FIRST_CHANGE# and NEXT_CHANGE# order by recid;"
- ;;
- '') SQL_="$CUR_SCN_"
- ;;
-esac
-
-$SP <<EOF >>$LOGF
-set lines 230
+SET_COL_="set lines 230
 set echo off feed off veri off tab off pages 40 numwidth 15 timing off
 col scn_date for a20
-col name for a70
-col dest_id for 999999
-col SEQUENCE# for 99999999
-col size_mb for 999999
+col name for a88
+col dest_id for 99 heading 'ID'
+col SEQUENCE# for 999999 heading 'SEQ'
+col size_mb for 99999 heading 'Mb'
 col creator for a4
 col registrar for a4
 col standby_dest for a4
 col archived for a4
 col applied for a4
 col deleted for a4
-col status for a4
-col completion_time for a20
-$SQL_
+col status for a1 heading 'S'"
+case $P1_ in
+seq)
+  case "$P2_" in
+    */*) SQL_="where first_time >= to_date('$P2_','dd/mm/yy-hh24:mi') order by SEQUENCE#"
+    ;;
+    *[0-9]*) SQL_="where sequence# >= $P2_ order by SEQUENCE#"
+    ;;
+    '') SQL_="where first_time >= sysdate-1 order by SEQUENCE#"
+    ;;
+  esac
+  $SP <<EOF >>$LOGF
+  $SET_COL_
+  prompt v\$archived_log  $SQL_
+  select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log  $SQL_ ;
+EOF
+;;
+scn)
+  case "$P2_" in
+    */*) SQL_="prompt v\$archived_log where to_date('$P2_','dd/mm/yy-hh24:mi') between FIRST_TIME and NEXT_TIME order by recid :
+         select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where to_date('$P2_','dd/mm/yy-hh24:mi') between FIRST_TIME and NEXT_TIME order by recid;"
+    ;;
+    *[0-9]*) SQL_="prompt scn_to_timestamp:
+             select $P2_ as scn, cast(scn_to_timestamp($P2_) as date) scn_date from dual;
+             prompt v\$archived_log where $P2_ between FIRST_CHANGE# and NEXT_CHANGE# order by recid :
+             select SEQUENCE#,dest_id,FIRST_CHANGE#,NEXT_CHANGE#, first_time, next_time, (blocks*block_size)/1024/1024 size_mb,creator,registrar,standby_dest,archived,applied,deleted,status,completion_time,name from v\$archived_log where $P2_ between FIRST_CHANGE# and NEXT_CHANGE# order by recid;"
+    ;;
+    '') SQL_="SELECT dbms_flashback.get_system_change_number as current_scn, sysdate FROM DUAL;"
+    ;;
+  esac
+  $SP <<EOF >>$LOGF
+  $SET_COL_
+  $SQL_
 EOF
 ;;
 *)
 $SP <<EOF >$LOGF
 set lines 230 pages 60 tab off timing off
-
 column "Archive_dest" for a50
 ttitle left "V\$ARCHIVE_DEST :"
-column DEST_ID for 99
-column LOG_SEQUENCE for 999999999
+column DEST_ID for 99 heading "ID"
+column LOG_SEQUENCE for 9999999 heading "SEQUENCE"
 column binding for a10
+column status for a10
 column target for a7
 column compression for a7
 column valid_type for a15
@@ -7166,8 +7183,8 @@ logf
 export TERM=xterm
 U=$(awk -F_ '{print $1}' <<< $(uname))
 case "$U" in
- CYGWIN) echo -n "DB="$sid" ver="$TPIVER"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  " ;;
- AIX)    echo -n "DB="$sid" ver="$TPIVER"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  " ;;
+ CYGWIN) echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2" ;;
+ AIX)    echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2" ;;
  *)       red=$(tput setaf 1)
 	 green=$(tput setaf 2)
 	 yellow=$(tput setaf 3)
@@ -7175,7 +7192,7 @@ case "$U" in
 	 magneta=$(tput setaf 5)
 	 cyan=$(tput setaf 6)
 	 reset=$(tput sgr0)
-	 echo -n ${green}"DB="$sid" ver="$TPIVER"  "$(date +%d/%m/%y"-"%H:%M:%S)"  "$ls2"  "
+	 echo -n ${green}"DB=$sid ver=$TPIVER $SYSDATE $ls2"
  ;;
 esac
 

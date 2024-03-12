@@ -8,7 +8,7 @@ oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instanc
 sga - SGA information
 pga - PGA sessions information
 size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set "_enable_space_preallocation"=0 )
-arch [scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
+arch [seq [SCN|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
 redo [logs] - redo information
 undo [recovery] - undo active transaction information, recovery information
 sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME
