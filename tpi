@@ -7183,8 +7183,8 @@ logf
 export TERM=xterm
 U=$(awk -F_ '{print $1}' <<< $(uname))
 case "$U" in
- CYGWIN) echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2" ;;
- AIX)    echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2" ;;
+ CYGWIN) echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2  " ;;
+ AIX)    echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2  " ;;
  *)       red=$(tput setaf 1)
 	 green=$(tput setaf 2)
 	 yellow=$(tput setaf 3)
@@ -7192,7 +7192,7 @@ case "$U" in
 	 magneta=$(tput setaf 5)
 	 cyan=$(tput setaf 6)
 	 reset=$(tput sgr0)
-	 echo -n ${green}"DB=$sid ver=$TPIVER $SYSDATE $ls2"
+	 echo -n ${green}"DB=$sid ver=$TPIVER $SYSDATE $ls2  "
  ;;
 esac
 
