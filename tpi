@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="12.03.24"
+TPIVER="15.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -54,7 +54,7 @@ init_msg()
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
   scheduler__="scheduler [JOB_NAME | run JOB_NAME [hours] | log JOB_NAME [hours] | autotask ] - dba_scheduler_jobs information, log | run JOB_NAME [hours] - dba_scheduler_job_log | dba_scheduler_job_run_details for JOB_NAME in last [hours]" 
   job__="job [OWNER] - dba_jobs information" 
-  rman__="rman [DAYS|cfg|last|arch SEQUENCE ] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup" 
+  rman__="rman [DAYS|cfg|last|arch [SEQUENCE] ] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup | arch - last backup archivelog"
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
   kill__="kill SID SERIAL - Kill session"
@@ -4195,11 +4195,16 @@ group by name;
 EOF
 ;;
 arch)
+if [ -z "$P2_" ]; then
+   SQL="SELECT * FROM (select FIRST_CHANGE#, cast(first_time as date) first_time from V\$BACKUP_ARCHIVELOG_DETAILS order by FIRST_TIME DESC) WHERE ROWNUM = 1;" 
+else
+   SQL="select SEQUENCE#,start_time,end_time,output_device_type,input_type,elapsed_seconds from V\$BACKUP_ARCHIVELOG_DETAILS bad, V\$RMAN_BACKUP_JOB_DETAILS  bj where bj.session_recid=bad.session_recid and bj.session_stamp=bad.session_stamp and SEQUENCE#=$P2_;"
+fi
+
 $SP <<EOF >$LOGF
 set lines 250
-set echo off feed off veri off tab off timing off pages 9
-select SEQUENCE#,start_time,end_time,output_device_type,input_type,elapsed_seconds from V\$BACKUP_ARCHIVELOG_DETAILS bad, V\$RMAN_BACKUP_JOB_DETAILS  bj where
-bj.session_recid=bad.session_recid and bj.session_stamp=bad.session_stamp and "SEQUENCE#"=$P2_;
+set echo off feed off veri off tab off timing off pages 90 numw 15
+$SQL
 EOF
 ;;
 *)
