@@ -1,6 +1,6 @@
 [servers]
-#host=srv-axdb1-mrg
-#host=srv-axdb2-mrg
+host=srv-axdb1-mrg
+host=srv-axdb2-mrg
 host=db-gold-dca
 host=dcb-retail-db
 host=dca-stock-db
@@ -13,9 +13,17 @@ host=mp
 host=mp2
 host=md
 host=mu
-#host=p260unc2
-#host=p260unc4
+host=p260unc2
+host=p260unc4
 host=askona04
+host=dca-label-db
+host=dcb-label-db
+
+[dca-label-db]
+db=lbl
+
+[dcb-label-db]
+db=lbl
 
 [mp]
 db=mprd
