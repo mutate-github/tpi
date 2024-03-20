@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="16.03.24"
+TPIVER="20.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -3669,7 +3669,7 @@ logf
 
 links()
 {
-P1_="$1"
+P1_="$(sed -e 's/\(.*\)/\U\1/' <<< $1)"
 REL=$(db_version)
 case $REL in
 9)  $SP <<EOF >$LOGF
