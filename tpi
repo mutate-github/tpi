@@ -3669,7 +3669,7 @@ logf
 
 links()
 {
-P1_="$(sed -e 's/\(.*\)/\U\1/' <<< $1)"
+P1_="$(tr '[a-z]' '[A-Z]' <<< $1)"
 REL=$(db_version)
 case $REL in
 9)  $SP <<EOF >$LOGF
