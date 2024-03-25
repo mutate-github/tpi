@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="20.03.24"
+TPIVER="25.03.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -5458,9 +5458,9 @@ col LIOPSEC for 9999999 heading "7|LIOPSEC"
 col REDO_GB for 9999 heading "8|REDO_GB"
 col DBBLC for 9999999999 heading "9|DBBLC^3"
 col PGAMB for 99999 heading "10|PGAMB"
-col READLAT for 9999.00 heading "11|READLAT"
-col LFPWLAT for 9999.00 heading "12|LFPWLAT"
-col LFSYLAT for 9999.00 heading "13|LFSYLAT"
+col READLAT for 9990.00 heading "11|READLAT"
+col LFPWLAT for 9990.00 heading "12|LFPWLAT"
+col LFSYLAT for 9990.00 heading "13|LFSYLAT"
 col PHYREMBT for 9999999 heading "14|PHYREMBT"
 col PHYWRMBT for 9999999 heading "15|PHYWRMBT"
 col PHREMBPS for 999999 heading "16|PREMBPS"
