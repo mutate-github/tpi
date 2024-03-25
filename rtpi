@@ -36,7 +36,7 @@ case "${P1_}:${sid}" in
   srv-deosdb*:*|srv-olapwhs*:*|srv-axdb*:*)                                          cat $wtpi | ssh oracle@$P1_ ". ~/.bash_profile  >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
   askona*:*)                                                                         cat $wtpi | ssh oracle@$P1_ ". ~/.profile >/dev/null 2>&1; /bin/bash -s $sid $args" ;;
   storgco:*|ikb:*)                                                                   $wtpi $sid $login_str $args ;;
-  p260unc2:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
+  p260unc2:*|p922bull2:*)                                                            cat $wtpi | ssh oracle@$P1_ "if [ -f ~/unc10g_setenv.sh ]; then . ~/unc10g_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   p260unc4:*)                                                                        cat $wtpi | ssh oracle@$P1_ "if [ -f ~/uncunc_setenv.sh ]; then . ~/uncunc_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   z14-0975-tfdb:obklocal)                                                            cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
   z14-0976-tfdb:middle)                                                              cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid $login_str $args" ;;
