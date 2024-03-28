@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 07/07/2023 Talgat Mukhametshin  email: mutate@mail.ru
+# version 28/03/2024 Talgat Mukhametshin  email: mutate@mail.ru
 
 set -f
 
@@ -22,7 +22,7 @@ init_msg()
   exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' "
   activity__="activity  - activity sessions in DB"
   lock__="lock [ all | dead | tree | tree2 ] - locks"
-  vacuum__="vacuum - vacuum activity"
+  vacuum__="vacuum - vacuum activity and wrap around info"
   topsql__="topsql - top 20 sql"
   bloat__="bloat - bloat tables"
   dead__="dead - tables with dead rows"
@@ -80,7 +80,7 @@ EOF
 sess()
 {
 P1_=$1
-echo "P1_: "$P1_
+# echo "P1_: "$P1_
 case $P1_ in
 [0-9]*) 
 $psql_ <<EOF
@@ -100,10 +100,8 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
-\pset title "Transaction in 'active' state is too long > $P2_ minutes"
-SELECT  pid, now() - pg_stat_activity.query_start AS duration, query, state FROM pg_stat_activity WHERE state = 'active' and (now() - pg_stat_activity.query_start) > interval '$P2_ minutes';
-\pset title "Transaction in 'idle in transaction' state is too long > $P2_ minutes"
-SELECT  pid, now() - pg_stat_activity.xact_start AS duration, query, state FROM pg_stat_activity WHERE state = 'idle in transaction' and (now() - pg_stat_activity.xact_start) > interval '$P2_ minutes';
+\pset title "Transactions now() - pg_stat_activity.query_start AS duration from pg_stat_activity where state<>'idle' and (now() - pg_stat_activity.query_start) > interval '$P2_ minutes'"
+SELECT  pid, now() - pg_stat_activity.query_start AS duration, client_addr,application_name,wait_event, query, state FROM pg_stat_activity WHERE state<>'idle' and (now() - pg_stat_activity.query_start) > interval '$P2_ minutes';
 EOF
 ;;
 cancel)
@@ -574,12 +572,13 @@ vacuum()
 {
 $psql_ <<EOF
 --\x ON
-\timing
+--\timing
 -- vacuum activity
+\pset title "pg_stat_progress_vacuum:"
 SELECT * FROM pg_stat_progress_vacuum;
 
-SELECT
-        p.pid,
+\pset title "pg_stat_progress_vacuum p RIGHT JOIN pg_stat_activity a ON a.pid = p.pid "
+SELECT   p.pid,
         now() - a.xact_start AS duration,
         COALESCE(wait_event_type ||'.'|| wait_event, 'f') AS waiting,
         CASE
@@ -606,13 +605,19 @@ ORDER BY now() - a.xact_start DESC;
 --table_autovacuum-stats
 --SELECT relname, n_dead_tup, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze FROM pg_stat_all_tables WHERE n_dead_tup>0 ORDER BY n_dead_tup DESC;
 --SELECT schemaname ||'.'|| relname AS relname, n_dead_tup, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze FROM pg_stat_user_tables WHERE n_dead_tup>0 ORDER BY n_dead_tup DESC;
+--\pset title "SELECT schemaname ||'.'|| relname, n_dead_tup, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze FROM pg_stat_user_tables WHERE last_autovacuum IS NOT NULL ORDER BY n_dead_tup DESC;"
 --SELECT schemaname ||'.'|| relname, n_dead_tup, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze FROM pg_stat_user_tables WHERE last_autovacuum IS NOT NULL ORDER BY n_dead_tup DESC;
 --SELECT schemaname ||'.'|| relname, n_dead_tup, last_vacuum, last_autovacuum, last_analyze, last_autoanalyze FROM pg_stat_user_tables;
 --SELECT SUM(heap_blks_read) AS heap_read, SUM(heap_blks_hit)  AS heap_hit, (SUM(heap_blks_hit) - SUM(heap_blks_read)) / SUM(heap_blks_hit) AS ratio FROM pg_statio_user_tables;
 --SELECT SUM(idx_blks_read) AS idx_read, SUM(idx_blks_hit)  AS idx_hit, (SUM(idx_blks_hit) - SUM(idx_blks_read)) / SUM(idx_blks_hit) AS ratio FROM pg_statio_user_indexes;
---SELECT datname, age(datfrozenxid) FROM pg_database;
+\pset title "SELECT datname, age(datfrozenxid), current_setting('autovacuum_freeze_max_age') FROM pg_database;"
+SELECT datname, age(datfrozenxid), current_setting('autovacuum_freeze_max_age') FROM pg_database;
+
+--\pset title "SELECT c.oid::regclass as table_name, greatest(age(c.relfrozenxid), age(t.relfrozenxid)) as age FROM pg_class c LEFT JOIN pg_class t ON c.reltoastrelid = t.oid WHERE c.relkind IN ('r', 'm');"
+--SELECT c.oid::regclass as table_name, greatest(age(c.relfrozenxid), age(t.relfrozenxid)) as age FROM pg_class c LEFT JOIN pg_class t ON c.reltoastrelid = t.oid WHERE c.relkind IN ('r', 'm');
 
 -- table autovacuum stat
+\pset title "Last last_autovacuum for pg_stat_user_tables, pg_class:"
 WITH rel_set AS
 (
     SELECT
@@ -639,6 +644,7 @@ SELECT
         THEN '*'
     ELSE ''
     END AS expect_av
+    , last_analyze, last_autoanalyze
 FROM
     pg_stat_user_tables PSUT
     JOIN pg_class C
@@ -646,6 +652,25 @@ FROM
     JOIN rel_set RS
         ON PSUT.relid = RS.oid
 ORDER BY C.reltuples DESC;
+
+\pset title "Wrap around info from pg_catalog.pg_database, pg_catalog.pg_settings WHERE name = 'autovacuum_freeze_max_age'"
+WITH max_age AS (
+    SELECT 2000000000 AS max_old_xid
+        , setting AS autovacuum_freeze_max_age
+        FROM pg_catalog.pg_settings
+        WHERE name = 'autovacuum_freeze_max_age' )
+, per_database_stats AS (
+    SELECT datname
+        , m.max_old_xid::INT
+        , m.autovacuum_freeze_max_age::INT
+        , age(d.datfrozenxid) AS oldest_current_xid
+    FROM pg_catalog.pg_database d
+    JOIN max_age m ON (TRUE)
+    WHERE d.datallowconn )
+SELECT MAX(oldest_current_xid) AS oldest_current_xid
+    , MAX(ROUND(100*(oldest_current_xid/max_old_xid::FLOAT))) AS percent_towards_wraparound
+    , MAX(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::FLOAT))) AS percent_towards_emergency_autovac
+FROM per_database_stats;
 EOF
 }
 
