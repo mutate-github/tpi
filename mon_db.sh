@@ -21,6 +21,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
+    ssh -q $HOST exit && : || echo "Host: $HOST not answer, continue..."; continue
     LOGF=$LOGDIR/mon_db_${HOST}_${DB}.log
     $WRTPI $HOST $DB db | sed -n '/v$instance:/,/v$database:/p' | egrep -v '\----|v\$database:' | sed '/^$/d' > $LOGF
 
