@@ -29,7 +29,6 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     touch $LOGF_DB_OLD
     LOGF_DB=$LOGDIR/mon_db_${HOST}_${DB}_db.log
     cat $LOGF | sed -n '1,3p' > $LOGF_DB
-    cat $LOGF | sed -n '4,6p' | cut -c 1-108 >> $LOGF_DB
     diff $LOGF_DB_OLD $LOGF_DB > $LOGF_DB_DIFF
 
     if [ -s $LOGF_DB_DIFF ]; then
