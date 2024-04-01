@@ -80,7 +80,7 @@ for tns3_ in \$(echo \$tns3 | xargs); do
   adrci exec="set home \$tns3_ ; purge -age \$age -type ALERT"
   adrci exec="set home \$tns3_ ; purge -age \$age -type TRACE"
   find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim
-  find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim -exec /bin/bash -c 'echo > {}' \;
+  find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim -exec cp /dev/null {} \;
 done
 
 VALUE=\$(sqlplus -S '/ as sysdba' <<'END'
