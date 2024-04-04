@@ -4958,10 +4958,12 @@ EOF
 fi
 ;;
 where)
-  FIELD_=$(awk '{print $2}' <<< "$*")
-  if [ -z "$FIELD_" ]; then FIELD_="program"; fi
-  PRG_=$(awk '{print $3}' <<< "$*")
-  COND_="and $FIELD_ like '%$PRG_%'"
+  shift
+  [[ -n "$*" ]] && COND_=" $* and "
+#  FIELD_=$(awk '{print $2}' <<< "$*")
+#  if [ -z "$FIELD_" ]; then FIELD_="program"; fi
+#  PRG_=$(awk '{print $3}' <<< "$*")
+#  COND_="and $FIELD_ like '%$PRG_%'"
   $SP <<EOF >$LOGF
   PROMPT "Stat top 30 session_state from DBA_HIST_ACTIVE_SESS_HISTORY where sample_time $INTERVAL_  for condition: $COND_"
   $SET_COL
@@ -4974,13 +4976,15 @@ where)
     (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
     sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
     round(100*count(*)/ sum(count(1)) over(), 2) activity
-  from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u where h.user_id=u.user_id
+  from DBA_HIST_ACTIVE_SESS_HISTORY h, dba_users u 
+  where $COND_
+  h.user_id=u.user_id
   and dbid=(select dbid from v\$database) and sample_time $INTERVAL_
   --and  sql_id is not null 
   --and PLSQL_ENTRY_OBJECT_ID = 11235547
   --and "CURRENT_OBJ#" = 56645
-  $COND_
   --and program like '%$PRG_%'
+  --and machine = 'my_pc'
   group by /*session_id,"SESSION_SERIAL#",*/ username,
   sql_id,sql_plan_hash_value,
   event --, /* top_level_sql_id, top_level_call_name, */  session_state,program,module,action,machine 
@@ -5905,10 +5909,12 @@ EOF
 fi
 ;;
 where)
-FIELD_=$(awk '{print $2}' <<< "$*")
-if [ -z "$FIELD_" ]; then FIELD_="program"; fi
-PRG_=$(awk '{print $3}' <<< "$*")
-COND_="and $FIELD_ like '%$PRG_%'"
+shift
+[[ -n "$*" ]] && COND_=" $* and "
+#FIELD_=$(awk '{print $2}' <<< "$*")
+#if [ -z "$FIELD_" ]; then FIELD_="program"; fi
+#PRG_=$(awk '{print $3}' <<< "$*")
+#COND_="$FIELD_ like '%$PRG_%' and"
 $SP <<EOF >$LOGF
 PROMPT
 PROMPT "Stat top 30 session_state from V\$ACTIVE_SESSION_HISTORY for condition: $COND_ and sample_time $INTERVAL_"
@@ -5922,16 +5928,17 @@ select session_id sid,"SESSION_SERIAL#" serial, username,
    (sum(decode(session_state,'WAITING',time_waited))  -  sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0))) )/1000000    "WAIT" ,
    sum(decode(session_state,'WAITING', decode(wait_class, 'User I/O',time_waited,0)))/1000000    "IO" ,
    round(100*count(*)/ sum(count(1)) over(), 2) activity
-from v\$active_session_history h, dba_users u where h.user_id=u.user_id
+from v\$active_session_history h, dba_users u 
+where $COND_ h.user_id=u.user_id
   --and sql_id is not null 
   --and sql_plan_hash_value<>0
   and sample_time $INTERVAL_
-  $COND_
   --and PLSQL_ENTRY_OBJECT_ID = 11235547
   --and "CURRENT_OBJ#" = 56645
   --and program like '%$PRG_%'
   --and module like '%$PRG_%'
   --and action like '%$PRG_%'
+--  and machine like 'dcb-aix71-01'
 group by session_id,"SESSION_SERIAL#",
   username,
   sql_id,sql_plan_hash_value,
