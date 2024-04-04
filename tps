@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 28/03/2024 Talgat Mukhametshin  email: mutate@mail.ru
+# version 04/04/2024 Talgat Mukhametshin  email: mutate@mail.ru
 
 set -f
 
@@ -18,15 +18,15 @@ psql_="psql -q $db "
 init_msg()
 {
   p__="p [parameter] - parameter from pg_file_settings and pg_settings"
-  sess__="sess [ PID | idle | active | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
-  exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' "
+  sess__="sess [ PID | a | idle | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
+  exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' '\\\\\dv+ \*.\*' '\\\\\dm+ \*.\*' "
   activity__="activity  - activity sessions in DB"
-  lock__="lock [ all | dead | tree | tree2 ] - locks"
+  lock__="lock [ all | dead | tree ] - locks"
   vacuum__="vacuum - vacuum activity and wrap around info"
   topsql__="topsql - top 20 sql"
   bloat__="bloat - bloat tables"
   dead__="dead - tables with dead rows"
-  table__="table [table_name] - table information"
+  table__="table [table_name] - table or view information"
   mastrep__="mastrep - master replication   pg_stat_replication  \  pg_replication_slots (watch on primary)"
   stblag__="stblag - standby lag (watch on standby)"
   log__="log [NUM] - show NUM (def 100) lines of logfile"
@@ -125,6 +125,8 @@ EOF
 done
 ;;
 *)
+[[ -z "$P1_" ]] && P1_='active'
+[[ "$P1_" = "a" ]] && P1_=''
 $psql_ <<EOF
 \timing
 \pset format wrapped
@@ -135,10 +137,24 @@ FROM pg_stat_activity
 GROUP BY  datname, client_addr
 ORDER BY session_count desc;
 \pset title "pg_stat_activity where state like '$P1_%'"
-SELECT datname, pid, application_name, client_addr, query_start, /*state_change, */ state,  wait_event_type, wait_event,  query
+SELECT datname, pid, usename, application_name, client_addr, (clock_timestamp() - query_start) AS query_age, /*state_change, */ state,  wait_event_type, wait_event,  query
 FROM pg_stat_activity WHERE state like '$P1_%' 
 ORDER BY query_start ASC;
 --LIMIT 50;
+
+--\pset title "Locks FROM pg_stat_activity WHERE clock_timestamp() - COALESCE(xact_start, query_start) > '00:00:00.1'::INTERVAL AND pid <> pg_backend_pid() AND state <> 'idle'"
+--SELECT pid, state, datname, usename,
+--(clock_timestamp() - xact_start) AS xact_age,
+--    (clock_timestamp() - query_start) AS query_age,
+--    (clock_timestamp() - state_change) AS change_age,
+--    COALESCE(wait_event_type = 'Lock', 'f') AS waiting,
+--    wait_event_type ||'.'|| wait_event AS wait_details,
+--    client_addr ||'.'|| client_port AS client,
+--    query
+--FROM pg_stat_activity
+--WHERE clock_timestamp() - COALESCE(xact_start, query_start) > '00:00:00.1'::INTERVAL
+--AND pid <> pg_backend_pid() AND state <> 'idle'
+--ORDER BY COALESCE(xact_start, query_start);
 EOF
 ;;
 esac
@@ -169,6 +185,7 @@ $psql_ <<EOF
 \timing
 \pset format wrapped
 \pset columns 230
+\pset title "pg_stat_activity WHERE ((clock_timestamp() - pg_stat_activity.xact_start > '00:00:00.1'::interval) OR (clock_timestamp() - pg_stat_activity.query_start > '00:00:00.1'::interval and state = 'idle in transaction (aborted)')) and pg_stat_activity.pid<>pg_backend_pid()"
 SELECT (clock_timestamp() - pg_stat_activity.xact_start) AS ts_age, pg_stat_activity.state, (clock_timestamp() - pg_stat_activity.query_start) as query_age, (clock_timestamp() - state_change) as change_age, pg_stat_activity.datname, pg_stat_activity.pid, pg_stat_activity.usename, coalesce(wait_event_type = 'Lock', 'f') waiting, pg_stat_activity.client_addr, pg_stat_activity.client_port, pg_stat_activity.query
 FROM pg_stat_activity
 WHERE
@@ -190,6 +207,7 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+\pset title "Locks from pg_catalog.pg_locks bdl JOIN pg_stat_activity bda ON bda.pid = bdl.pid JOIN pg_catalog.pg_locks bgl ON bgl.pid != bdl.pid AND (bgl.transactionid = bdl.transactionid OR bgl.relation = bdl.relation AND bgl.locktype = bdl.locktype) JOIN pg_stat_activity bga ON bga.pid = bgl.pid AND bga.datid = bda.datid WHERE NOT bdl.granted AND bga.datname = current_database()"
 SELECT
   COALESCE(bgl.relation::regclass::text, bgl.locktype) AS locked_item,
   now() - bda.query_start AS waiting_duration,
@@ -209,6 +227,7 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+\pset title "Locks from pg_locks pg_stat_activity "
 WITH RECURSIVE l AS (
   SELECT pid, locktype, mode, GRANTED,
 ROW(locktype,DATABASE,relation,page,tuple,virtualxid,transactionid,classid,objid,objsubid) obj
@@ -242,6 +261,7 @@ $psql_ <<EOF
 \pset format wrapped
 \pset columns 230
 \pset linestyle unicode
+\pset title "Locks tree from pg_locks pg_stat_activity"
 WITH RECURSIVE l AS (
   SELECT pid, locktype, granted,
     array_position(ARRAY['AccessShare','RowShare','RowExclusive','ShareUpdateExclusive','Share','ShareRowExclusive','Exclusive','AccessExclusive'], left(mode,-4)) m,
@@ -278,13 +298,14 @@ SELECT (clock_timestamp() - a.xact_start)::interval(0) AS ts_age,
  ORDER BY (now() - r.xact_start), path;
 EOF
 ;;
-tree2)
+*)
 $psql_ <<EOF
 --\x ON
 \timing
 \pset format wrapped
 \pset columns 330
 \pset linestyle unicode
+\pset title "Locks tree2 from pg_locks pg_stat_activity"
 WITH conflicts(lock, conflict) AS (VALUES
     ('AccessShare', 'AccessExclusive'), ('RowShare', 'Exclusive'),
     ('RowShare', 'AccessExclusive'), ('RowExclusive', 'Share'),
@@ -540,28 +561,7 @@ SELECT
     blocked_cnt,
     root,
     query
-FROM result;
-EOF
-;;
-*)
-$psql_ <<EOF
---\x ON
-\timing
-\pset format wrapped
-\pset columns 230
-\pset linestyle unicode
-SELECT pid, state, datname, usename,
-(clock_timestamp() - xact_start) AS xact_age,
-    (clock_timestamp() - query_start) AS query_age,
-    (clock_timestamp() - state_change) AS change_age,
-    COALESCE(wait_event_type = 'Lock', 'f') AS waiting,
-    wait_event_type ||'.'|| wait_event AS wait_details,
-    client_addr ||'.'|| client_port AS client,
-    query
-FROM pg_stat_activity
-WHERE clock_timestamp() - COALESCE(xact_start, query_start) > '00:00:00.1'::INTERVAL
-AND pid <> pg_backend_pid() AND state <> 'idle'
-ORDER BY COALESCE(xact_start, query_start);
+FROM result where blocked_by <> '{}';
 EOF
 ;;
 esac
