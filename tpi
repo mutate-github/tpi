@@ -2287,11 +2287,14 @@ col DATA_TYPE for a10  heading "TYPE"
 col DATA_LENGTH for 999999 heading "LENGTH"
 col DATA_PRECISION for 999 heading "PRECISION"
 col DATA_SCALE for 999 heading "SCALE"
+col nullable for a4 heading "NULL"
 col COLUMN_ID for 999 heading "COLID"
 col HISTOGRAM for a20
 col NUM_DISTINCT for 999999999999
+col DENSITY for 90D99999999
 col NUM_NULLS for 999999999999
 col hidden_column for a4
+col char_used for a4 heading "CHAR"
 col virtual_column for a4
 col GLOBAL_STATS for a7 heading "GLOB_ST"
 select column_name,data_type,data_length,data_precision,data_scale,nullable,column_id,num_distinct,density,num_nulls,last_analyzed,global_stats,avg_col_len,char_length,char_used,hidden_column,virtual_column $SQL_TEXT2 
