@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="25.03.24"
+TPIVER="05.04.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2138,15 +2138,15 @@ P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
 P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 REL=$(db_version)
 case $REL in
-  8|9) SQL_TEXT1="" ; SQL_TEXT2="" ;;
-  *)   SQL_TEXT1=" t.compression, t.compress_for, " ; SQL_TEXT2=" , HISTOGRAM " ;;
+  8|9) SQL_TEXT1=""; SQL_TEXT2=""; SQL_TEXT3="" ;;
+  *)   SQL_TEXT1=" t.compression, t.compress_for, "; SQL_TEXT2=" ,HISTOGRAM "; SQL_TEXT3=" ,VISIBILITY " ;;
 esac
 
 shopt -s nocasematch
 case "$P1_" in
 part)
 $SP <<EOF >$LOGF
-set lines 230 numw 6 pages 60
+set lines 230 numw 6 pages 70
 col OWNER for a20
 col TABLE_NAME for a30
 col PARTITIONING_TYPE for a6
@@ -2224,7 +2224,7 @@ EOF
 *)
 $SP <<EOF >$LOGF
 set lines 300
-set echo off feed off veri off tab off pages 45
+set echo off feed off veri off tab off pages 70
 column owner for a20
 column segment_name for a30
 column table_name for a30
@@ -2247,8 +2247,8 @@ last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
 from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner;
 
 prompt
-prompt indexes:
-column index_type for a15
+prompt dba_indexes:
+column index_type for a21
 column index_name for a33
 column compression for a15
 column UNIQUENESS for a10
@@ -2256,11 +2256,11 @@ column blevel for 99
 column distinct_keys for 99999999999
 column status for a10
 column VISIBILITY for a9
-select tablespace_name, owner, index_name, index_type, uniqueness, blevel, distinct_keys, status, num_rows, last_analyzed, compression, partitioned,VISIBILITY
+select tablespace_name, owner, index_name, index_type, uniqueness, blevel, distinct_keys, status, num_rows, last_analyzed, compression, partitioned $SQL_TEXT3
 from dba_indexes where table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner,index_name;
 
 prompt
-prompt index_columns:
+prompt dba_ind_columns:
 column index_owner for a20
 column index_name for a33
 column COLUMN_NAME for a30
@@ -2268,7 +2268,7 @@ select index_owner,index_name,column_name,column_position,column_length,descend
 from dba_ind_columns where table_name like upper('$P1_') and table_owner like nvl('$P2_','%') order by index_owner,index_name,column_position;
 /*
 prompt
-prompt constraints:
+prompt dba_constraints:
 column owner for a20
 column r_owner for a20
 column CONSTRAINT_NAME for a30
@@ -2281,19 +2281,21 @@ select OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE, R_OWNER,R_CONSTRAINT_NAME, STATUS,
 from dba_constraints where table_name = upper('$P1_') and owner like nvl('$P2_','%') order by owner,CONSTRAINT_NAME;
 */
 prompt
-prompt columns statistic information:
-col owner for a20
-col table_name for a25
+prompt dba_tab_cols:
 col COLUMN_NAME for a30
+col DATA_TYPE for a10  heading "TYPE"
+col DATA_LENGTH for 999999 heading "LENGTH"
+col DATA_PRECISION for 999 heading "PRECISION"
+col DATA_SCALE for 999 heading "SCALE"
+col COLUMN_ID for 999 heading "COLID"
+col HISTOGRAM for a20
 col NUM_DISTINCT for 999999999999
 col NUM_NULLS for 999999999999
-col NUM_BUCKETS for 99999
-col SAMPLE_SIZE for 999999999999
-col low_value for a15
-col high_value for a15
-col HISTOGRAM for a30
-select OWNER,COLUMN_NAME,NUM_DISTINCT,DENSITY,NUM_NULLS,NUM_BUCKETS,LAST_ANALYZED,SAMPLE_SIZE,GLOBAL_STATS,USER_STATS,AVG_COL_LEN $SQL_TEXT2
-from dba_tab_col_statistics where table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner,table_name,COLUMN_NAME;
+col hidden_column for a4
+col virtual_column for a4
+col GLOBAL_STATS for a7 heading "GLOB_ST"
+select column_name,data_type,data_length,data_precision,data_scale,nullable,column_id,num_distinct,density,num_nulls,last_analyzed,global_stats,avg_col_len,char_length,char_used,hidden_column,virtual_column $SQL_TEXT2 
+from dba_tab_cols where table_name = upper('$P1_') and owner like nvl('$P2_','%') order by column_id;
 EOF
 ;;
 esac
@@ -2471,9 +2473,8 @@ logf
 constraint()
 {
 P1_="$1"
-P2_="$2"
-P3_="$3"
-P4_="$4"
+P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 
 SET_COLUMNS="column owner for a17
 column table_name for a25
