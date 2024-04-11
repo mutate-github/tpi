@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="05.04.24"
+TPIVER="11.04.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -753,22 +753,22 @@ col BEGIN_TIME for a17 heading '1|BEGIN_TIME'
 col AAS for 9999 heading '2|AAS'
 col BCPUUPS for 99999 heading '3|BCPUUPS'
 col CPUUPS for 99999 heading '4|CPUUPS'
-col BLCHPT for 99999 heading '5|BLCHPT'
+col BLCHPT for 9999999 heading '5|BLCHPT'
 col ENQREQPT for 99999 heading '6|ENQREQPT'
 col execps for 999999 heading '7|EXECPS'
 col hcpuups for 99999 heading '8|HCPUUPS'
 col IOMBPS for 99999 heading '9|IOMBPS'
 col IOPS for 999999 heading '10|IOPS'
 col IORL for 99999 heading '11|IORL'
-col LOGRPT for 999999 heading '12|LOGRPT'
+col LOGRPT for 9999999 heading '12|LOGRPT'
 col lgnps for 99999 heading '13|LGNPS'
 col netmbps for 99999 heading '14|NETMBPS'
 col PHYR for 999999 heading '15|PHYR'
-col PHYRPT for 99999 heading '16|PHYRPT'
+col PHYRPT for 999999 heading '16|PHYRPT'
 col PHYW for 999999 heading '17|PHYW'
 col redokbps for 999999 heading '18|REDOKBPS'
-col redokbpt for 99999 heading '19|REDOKBPT'
-col rsptimpt for 9999999 heading '20|RSPTIMPT'
+col redokbpt for 999999 heading '19|REDOKBPT'
+col rsptimpt for 999999999 heading '20|RSPTIMPT'
 col SSRT for 9999999 heading '21|SSRT'
 col tparspt for 99999 heading '22|TPARSPT'
 col UCPS for 9999999 heading '23|UCPS'
@@ -5924,7 +5924,8 @@ PROMPT
 PROMPT "Stat top 30 session_state from V\$ACTIVE_SESSION_HISTORY for condition: $COND_ and sample_time $INTERVAL_"
 $SET_COL
 select * from (
-select session_id sid,"SESSION_SERIAL#" serial, username,
+select --session_id sid,"SESSION_SERIAL#" serial, 
+   username,
    sql_id,sql_plan_hash_value,
    nvl(event,'ON CPU') event, /* top_level_sql_id, top_level_call_name, */   /* program, session_state, */ /*program,module,action,machine,*/ program||' \ '||module||' \ '||action||' \ '||machine PMAM,
    sum(decode(session_state, 'ON CPU', wait_time, time_waited))/1000000 time_waited,
@@ -5943,7 +5944,7 @@ where $COND_ h.user_id=u.user_id
   --and module like '%$PRG_%'
   --and action like '%$PRG_%'
 --  and machine like 'dcb-aix71-01'
-group by session_id,"SESSION_SERIAL#",
+group by --session_id,"SESSION_SERIAL#",
   username,
   sql_id,sql_plan_hash_value,
   event, /* top_level_sql_id, top_level_call_name, */ program,module,action,machine
@@ -7201,8 +7202,8 @@ logf
 export TERM=xterm
 U=$(awk -F_ '{print $1}' <<< $(uname))
 case "$U" in
- CYGWIN) echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2  " ;;
- AIX)    echo -n "DB=$sid ver=$TPIVER $SYSDATE $ls2  " ;;
+ CYGWIN) echo -n "DB=$sid $SYSDATE ver=$TPIVER $ls2  " ;;
+ AIX)    echo -n "DB=$sid $SYSDATE ver=$TPIVER $ls2  " ;;
  *)       red=$(tput setaf 1)
 	 green=$(tput setaf 2)
 	 yellow=$(tput setaf 3)
@@ -7210,7 +7211,7 @@ case "$U" in
 	 magneta=$(tput setaf 5)
 	 cyan=$(tput setaf 6)
 	 reset=$(tput sgr0)
-	 echo -n ${green}"DB=$sid ver=$TPIVER $SYSDATE $ls2  "
+	 echo -n ${green}"DB=$sid $SYSDATE ver=$TPIVER $ls2  "
  ;;
 esac
 
