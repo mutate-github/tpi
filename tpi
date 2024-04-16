@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="12.04.24"
+TPIVER="16.04.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2281,7 +2281,7 @@ from dba_constraints where table_name = upper('$P1_') and owner like nvl('$P2_',
 prompt
 prompt dba_tab_cols:
 col COLUMN_NAME for a30
-col DATA_TYPE for a10  heading "TYPE"
+col DATA_TYPE for a14  heading "TYPE"
 col DATA_LENGTH for 999999 heading "LENGTH"
 col DATA_PRECISION for 999 heading "PRECISION"
 col DATA_SCALE for 999 heading "SCALE"
@@ -3538,7 +3538,7 @@ set numwidth 15
 column username for a30
 column table_name for a20
 column account_status for a20
-column default_tablespace for a20
+column default_tablespace for a25
 column TEMPORARY_TABLESPACE for a20
 column profile for a20
 column last_login for a19
