@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="16.04.24"
+TPIVER="17.04.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
