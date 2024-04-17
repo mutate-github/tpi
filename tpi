@@ -1332,7 +1332,7 @@ order by name;
 END
 ;;
 *)
- SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,supplemental_log_data_min,FLASHBACK_ON,platform_name from v\$database;"
+ SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,current_scn,protection_level,switchover_status,force_logging,FLASHBACK_ON,supplemental_log_data_min,platform_name from v\$database;"
 SQL_TEXT12="prompt DBA_REGISTRY_SQLPATCH:
       col INSTALL_ID for 99
       col action for a10
@@ -1351,7 +1351,8 @@ SQL_TEXT12="prompt DBA_REGISTRY_SQLPATCH:
  REL=$(db_version)
  VERSION="VERSION" ; BANNER="BANNER"
  case $REL in
-   9|10|11)  SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
+   9)        SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
+   10|11)    SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,FLASHBACK_ON,supplemental_log_data_min from v\$database;" ;;
    12)       SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID VERSION, ACTION, STATUS, ACTION_TIME, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"  ;;
    18|19|21) SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
 	      VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
