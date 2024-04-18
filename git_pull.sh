@@ -1,6 +1,6 @@
 #!/bin/sh
 
-git pull
+git pull --rebase
 
 echo "oracle@amazon1"
 cat <<EOF | ssh oracle@a1 "/bin/bash"
