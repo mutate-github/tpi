@@ -13,7 +13,7 @@ sid="$2"
 shift
 shift
 args="$@"
-argsl="$args"
+# argsl="$args"
 args=$(echo $args | sed -e 's|\$|\\$|g' -e 's|(|\\(|g' -e 's|)|\\)|g' -e 's|"|\\"|g')
 BASEDIR=`dirname $0`
 wtpi="$BASEDIR/tpi"
