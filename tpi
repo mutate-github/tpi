@@ -57,7 +57,7 @@ init_msg()
   rman__="rman [DAYS|cfg|last|arch [SEQUENCE] ] - RMAN backups | v\$rman_configuration information | last - hours passed since the last backup | arch - last backup archivelog"
   get_ddl__="get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%"
   trace__="trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off"
-  kill__="kill [SID SERIAL] | [idle NUM] | [where USERNAME=\"\'\"SomeUser\"\'\"] - Kill session, idle 5 - kill idle sessions for 5 hours and more"
+  kill__="kill [SID SERIAL] | [idle NUM] | [where USERNAME=\"\'\"SOMEUser\"\'\"] - Kill session, idle 5 - kill idle sessions for 5 hours and more"
   exec__="exec - execute \"SQL Commands\"  Note: Must be escaped with \\ characters: * ; ' ! ( )      ( alter system set \"_ash_sample_all\"=true )"
   alert__="alert [num] - tail -num alert_[sid].log, default num = 100"
   report__="report [ash {text|html} -60] -for last hour, [awr {text|html} DD/MM/YYYY HH24_begin HH24_end], [awrdd {text|html} DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql {text|html} DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports"
