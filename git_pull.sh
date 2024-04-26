@@ -15,6 +15,8 @@ cd start/tpi
 git pull
 echo "scp to aisprod:"
 scp tpi aisprod:start/bin
+echo "scp to beta:"
+scp tpi beta:start/bin
 EOL
 EOF
 
