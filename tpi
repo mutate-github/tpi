@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="18.04.24"
+TPIVER="26.04.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2240,9 +2240,10 @@ column compression for a11
 column compress_for for a15
 column partitioned for a4
 column iot_type for a8
+column external for a3
 select t.tablespace_name, owner, table_name, t.logging, t.cache,  num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
-last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary
+last_analyzed, $SQL_TEXT1 partitioned, iot_type,external, temporary
 from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner;
 
 prompt
@@ -3608,6 +3609,8 @@ esac
 $SP <<EOF >$LOGF
 set lines 230 pages 80 echo off feed off veri off tab off
 col owner for a30
+col role for a40
+col granted_role for a40
 select role,granted_role,admin_option from role_role_privs $COND1_ order by role,granted_role,admin_option;
 EOF
 logf
