@@ -40,7 +40,7 @@ init_msg()
   s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
   t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
   i__="i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate [TABLE_NAME|%] [TABLE_OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld" 
-  l__="l LOB_NAME - dba_lobs information" 
+  l__="l [LOB_NAME] | [unused OWNER LOBSEGMENT] - dba_lobs information or show unused segment information" 
   c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u [ USERNAME [{sys|role|tab} PRIVILEGE] ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
   r__="r [ {role|granted_role} ROLE  ] - role_role_privs information"
@@ -2611,7 +2611,53 @@ logf
 
 lob()
 {
-P1_=$1
+P1_="$1"
+P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
+P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
+case "$P1_" in
+  unused) $SP <<EOF >$LOGF
+set lines 200 echo off feed off veri off tab off pages 0 serveroutput on timing off
+DECLARE
+  TOTAL_BLOCKS                NUMBER;
+  TOTAL_BYTES                 NUMBER;
+  UNUSED_BLOCKS               NUMBER;
+  UNUSED_BYTES                NUMBER;
+  LAST_USED_EXTENT_FILE_ID    NUMBER;
+  LAST_USED_EXTENT_BLOCK_ID   NUMBER;
+  LAST_USED_BLOCK             NUMBER;
+BEGIN
+  DBMS_SPACE.unused_space ('$P2_','$P3_','LOB',
+  TOTAL_BLOCKS,
+  TOTAL_BYTES,
+  UNUSED_BLOCKS,
+  UNUSED_BYTES,
+  LAST_USED_EXTENT_FILE_ID,
+  LAST_USED_EXTENT_BLOCK_ID,
+  LAST_USED_BLOCK);
+  DBMS_OUTPUT.put_line ('SEGMENT_NAME = $P2_.$P3_');
+  DBMS_OUTPUT.put_line ('------------------------------');
+  DBMS_OUTPUT.put_line ('TOTAL_BLOCKS = ' || TOTAL_BLOCKS);
+  DBMS_OUTPUT.put_line ('TOTAL_BYTES = ' || TOTAL_BYTES);
+  DBMS_OUTPUT.put_line ('TOTAL_MB = ' || TOTAL_BYTES / 1024 / 1024);
+  DBMS_OUTPUT.put_line ('UNUSED_BLOCKS = ' || UNUSED_BLOCKS);
+  DBMS_OUTPUT.put_line ('UNUSED BYTES = ' || UNUSED_BYTES);
+  DBMS_OUTPUT.put_line ('UNUSED MB = ' || UNUSED_BYTES / 1024 / 1024);
+  DBMS_OUTPUT.put_line ('LAST_USED_EXTENT_FILE_ID = ' || LAST_USED_EXTENT_FILE_ID);
+  DBMS_OUTPUT.put_line ('LAST_USED_EXTENT_BLOCK_ID = ' || LAST_USED_EXTENT_BLOCK_ID);
+  DBMS_OUTPUT.put_line ('LAST_USED_BLOCK = ' || LAST_USED_BLOCK);
+END;
+/
+prompt
+prompt "Some recomendations:"
+select 'alter table $P2_.'||table_name||' enable row movement;' from dba_lobs where owner='$P2_' and segment_name = '$P3_';
+select 'alter table $P2_.'||table_name||' shrink space cascade;' from dba_lobs where owner='$P2_' and segment_name = '$P3_';
+select 'alter table $P2_.'||table_name||' disable row movement;' from dba_lobs where owner='$P2_' and segment_name = '$P3_';
+select 'alter table $P2_.'||table_name||' modify lob ('||column_name||') (shrink space cascade);' from dba_lobs where owner='$P2_' and segment_name = '$P3_';
+select 'alter table $P2_.'||table_name||' move lob ('||column_name||') STORE AS (TABLESPACE '||tablespace_name||');' from dba_lobs where owner='$P2_' and segment_name = '$P3_';
+prompt "Other recomendation for IOT: ALTER TABLE iot_name OVERFLOW SHRINK SPACE;"
+EOF
+;;
+     *)
 $SP <<EOF >$LOGF
 set lines 200
 set echo off feed off veri off tab off pages 40
@@ -2630,6 +2676,8 @@ prompt
 prompt Index from dba_lobs where index_name = upper('$P1_');
 select owner,table_name,column_name,segment_name,tablespace_name,index_name,partitioned from dba_lobs where index_name = upper('$P1_');
 EOF
+;;
+esac
 logf
 }
 
