@@ -45,6 +45,7 @@ size_lim=256M    # size limit for lsn.log
 
 $SET_ENV
 
+
 export ORACLE_SID=\$sid
 
 VALUE=\$(sqlplus -s '/as sysdba' <<'EOS'
@@ -55,6 +56,7 @@ EOS
 
 echo "diagnostic_dest: "\$VALUE
 cd \$VALUE
+show homes
 
 trc=\$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'\$sid'$')
 tns3=\$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
@@ -82,6 +84,12 @@ for tns3_ in \$(echo \$tns3 | xargs); do
   find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim
   find \$VALUE/\$tns3_/trace -type f -name "*lsn*.log" -size +\$size_lim -exec cp /dev/null {} \;
 done
+
+echo "BEGIN purge non-standard listener:"
+echo find "\$ORACLE_BASE/diag/tnslsnr/\$(hostname)/ -type f -name '*.'"
+find \$ORACLE_BASE/diag/tnslsnr/\$(hostname)/ -type f -name "*.log" -size +\$size_lim  -exec cp /dev/null {} \;
+find \$ORACLE_BASE/diag/tnslsnr/\$(hostname)/ -type f -name "*.*" -mtime +\$audit  -exec rm {} \; 
+echo "END purge non-standard listener"
 
 VALUE=\$(sqlplus -S '/ as sysdba' <<'END'
   set pagesize 0 feedback off verify off heading off echo off timing off

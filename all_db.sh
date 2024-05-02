@@ -31,12 +31,22 @@ for srv in $lst; do
 #       $WRTPI $srv $sid exec 'alter system set "_enable_space_preallocation"=0'
 
 SQL_NAME="exec_resize_df_${srv}_${sid}_$$.sql"
-$WRTPI $srv $sid size df lastseg | grep '^alter database datafile' > $SQL_NAME
+#$WRTPI $srv $sid size df lastseg | grep '^alter database datafile' > $SQL_NAME
+
+cat << 'EOL' > $SQL_NAME
+set lines 230
+column name for a30
+column value for a90
+select name, value from v\$diag_info;
+EOL
+
+
 cat <<EOFF >  $SCRIPT_NAME
 #!/bin/bash
 set -f
 sid=\$1
 $SET_ENV
+export ORACLE_SID=$sid
 sqlplus -s '/ as sysdba' <<EOS
 EOFF
 cat $SQL_NAME >> $SCRIPT_NAME
