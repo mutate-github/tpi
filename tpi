@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="26.04.24"
+TPIVER="03.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -746,6 +746,33 @@ else
    INTERVAL_="between to_date('$DD_ $HHB_','dd/mm/yy hh24:mi') and to_date('$DD_ $HHE_','dd/mm/yy hh24:mi') + interval '2' minute"
  fi
 fi
+
+#dhsh legend
+#AAS             - 'Average Active Sessions'
+#BCPUUPS         - 'Background CPU Usage Per Sec'
+#CPUUPS          - 'CPU Usage Per Sec'
+#BLCHPT          - 'DB Block Changes Per Txn'
+#ENQREQPT        - 'Enqueue Requests Per Txn'
+#execps          - 'Executions Per Sec'
+#hcpuups         - 'Host CPU Usage Per Sec'
+#IOMBPS          - 'I/O Megabytes per Second'
+#IOPS            - 'I/O Requests per Second'
+#IORL            - 'Average Synchronous Single-Block Read Latency'
+#LOGRPT          - 'Logical Reads Per Txn'
+#lgnps           - 'Logons Per Sec'
+#netmbps         - 'Network Traffic Volume Per Sec'
+#PHYR            - 'Physical Reads Per Sec'
+#PHYRPT          - 'Physical Reads Per Txn'
+#PHYW            - 'Physical Writes Per Sec'
+#redokbps        - 'Redo Generated Per Sec'
+#redokbpt        - 'Redo Generated Per Txn'
+#rsptimpt        - 'Response Time Per Txn'
+#SSRT            - 'SQL Service Response Time'
+#tparspt         - 'Total Parse Count Per Txn'
+#UCPS            - 'User Calls Per Sec'
+#UTPS            - 'User Transaction Per Sec'
+#NCPU            - 'Number of CPU'
+#instance_number - 'RAC instance number'
 
 $SP <<EOF >$LOGF
 set lines 230 pages 80 tab off
@@ -5521,6 +5548,31 @@ and filetype_name='$filetype_name'
 EOF
 ;;
 awrinfo)
+#awrinfo legend
+#begin_time       -  Begin time
+#instance_number  -  RAC instance number
+#AAS              -  Average Active Sessions             
+#DBTIMEM          -  DB Time                             
+#DBCPUM           -  DB CPU                              
+#LOAD             -  CPU Load                            
+#LOADW            -  CPU Load Windows                    
+#LIOPSEC          -  Logical Reads per second            
+#REDO_GB          -  Redo Size Generated per Hour        
+#DBBLC            -  Block Changed per Hour              
+#PGAMB            -  PGA Size                            
+#READLAT          -  Read S\B Latency                    
+#LFPWLAT          -  Log File parallel write (ms) Latency
+#LFSYLAT          -  Log File sync (ms) Latency          
+#PHYREMBT         -  Physical Read Total (MB)            
+#PHYWRMBT         -  Physical Write Total (MB)           
+#PHREMBPS         -  Physical Read Mb per Second         
+#PHWRMBPS         -  Physical Write Mb per Second        
+#PHREIOPS         -  Physical Read IOPS                  
+#PHWRIOPS         -  Physical Write IOPS                 
+#ENQTXMS          -  Enqueue TX contention (ms)          
+#ENQTMMS          -  Enqueue TM contention (ms)          
+#TRANMIN          -  DB Transactions per min             
+#ROLLMIN          -  DB Rollbacks per min                
 $SP <<EOF >$LOGF
 prompt  dba_hist_sys_time_model 
 set lines 230 pages 190 numw 9 tab off null 0
