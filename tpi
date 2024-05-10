@@ -49,7 +49,7 @@ init_msg()
   profile__="profile [PROFILE] - profiles information"
   links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
-  lock__="lock [lib | obj OBJECT_NAME | distrib [commit TRX | rolback TRX | purge TRX | hardpurge [TRX] ] ] - blocking locks information, lib - library lock information"
+  lock__="lock [lib | obj OBJECT_NAME | distrib [commit TRX | rollback TRX | purge TRX | hardpurge [TRX] ] ] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
