@@ -1,4 +1,4 @@
-Usage: /home/t.mukhametshin/start/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
+Usage: /home/t.mukhametshin/start/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | e . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
 "" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V$SES_OPTIMIZER_ENV by [param_name]
 p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir - instance parameters or hidden parameters, [FALSE] - only changed parameters, v$services, dba_directories
 db [ nls|option|properties|fusage ] - v$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information
@@ -15,6 +15,7 @@ sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, whe
 topseg [SEGMENT_NAME] [OWNER] - top 20 segments statistics information from V$SEGMENT_STATISTICS or SEGMENT_NAME statistics
 o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information
 s SEGMENT_NAME [OWNER] - dba_segments information
+e EXTENT_NAME [OWNER] - dba_extents, dba_tablespaces information
 t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information
 i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate [TABLE_NAME|%] [TABLE_OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld
 l [LOB_NAME] | [unused OWNER LOBSEGMENT] - dba_lobs information or show unused segment information
