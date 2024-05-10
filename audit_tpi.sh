@@ -83,14 +83,14 @@ echo '--------------------------------------------------------------------------
 rtpi $SRV $SID ash 
 rtpi $SRV $SID ash event
 rtpi $SRV $SID ash mchart
-echo "rtpi $SRV $SID ash tchart | diagram.sh  2 3 6 7 8 9 10 13 16"
-rtpi $SRV $SID ash tchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo "rtpi $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
+rtpi $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 rtpi $SRV $SID dhash 
 rtpi $SRV $SID dhash event
 rtpi $SRV $SID dhash $DT mchart
-echo "rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16"
-rtpi $SRV $SID dhash $DT tchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo "rtpi $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
+rtpi $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16
 echo "rtpi $SRV $SID dhash $DT3 awrinfo"
 rtpi $SRV $SID dhash $DT3 awrinfo | diagram.sh 
 echo "rtpi $SRV $SID dhash $DT3 iostat"
