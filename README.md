@@ -26,7 +26,7 @@ trg [ "" | [TRIGGER_NAME] [TRIGGER_OWNER] | t [TABLE_NAME] [TABLE_OWNER] ] - dba
 profile [PROFILE] - profiles information
 links [LINK_NAME] - links information
 latch - latch information
-lock [lib | obj OBJECT_NAME | distrib [commit TRX | rollback TRX | purge TRX | hardpurge [TRX] ] ] - blocking locks information, lib - library lock information
+lock [lib | obj OBJECT_NAME | distrib [commit TRX | rollback TRX | purge TRX | hardpurge TRX | hardpurge-ORA-02075-prepared TRX ] ] - blocking locks information, lib - library lock information
 bind [SQL] - sql not using bind variable information
 pipe [PIPE_NAME] - pipes information, read PIPE_NAME
 longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time

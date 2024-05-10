@@ -49,7 +49,7 @@ init_msg()
   profile__="profile [PROFILE] - profiles information"
   links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
-  lock__="lock [lib | obj OBJECT_NAME | distrib [commit TRX | rollback TRX | purge TRX | hardpurge [TRX] ] ] - blocking locks information, lib - library lock information"
+  lock__="lock [lib | obj OBJECT_NAME | distrib [commit TRX | rollback TRX | purge TRX | hardpurge TRX | hardpurge-ORA-02075-prepared TRX ] ] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
@@ -565,18 +565,21 @@ prompt  ROLLBACK FORCE '$P3_';
  ROLLBACK FORCE '$P3_';
 END
 ;;
-purge)  $SP <<END > $LOGF
-prompt execute DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+purge)
+--ORA-02058 collecting
+--status=collecting
+      $SP <<END > $LOGF
+prompt execute DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_') for states:  committed, rollback forced or commit forced
 execute DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_'); 
 commit;
 END
 ;;
-hardpurge)  $SP <<END > $LOGF
+hardpurge)  $SP <<ENDHP > $LOGF
 -- узнать информацию о транзакции
 -- accept local_tran_id  prompt '$P3_'
-prompt accept local_tran_id:  $P3_
+prompt accept local_tran_id:  $P3_  for state transaction: prepared
 
-set pagesize 100 linesize 250 trimspool on trimout on
+set pagesize 100 linesize 250 trimspool on trimout on timing off
 set serveroutput on
 column global_tran_id format a35
 column tran_comment   format a20
@@ -589,12 +592,49 @@ col branch for a15
 
 SELECT * FROM DBA_2PC_PENDING WHERE LOCAL_TRAN_ID = '$P3_';
 SELECT * FROM DBA_2PC_NEIGHBORS WHERE LOCAL_TRAN_ID = '$P3_';
+--If the state is "prepared" the transaction can be forced to rollback or commit
+--Note 1: If the command hangs, go to the "Handling Stuck DBA_2PC_PENDING" section.     ----> GOTO "2. HANDLING STUCK TRANSACTIONS"
+--Note 2: If the state of the transaction is "collecting" and you execute the above command, you may see an error like:
+--ERROR at line 1:
+--ORA-02058: no prepared transaction found with ID 96.22.163456
+--Then, you have to run:
+--alter system set  "_smu_debug_mode" = 4;
+--EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('96.22.163456');
+--ALTER SYSTEM SET "_smu_debug_mode" = 0;
+--COMMIT;
 
+--The background RECO process will try to resolve in-doubt transactions across Oracle distributed databases. Enable RECO:
+--ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
+--ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;
+
+
+--2 HANDLING STUCK TRANSACTIONS:
 -- получаем user exception
 EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
 
-prompt "SET TRASACTION USE ROLLBACK SEGMENT SYSTEM;"
-set transaction use rollback segment SYSTEM;
+-- EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('96.22.163456');
+-- *
+-- ERROR at line 1:
+-- ORA-06510: PL/SQL: unhandled user-defined exception
+-- ORA-06512: at "SYS.DBMS_TRANSACTION", line 105
+-- ORA-06512: at line 1
+-- KTUXEUSN.KTUXESLT.KTUXESQN = 96.22.163456   (The concat of KTUXEUSN, KTUXESLT and KTUXESQN gives us the transacion number)
+-- KTUXEUSN=96
+-- KTUXESLT=22
+-- KTUXESQN=163456
+-- Therefore, the condition1 holds when DBA_2PC_PENDING has the entry but X$KTUXE does not.
+
+--SQL> SELECT LOCAL_TRAN_ID, GLOBAL_TRAN_ID, STATE, MIXED, COMMIT# FROM DBA_2PC_PENDING;
+--  -- Returns: 96.22.163456 TESTDB.723a8559.96.22.163456  prepared  no  56759427464
+--SQL> SELECT * FROM X$KTUXE WHERE KTUXEUSN=96 AND KTUXESLT=22 AND KTUXESQN =163456;
+--  -- Returns: No Rows
+
+
+--prompt "SET TRASACTION USE ROLLBACK SEGMENT SYSTEM;"
+--set transaction use rollback segment SYSTEM;
+
+PROMPT "ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;"
+ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
 
 prompt "deleting LOCAL_TRAN_ID = '$P3_' FROM SYS.PENDING_TRANS$  SYS.PENDING_SESSIONS$  SYS.PENDING_SUB_SESSIONS$
 DELETE FROM SYS.PENDING_TRANS$ WHERE LOCAL_TRAN_ID = '$P3_'; 
@@ -602,9 +642,9 @@ DELETE FROM SYS.PENDING_SESSIONS$ WHERE LOCAL_TRAN_ID ='$P3_' ;
 DELETE FROM SYS.PENDING_SUB_SESSIONS$ WHERE LOCAL_TRAN_ID = '$P3_';
 COMMIT;
 
-PROMPT "ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;"
-ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
-
+-- PROMPT "ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;"
+-- ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
+/*
 PROMPT "INSERT into pending_trans$ FAKE Data:"
 insert into pending_trans$
 (LOCAL_TRAN_ID,
@@ -644,13 +684,54 @@ commit;
 
 PROMPT "ROLLBACK FORCE '$P3_';"
 ROLLBACK FORCE '$P3_';
+*/
+PROMPT "ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;"
+ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;
+COMMIT;                                  
 
-PRIMPT "EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');"
+
+PROMPT "EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');"
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+COMMIT;                                 
+
+ENDHP
+;;
+hardpurge-ORA-02075-prepared) 
+--ORA-02075: another instance changed state of transaction
+--stated=prepared
+ $SP <<ENDHP > $LOGF
+set pagesize 100 linesize 250 trimspool on trimout on timing off
+set serveroutput on
+column global_tran_id format a35
+column tran_comment   format a20
+col database for a20
+col host for a20
+col OS_TERMINAL for a20
+col OS_user for a15
+col db_user for a15
+col branch for a15
+
+SELECT * FROM DBA_2PC_PENDING WHERE LOCAL_TRAN_ID = '$P3_';
+SELECT * FROM DBA_2PC_NEIGHBORS WHERE LOCAL_TRAN_ID = '$P3_';
 EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
 
-PRIMPT "ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;"
+PROMPT "ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;"
+ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
+
+prompt "deleting LOCAL_TRAN_ID = '$P3_' FROM SYS.PENDING_TRANS$  SYS.PENDING_SESSIONS$  SYS.PENDING_SUB_SESSIONS$
+DELETE FROM SYS.PENDING_TRANS$ WHERE LOCAL_TRAN_ID = '$P3_';
+DELETE FROM SYS.PENDING_SESSIONS$ WHERE LOCAL_TRAN_ID ='$P3_' ;
+DELETE FROM SYS.PENDING_SUB_SESSIONS$ WHERE LOCAL_TRAN_ID = '$P3_';
+COMMIT;
+
+PROMPT "ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;"
 ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;
-END
+COMMIT;
+
+PROMPT "EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');"
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+COMMIT;
+ENDHP
 ;;
 *)
 $SP <<END > $LOGF
