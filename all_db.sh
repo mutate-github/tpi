@@ -35,9 +35,22 @@ SQL_NAME="exec_resize_df_${srv}_${sid}_$$.sql"
 
 cat << 'EOL' > $SQL_NAME
 set lines 230
-column name for a30
-column value for a90
-select name, value from v\$diag_info;
+--column name for a30
+--column value for a90
+--select name, value from v\$diag_info;
+set lines 230 echo on
+column global_tran_id format a35
+column tran_comment   format a20
+col database for a20
+col host for a20
+col OS_TERMINAL for a20
+col OS_user for a15
+col db_user for a15
+col top_db_user for a15
+col branch for a15
+col HOST for a30
+col FAIL_TIME for a18
+SELECT LOCAL_TRAN_ID,GLOBAL_TRAN_ID,STATE,cast(FAIL_TIME as date) FAIL_TIME,HOST,db_user,COMMIT# FROM dba_2pc_pending ;
 EOL
 
 

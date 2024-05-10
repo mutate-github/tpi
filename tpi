@@ -49,7 +49,7 @@ init_msg()
   profile__="profile [PROFILE] - profiles information"
   links__="links [LINK_NAME] - links information"
   latch__="latch - latch information"
-  lock__="lock [lib | obj OBJECT_NAME] - blocking locks information, lib - library lock information"
+  lock__="lock [lib | obj OBJECT_NAME | distrib [commit TRX | rolback TRX | purge TRX | hardpurge [TRX] ] ] - blocking locks information, lib - library lock information"
   bind__="bind [SQL] - sql not using bind variable information"
   pipe__="pipe [PIPE_NAME] - pipes information, read PIPE_NAME" 
   longops__="longops [SID | MESSAGE | rman] - active session longops for SID or MESSAGE or rman backup elapsed time" 
@@ -548,6 +548,135 @@ and upper(o.name) = upper('$P2_') and w.lmode not in (0,1)
 and o.obj# (+) = s1.row_wait_obj# and w.sid = S1.sid (+) and S1.paddr = P1.addr (+)
 ORDER BY w.id1, w. request, last_call_et desc;
 END
+;;
+distrib)
+P3_="$3"
+echo  "P1_: "$P1_
+echo  "P2_: "$P2_
+echo  "P3_: "$P3_
+case "$P2_" in 
+commit)   $SP <<END > $LOGF
+prompt  COMMIT FORCE '$P3_';
+COMMIT FORCE '$P3_';
+END
+;;
+rollback)  $SP <<END > $LOGF
+prompt  ROLLBACK FORCE '$P3_';
+ ROLLBACK FORCE '$P3_';
+END
+;;
+purge)  $SP <<END > $LOGF
+prompt execute DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+execute DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_'); 
+commit;
+END
+;;
+hardpurge)  $SP <<END > $LOGF
+-- узнать информацию о транзакции
+-- accept local_tran_id  prompt '$P3_'
+prompt accept local_tran_id:  $P3_
+
+set pagesize 100 linesize 250 trimspool on trimout on
+set serveroutput on
+column global_tran_id format a35
+column tran_comment   format a20
+col database for a20
+col host for a20
+col OS_TERMINAL for a20
+col OS_user for a15
+col db_user for a15
+col branch for a15
+
+SELECT * FROM DBA_2PC_PENDING WHERE LOCAL_TRAN_ID = '$P3_';
+SELECT * FROM DBA_2PC_NEIGHBORS WHERE LOCAL_TRAN_ID = '$P3_';
+
+-- получаем user exception
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+
+prompt "SET TRASACTION USE ROLLBACK SEGMENT SYSTEM;"
+set transaction use rollback segment SYSTEM;
+
+prompt "deleting LOCAL_TRAN_ID = '$P3_' FROM SYS.PENDING_TRANS$  SYS.PENDING_SESSIONS$  SYS.PENDING_SUB_SESSIONS$
+DELETE FROM SYS.PENDING_TRANS$ WHERE LOCAL_TRAN_ID = '$P3_'; 
+DELETE FROM SYS.PENDING_SESSIONS$ WHERE LOCAL_TRAN_ID ='$P3_' ; 
+DELETE FROM SYS.PENDING_SUB_SESSIONS$ WHERE LOCAL_TRAN_ID = '$P3_';
+COMMIT;
+
+PROMPT "ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;"
+ALTER SYSTEM DISABLE DISTRIBUTED RECOVERY;
+
+PROMPT "INSERT into pending_trans$ FAKE Data:"
+insert into pending_trans$
+(LOCAL_TRAN_ID,
+GLOBAL_TRAN_FMT,
+GLOBAL_ORACLE_ID,
+STATE,
+STATUS,
+SESSION_VECTOR,
+RECO_VECTOR,
+TYPE#,
+FAIL_TIME,
+RECO_TIME) values
+('$P3_',
+   306206, 
+   'XXXXXXX.12345.1.2.3',
+   'prepared',
+   'P', 
+   hextoraw('00000001'), 
+   hextoraw('00000000'), 
+   0,
+   sysdate,
+   sysdate);
+
+PROMPT "INSERT into pending_sessions$ FAKE Data:"
+insert into pending_sessions$
+values
+  ('$P3_',
+   1,
+   hextoraw('05004F003A1500000104'),
+   'C',
+   0,
+   30258592,
+   '',
+   146);
+
+commit;
+
+PROMPT "ROLLBACK FORCE '$P3_';"
+ROLLBACK FORCE '$P3_';
+
+PRIMPT "EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');"
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('$P3_');
+
+PRIMPT "ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;"
+ALTER SYSTEM ENABLE DISTRIBUTED RECOVERY;
+END
+;;
+*)
+$SP <<END > $LOGF
+set lines 230 echo on pages 100
+column global_tran_id format a35
+column tran_comment   format a20
+col database for a20
+col host for a20
+col OS_TERMINAL for a20
+col OS_user for a15
+col db_user for a15
+col top_db_user for a15
+col branch for a15
+col HOST for a30
+col FAIL_TIME for a18
+ttitle left "dba_2pc_pending:"
+SELECT LOCAL_TRAN_ID,GLOBAL_TRAN_ID,STATE,cast(FAIL_TIME as date) FAIL_TIME,HOST,db_user,COMMIT# FROM dba_2pc_pending;
+ttitle left "dba_2pc_neighbors:"
+col local_tran_id for a30
+col in_out for a10
+col database for a15
+col interface for a10
+select local_tran_id, in_out, database, interface from dba_2pc_neighbors;
+END
+;;
+esac
 ;;
 *) $SP <<END > $LOGF
 $SETP_
