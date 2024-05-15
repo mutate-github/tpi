@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="10.05.24"
+TPIVER="14.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -3988,14 +3988,14 @@ case $REL in
 set lines 300
 set echo off feed off veri off tab off pages 0 timing off
 select 'create database link '||l.name||' connect to '||l.userid||' identified by "'||l.password||'" using '''||l.host||''';' 
-from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name);
+from link$ l, user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name);
 EOF
 ;;
 *) $SP <<EOF >$LOGF
 set lines 300
 set echo off feed off veri off tab off pages 0 timing off
 select 'create database link '||l.name||' connect to '||l.userid||' identified by values '''||l.passwordx||''' using '''||l.host||''';'
-from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by l.name;
+from link$ l, user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by l.name;
 EOF
 ;;
 esac
@@ -4009,7 +4009,7 @@ column name for a35
 column userid for a30
 column host for a45
 column ctime for a20
-select u.name owner,l.name,l.userid,l.host,l.ctime from sys.link$ l, sys.user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by owner, l.name;
+select u.name owner,l.name,l.userid,l.host,l.ctime from link$ l, user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by owner, l.name;
 prompt
 EOF
 logf
@@ -4215,7 +4215,7 @@ else
   set lines 230
   set echo off feed off veri off tab off pages 40
   column name for a40
-  select name,pipe_size from sys.V_$DB_PIPES
+  select name,pipe_size from V_$DB_PIPES
   where name not like '%LOCK%'
   order by pipe_size desc;
 EOF
