@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="14.05.24"
+TPIVER="15.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -34,7 +34,7 @@ init_msg()
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
-  sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
+  sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME | group STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
   topseg__="topseg [SEGMENT_NAME] [OWNER] - top 20 segments statistics information from V\$SEGMENT_STATISTICS or SEGMENT_NAME statistics" 
   o__="o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information" 
   s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
@@ -3127,12 +3127,30 @@ and s.sid=b.sid and s.serial#<>'1' and s.sid = '$P2_' and name like '$ALL%' orde
 ) where rownum < 61;
 EOF
 ;;
+group)
+shift
+ALL="$*"
+$SP <<EOF >$LOGF
+$SET_COL
+prompt
+prompt "Group session in v\$sysstat event for event = $ALL"
+select startup_time from v\$instance;
+col STATISTIC#  for 999
+col NAME for a55
+col CLASS for a10
+col VALUE for 999,999,999,999,999
+select  STATISTIC#, NAME,  DECODE(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') AS class, VALUE  from v\$sysstat where name like '$ALL%' order by value desc;
+EOF
+;;
+
 *)
 echo "*) ALL: " $ALL
 $SP <<EOF >$LOGF
 $SET_COL
 prompt
 prompt Sessions of top 60 event $P1:
+col osuser for a30
+col name for a60
 select * from (
 select b.sid, s.serial#, s.username, s.osuser, s.module, a.name, decode(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') CLASS, b.value
 from v\$statname a, v\$sesstat b, v\$session s where a.statistic#=b.statistic#
@@ -4529,7 +4547,7 @@ EOF
 arch)
 if [ -z "$P2_" ]; then
    SQL="PROMPT Last archivelog scn backup in V\$BACKUP_ARCHIVELOG_DETAILS 
-        SELECT * FROM (select FIRST_CHANGE#, cast(first_time as date) first_time from V\$BACKUP_ARCHIVELOG_DETAILS order by FIRST_TIME DESC) WHERE ROWNUM = 1;" 
+        SELECT * FROM (select SEQUENCE#, FIRST_CHANGE#, cast(first_time as date) first_time from V\$BACKUP_ARCHIVELOG_DETAILS order by FIRST_TIME DESC) WHERE ROWNUM = 1;" 
 else
    SQL="PROMPT Backup archivelog in V\$BACKUP_ARCHIVELOG_DETAILS bad, V\$RMAN_BACKUP_JOB_DETAILS for SEQUENCE#=$P2_;
         select SEQUENCE#,start_time,end_time,output_device_type,input_type,elapsed_seconds from V\$BACKUP_ARCHIVELOG_DETAILS bad, V\$RMAN_BACKUP_JOB_DETAILS  bj where bj.session_recid=bad.session_recid and bj.session_stamp=bad.session_stamp and SEQUENCE#=$P2_;"

@@ -1,5 +1,14 @@
 #!/bin/sh
 
+case "$#" in
+ 2) echo "usage: ./audit_tpi.sh ORACLE_SID DAYS"; cmd='tpi' ;;
+ 3) echo "usage: ./audit_tpi.sh SERVERNAME ORACLE_SID DAYS"; cmd='$cmd' ;;
+ *) echo -n "usage: 2 or 3 parameters, last parameter is days in past: 
+    For local oracle DB:   ./audit_tpi.sh ORACLE_SID 2
+    For remote oracle DB:  ./audit_tpi.sh my_server01 ORACLE_SID 2"; exit 128 ;;
+esac
+
+
 SRV=$1
 SID=$2
 DT=$3
@@ -8,99 +17,126 @@ DT=$3
 DT3=$(date -d '3 days ago' +%d/%m/%y-00:00-240)
 
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID db
+$cmd $SRV $SID db
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID db nls
+$cmd $SRV $SID db nls
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID db option
+$cmd $SRV $SID db acl
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID db properties
+$cmd $SRV $SID db option
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID db fusage
+$cmd $SRV $SID db properties
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID u % role DBA
+$cmd $SRV $SID db fusage
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID size tbs
-rtpi $SRV $SID size tbs free
-rtpi $SRV $SID size df
-rtpi $SRV $SID size sysaux
+$cmd $SRV $SID u % role DBA
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID size
-rtpi $SRV $SID arch
+$cmd $SRV $SID size tbs
+$cmd $SRV $SID size tbs free
+$cmd $SRV $SID size df
+$cmd $SRV $SID size sysaux
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID scheduler autotask
+$cmd $SRV $SID size
+$cmd $SRV $SID arch
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID pipe
+$cmd $SRV $SID scheduler autotask
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID p memory_target sga_target db_cache_size shared_pool_size pga_aggregate_target workarea_size_policy sort_area_size
-rtpi $SRV $SID sga
+$cmd $SRV $SID pipe
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID p FALSE %
+$cmd $SRV $SID p memory_target sga_target db_cache_size shared_pool_size pga_aggregate_target workarea_size_policy sort_area_size
+$cmd $SRV $SID sga
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID p audit
-rtpi $SRV $SID s 'AUD$'
-rtpi $SRV $SID audit
-rtpi $SRV $SID audit login
-rtpi $SRV $SID job | egrep 'dba_jobs information|AUD|--------|FAILURES'
-rtpi $SRV $SID scheduler | egrep "AUD|--------|JOB_NAME" | grep AUD -B 2
+$cmd $SRV $SID p FALSE %
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID p contorl_file
+$cmd $SRV $SID p audit
+$cmd $SRV $SID s 'AUD$'
+$cmd $SRV $SID audit
+$cmd $SRV $SID audit login
+$cmd $SRV $SID audit maxcon
+$cmd $SRV $SID audit 1017
+$cmd $SRV $SID job | egrep 'dba_jobs information|AUD|--------|FAILURES'
+$cmd $SRV $SID scheduler | egrep "AUD|--------|JOB_NAME" | grep AUD -B 2
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID redo logs
+$cmd $SRV $SID p contorl_file
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID fra
-rtpi $SRV $SID p db_recovery_file_dest  db_flashback_retention_target
+$cmd $SRV $SID redo logs
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID rman cfg
-rtpi $SRV $SID rman 7
+$cmd $SRV $SID fra
+$cmd $SRV $SID p db_recovery_file_dest  db_flashback_retention_target
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID u % sys ALTER SYSTEM
-rtpi $SRV $SID u % sys ALTER DATABASE
-rtpi $SRV $SID u % sys ALTER DATABASE
-rtpi $SRV $SID u % sys DROP ANY TRIGGER
-rtpi $SRV $SID u % sys DROP ANY PROCEDURE
-rtpi $SRV $SID u % sys DROP ANY TABLE
-rtpi $SRV $SID u % sys ALTER ANY PROCEDURE
-rtpi $SRV $SID u % sys DELETE ANY TABLE
-rtpi $SRV $SID u % sys UPDATE ANY TABLE
-rtpi $SRV $SID u % sys INSERT ANY TABLE
-rtpi $SRV $SID u % sys CREATE USER
-rtpi $SRV $SID u % sys BECOME USER
-rtpi $SRV $SID u % sys ALTER USER
-rtpi $SRV $SID u % sys DROP USER
+$cmd $SRV $SID rman cfg
+$cmd $SRV $SID rman 7
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-echo "rtpi $SRV $SID o invalid | sed  -e '/Elapsed/q'"
-rtpi $SRV $SID o invalid | sed  -e '/Elapsed/q'
+$cmd $SRV $SID u % sys ALTER SYSTEM
+$cmd $SRV $SID u % sys ALTER DATABASE
+$cmd $SRV $SID u % sys ALTER DATABASE
+$cmd $SRV $SID u % sys DROP ANY TRIGGER
+$cmd $SRV $SID u % sys DROP ANY PROCEDURE
+$cmd $SRV $SID u % sys DROP ANY TABLE
+$cmd $SRV $SID u % sys ALTER ANY PROCEDURE
+$cmd $SRV $SID u % sys DELETE ANY TABLE
+$cmd $SRV $SID u % sys UPDATE ANY TABLE
+$cmd $SRV $SID u % sys INSERT ANY TABLE
+$cmd $SRV $SID u % sys CREATE USER
+$cmd $SRV $SID u % sys BECOME USER
+$cmd $SRV $SID u % sys ALTER USER
+$cmd $SRV $SID u % sys DROP USER
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID scheduler
-rtpi $SRV $SID scheduler run % 48 | awk '/FAILED/{ f[$7"-"$1"."$2]++ } END { for (i in f)  printf "%-60s %-10s %-10s\n", i, " - FAILED: ",f[i]}' | sort
+echo "$cmd $SRV $SID o invalid | sed  -e '/Elapsed/q'"
+$cmd $SRV $SID o invalid | sed  -e '/Elapsed/q'
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID job
+$cmd $SRV $SID scheduler
+$cmd $SRV $SID scheduler run % 48 | awk '/FAILED/{ f[$7"-"$1"."$2]++ } END { for (i in f)  printf "%-60s %-10s %-10s\n", i, " - FAILED: ",f[i]}' | sort
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-echo "rtpi $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24"
-rtpi $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24
+$cmd $SRV $SID job
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID ash 
-rtpi $SRV $SID ash event
-rtpi $SRV $SID ash mchart
-echo "rtpi $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
-rtpi $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo $cmd $SRV $SID health
+$cmd $SRV $SID health
+echo $cmd $SRV $SID health cr
+$cmd $SRV $SID health cr
+echo $cmd $SRV $SID health hot
+$cmd $SRV $SID health hot
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID dhash 
-rtpi $SRV $SID dhash event
-rtpi $SRV $SID dhash $DT mchart
-echo "rtpi $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
-rtpi $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16
-echo "rtpi $SRV $SID dhash $DT3 awrinfo"
-rtpi $SRV $SID dhash $DT3 awrinfo | diagram.sh 
-echo "rtpi $SRV $SID dhash $DT3 iostat"
-rtpi $SRV $SID dhash $DT3 iostat | diagram.sh
-echo "rtpi $SRV $SID dhash $DT segstat"
-rtpi $SRV $SID dhash $DT segstat 
-echo "rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
-rtpi $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
+$cmd $SRV $SID sesstat group user call
+$cmd $SRV $SID sesstat group user commit
+$cmd $SRV $SID sesstat group rollback
+$cmd $SRV $SID sesstat group redo size
+$cmd $SRV $SID sesstat group redo write
+$cmd $SRV $SID sesstat group physical reads
+$cmd $SRV $SID sesstat group physical writes
+$cmd $SRV $SID sesstat group consistent gets
+$cmd $SRV $SID sesstat group db db block gets
+echo "--Number of undo records applied to transaction tables that have been rolled back for consistent read purposes"
+$cmd $SRV $SID sesstat transaction tables consistent reads - undo records applied
+echo "--Number of undo records applied to user-requested rollback changes (not consistent-read rollbacks)"
+$cmd $SRV $SID sesstat rollback changes - undo records applied
+$cmd $SRV $SID sesstat number of auto extends on undo tablespace
+$cmd $SRV $SID topseg
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-rtpi $SRV $SID dhash $DT sql
+echo "$cmd $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24"
+$cmd $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24
+echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+$cmd $SRV $SID ash 
+$cmd $SRV $SID ash event
+$cmd $SRV $SID ash mchart
+echo "$cmd $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
+$cmd $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+$cmd $SRV $SID dhash 
+$cmd $SRV $SID dhash event
+$cmd $SRV $SID dhash $DT mchart
+echo "$cmd $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
+$cmd $SRV $SID dhash $DT uchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo "$cmd $SRV $SID dhash $DT3 awrinfo"
+$cmd $SRV $SID dhash $DT3 awrinfo | diagram.sh 
+echo "$cmd $SRV $SID dhash $DT3 iostat"
+$cmd $SRV $SID dhash $DT3 iostat | diagram.sh
+echo "$cmd $SRV $SID dhash $DT segstat"
+$cmd $SRV $SID dhash $DT segstat 
+echo "$cmd $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
+$cmd $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
+echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
+$cmd $SRV $SID dhash $DT sql
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 
