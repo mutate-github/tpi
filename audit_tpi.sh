@@ -1,7 +1,13 @@
-#!/bin/sh
+#!/bin/bash
+
+DT=$(date '+%d-%m-%Y-%H:%M:%S')
+
+logf="logfile_$DT.txt"
+exec &> >(tee -a "$logf")
+
 
 case "$#" in
- 2) echo "usage: ./audit_tpi.sh ORACLE_SID DAYS"; cmd='tpi' ;;
+ 2) echo "usage: ./audit_tpi.sh ORACLE_SID DAYS"; cmd='./tpi' ;;
  3) echo "usage: ./audit_tpi.sh SERVERNAME ORACLE_SID DAYS"; cmd='$cmd' ;;
  *) echo -n "usage: 2 or 3 parameters, last parameter is days in past: 
     For local oracle DB:   ./audit_tpi.sh ORACLE_SID 2

@@ -4030,7 +4030,7 @@ from link$ l, user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name);
 EOF
 ;;
 *) $SP <<EOF >$LOGF
-set lines 300
+set lines 400
 set echo off feed off veri off tab off pages 0 timing off
 select 'create database link '||l.name||' connect to '||l.userid||' identified by values '''||l.passwordx||''' using '''||l.host||''';'
 from link$ l, user$ u where l.owner#=u.user# and l.name=nvl('$P1_',l.name) order by l.name;
@@ -4439,7 +4439,7 @@ EOF
 $SP <<EOF >$LOGF
 set echo off feed off veri off tab off pages 140
 set lines 230
-col owner for a15
+col owner for a30
 col job_name for a30
 col PROGRAM for a18
 col JOB_ACTION for a100
