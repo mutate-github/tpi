@@ -12,6 +12,7 @@ arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V$LOG V
 redo [logs] - redo information
 undo [recovery] - undo active transaction information, recovery information
 sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME
+sysstat [ % | STATNAME ] - sysstat information, by startup, by day, by hours, by min, by sec
 topseg [SEGMENT_NAME] [OWNER] - top 20 segments statistics information from V$SEGMENT_STATISTICS or SEGMENT_NAME statistics
 o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information
 s SEGMENT_NAME [OWNER] - dba_segments information
