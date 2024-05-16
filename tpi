@@ -34,7 +34,8 @@ init_msg()
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
-  sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME | group STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
+  sesstat__="sesstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
+  sysstat__="sysstat [ list | sess SESS_ID [STATNAME] | STATNAME ] - sesstat information, where 'list' - STATISTIC NAMES, sess SESS_ID - sesstat for session, STATNAME - name particular of STATISTIC NAME" 
   topseg__="topseg [SEGMENT_NAME] [OWNER] - top 20 segments statistics information from V\$SEGMENT_STATISTICS or SEGMENT_NAME statistics" 
   o__="o OBJECT_NAME | OBJECT_ID | invalid [OWNER] | ddl [last N hours] - dba_objects information" 
   s__="s SEGMENT_NAME [OWNER] - dba_segments information" 
@@ -3127,22 +3128,6 @@ and s.sid=b.sid and s.serial#<>'1' and s.sid = '$P2_' and name like '$ALL%' orde
 ) where rownum < 61;
 EOF
 ;;
-group)
-shift
-ALL="$*"
-$SP <<EOF >$LOGF
-$SET_COL
-prompt
-prompt "Group session in v\$sysstat event for event = $ALL"
-select startup_time from v\$instance;
-col STATISTIC#  for 999
-col NAME for a55
-col CLASS for a10
-col VALUE for 999,999,999,999,999
-select  STATISTIC#, NAME,  DECODE(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') AS class, VALUE  from v\$sysstat where name like '$ALL%' order by value desc;
-EOF
-;;
-
 *)
 echo "*) ALL: " $ALL
 $SP <<EOF >$LOGF
@@ -3163,6 +3148,30 @@ logf
 }
 
 
+sysstat()
+{
+ALL="$*"
+$SP <<EOF >$LOGF
+$SET_COL
+prompt
+prompt "Group session in v\$sysstat event for event = $ALL"
+set lines 250 pages 120 echo off feed off veri off tab off 
+select startup_time from v\$instance;
+col STATISTIC#  for 999
+col NAME for a65
+col CLASS for a10
+col VALUE for 999,999,999,999,999,999
+col VALUE_PER_HOUR for 999,999,999,999,999,999
+col VALUE_PER_MIN for 999,999,999,999,999,999
+col VALUE_PER_SEC for 999,999,999,999,999,999
+select STATISTIC#, NAME,  DECODE(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, 'Cache', 16, 'OS', 32, 'RAC', 64, 'SQL', 128, 'Debug', 'Unknown') AS class, VALUE, 
+ value/(SELECT 24*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_HOUR, 
+ value/(SELECT 60*24*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_MIN, 
+ value/(SELECT 60*6024*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_SEC  
+  from v\$sysstat where name like '$ALL%' order by value desc;
+EOF
+logf
+}
 
 
 dbsize()
@@ -7676,6 +7685,7 @@ fra)       shift; ALL=$*; echo $size__ ${reset}; fra $ALL ;;
 redo)      shift; ALL=$*; echo $redo__ ${reset}; redo $ALL ;;
 undo)      shift; ALL=$*; echo $undo__ ${reset}; undo $ALL ;;
 sesstat)   shift; ALL=$*; echo $sesstat__ ", STATNAME = " $ALL ${reset}; sesstat $ALL ;;
+sysstat)   shift; ALL=$*; echo $sesstat__ ", STATNAME = " $ALL ${reset}; sysstat $ALL ;;
 topseg)    shift; ALL=$*; echo $topseg__", SEGMENT_NAME = " $ALL ${reset}; topseg $ALL ;;
 o)         shift; ALL=$*; echo $o__ ", ALL  = " $ALL ${reset}; object $ALL ;;
 s)         shift; ALL=$*; echo $s__ ", SEGMENT_NAME = " $ALL ${reset}; segment $ALL ;;

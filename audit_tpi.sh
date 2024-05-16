@@ -2,7 +2,7 @@
 
 DT=$(date '+%d-%m-%Y-%H:%M:%S')
 
-logf="logfile_$DT.txt"
+logf="logfile_$ORACLE_SID_$DT.txt"
 exec &> >(tee -a "$logf")
 
 
