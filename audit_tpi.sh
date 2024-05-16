@@ -103,15 +103,15 @@ $cmd $SRV $SID health cr
 echo $cmd $SRV $SID health hot
 $cmd $SRV $SID health hot
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-$cmd $SRV $SID sesstat group user call
-$cmd $SRV $SID sesstat group user commit
-$cmd $SRV $SID sesstat group rollback
-$cmd $SRV $SID sesstat group redo size
-$cmd $SRV $SID sesstat group redo write
-$cmd $SRV $SID sesstat group physical reads
-$cmd $SRV $SID sesstat group physical writes
-$cmd $SRV $SID sesstat group consistent gets
-$cmd $SRV $SID sesstat group db db block gets
+$cmd $SRV $SID sysstat user call
+$cmd $SRV $SID sysstat user commit
+$cmd $SRV $SID sysstat rollback
+$cmd $SRV $SID sysstat redo size
+$cmd $SRV $SID sysstat redo write
+$cmd $SRV $SID sysstat physical reads
+$cmd $SRV $SID sysstat physical writes
+$cmd $SRV $SID sysstat consistent gets
+$cmd $SRV $SID sysstat db block gets
 echo "--Number of undo records applied to transaction tables that have been rolled back for consistent read purposes"
 $cmd $SRV $SID sesstat transaction tables consistent reads - undo records applied
 echo "--Number of undo records applied to user-requested rollback changes (not consistent-read rollbacks)"
