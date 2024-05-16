@@ -3153,10 +3153,14 @@ sysstat()
 ALL="$*"
 $SP <<EOF >$LOGF
 $SET_COL
-prompt
-prompt "Group session in v\$sysstat event for event = $ALL"
 set lines 250 pages 120 echo off feed off veri off tab off timing off
-select startup_time from v\$instance;
+col uptime_days for 999,990.00
+col uptime_hours for 999,990.00
+col uptime_min for 999990
+col uptime_sec for 999999990
+select startup_time, sysdate-startup_time uptime_days, 24*(sysdate-startup_time) uptime_hours, 60*24*(sysdate-startup_time) uptime_min, 60*60*24*(sysdate-startup_time) uptime_sec from v\$instance;
+prompt
+prompt "v\$sysstat for name like $ALL"
 col STATISTIC#  for 9999
 col NAME for a65
 col CLASS for a10
@@ -3169,7 +3173,7 @@ select STATISTIC#, NAME,  DECODE(class, 1, 'User', 2, 'Redo', 4, 'Enqueue', 8, '
  value/(SELECT (sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_DAY, 
  value/(SELECT 24*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_HOUR, 
  value/(SELECT 60*24*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_MIN, 
- value/(SELECT 60*6024*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_SEC  
+ value/(SELECT 60*60*24*(sysdate-(select startup_time from v\$instance)) FROM dual) VALUE_PER_SEC  
   from v\$sysstat where name like '$ALL%' order by value desc;
 EOF
 logf
