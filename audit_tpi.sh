@@ -136,32 +136,32 @@ echo -e "$cmd $SRV $SID sesstat number of auto extends on undo tablespace"
 $cmd $SRV $SID sesstat number of auto extends on undo tablespace
 $cmd $SRV $SID topseg
 echo -e  '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
-$cmd $SRV $SID oratop h | diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24
+$cmd $SRV $SID oratop h | ./diagram.sh  3 6 7  11 13 14 15 17 18 19 20 22 23 24
 echo -e  '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 $cmd $SRV $SID ash
 $cmd $SRV $SID ash event
 $cmd $SRV $SID ash mchart
-$cmd $SRV $SID ash uchart | diagram.sh  2 3 6 7 8 9 10 13 16
+$cmd $SRV $SID ash uchart | ./diagram.sh  2 3 6 7 8 9 10 13 16
 echo -e  '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 $cmd $SRV $SID dhash
 $cmd $SRV $SID dhash event
 echo -e "$cmd $SRV $SID dhash $DT3 mchart"
 $cmd $SRV $SID dhash $DT3 mchart
 
-echo -e "$cmd $SRV $SID dhash $DT3 uchart | diagram.sh  2 3 6 7 8 9 10 13 16"
-$cmd $SRV $SID dhash $DT3 uchart | diagram.sh  2 3 6 7 8 9 10 13 16
+echo -e "$cmd $SRV $SID dhash $DT3 uchart | ./diagram.sh  2 3 6 7 8 9 10 13 16"
+$cmd $SRV $SID dhash $DT3 uchart | ./diagram.sh  2 3 6 7 8 9 10 13 16
 
-echo -e "$cmd $SRV $SID dhash $DT3 awrinfo | diagram.sh"
-$cmd $SRV $SID dhash $DT3 awrinfo | diagram.sh
+echo -e "$cmd $SRV $SID dhash $DT3 awrinfo | ./diagram.sh"
+$cmd $SRV $SID dhash $DT3 awrinfo | ./diagram.sh
 
-echo -e "$cmd $SRV $SID dhash $DT3 iostat | diagram.sh"
-$cmd $SRV $SID dhash $DT3 iostat | diagram.sh
+echo -e "$cmd $SRV $SID dhash $DT3 iostat | ./diagram.sh"
+$cmd $SRV $SID dhash $DT3 iostat | ./diagram.sh
 
 echo -e "$cmd $SRV $SID dhash $DT3 segstat"
 $cmd $SRV $SID dhash $DT3 segstat
 
-echo -e "$cmd $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
-$cmd $SRV $SID oratop dhsh | diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
+echo -e "$cmd $SRV $SID oratop dhsh | ./diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24"
+$cmd $SRV $SID oratop dhsh | ./diagram.sh 2 5 6 9 10 11 13 14 15 17 18 21 23 24
 echo -e  '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 $cmd $SRV $SID dhash $DT3 sql
 echo -e  '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
