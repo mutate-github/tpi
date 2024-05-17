@@ -4453,7 +4453,7 @@ EOF
 *)
 $SP <<EOF >$LOGF
 set echo off feed off veri off tab off pages 140
-set lines 230
+set lines 250
 col owner for a30
 col job_name for a30
 col PROGRAM for a18
