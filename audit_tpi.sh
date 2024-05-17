@@ -10,8 +10,9 @@ case "$#" in
  2) echo "usage: ./audit_tpi.sh ORACLE_SID DAYS"; cmd='./tpi' ;;
  3) echo "usage: ./audit_tpi.sh SERVERNAME ORACLE_SID DAYS"; cmd='$cmd' ;;
  *) echo -n "usage: 2 or 3 parameters, last parameter is days in past: 
-    For local oracle DB:   ./audit_tpi.sh ORACLE_SID 2
-    For remote oracle DB:  ./audit_tpi.sh my_server01 ORACLE_SID 2"; exit 128 ;;
+    For local oracle DB:   ./audit_tpi.sh ORACLE_SID NUM_DAYS
+    For remote oracle DB:  ./audit_tpi.sh my_server01 ORACLE_SID NUM_DAYS"; 
+    exit 128 ;;
 esac
 
 
@@ -105,13 +106,14 @@ $cmd $SRV $SID health hot
 echo '--------------------------------------------------------------------------------------------------------------------------------------------------------------------'
 $cmd $SRV $SID sysstat user call
 $cmd $SRV $SID sysstat user commit
-$cmd $SRV $SID sysstat rollback
+$cmd $SRV $SID sysstat user rollbacks
 $cmd $SRV $SID sysstat redo size
 $cmd $SRV $SID sysstat redo write
 $cmd $SRV $SID sysstat physical reads
 $cmd $SRV $SID sysstat physical writes
 $cmd $SRV $SID sysstat consistent gets
 $cmd $SRV $SID sysstat db block gets
+$cmd $SRV $SID sysstat rollback
 echo "--Number of undo records applied to transaction tables that have been rolled back for consistent read purposes"
 $cmd $SRV $SID sesstat transaction tables consistent reads - undo records applied
 echo "--Number of undo records applied to user-requested rollback changes (not consistent-read rollbacks)"
