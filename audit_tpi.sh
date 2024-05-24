@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-# version 1 
+# version 2
 
 DTL=$(date '+%d-%m-%y-%H:%M:-%S')
 
