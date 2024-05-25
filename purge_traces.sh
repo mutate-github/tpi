@@ -20,6 +20,7 @@ age=1440         # min
 audit=7          # days
 size_lim=256M    # size limit for lsn.log
 
+shopt -s nocasematch
 case "$sid" in
 cft*|kik*|bd*|prov*)        [ -r ~/db12kik.env ] && source ~/db12kik.env ;;
 EPS*|creditc)               [ -r ~/db12.env ] && source ~/db12.env ;;
@@ -28,10 +29,10 @@ jet|ja)                     [ -r /etc/profile.ora ] && source /etc/profile.ora ;
 aisutf*|unit*|crm)          [ -r ~/.ora_env ] && source ~/.ora_env ;;
 askona*|aixtdb*|sbaskona)   [ -r ~/.profile ] && source ~/.profile ;;
 egais*|GOLD506*)            [ -r ~/.bashrc ] && source ~/.bashrc ;;
-unc*)                       [ -r ~/${sid}_setenv.sh ] && source ~/${sid}_setenv.sh ;;
+unc*|UKVDEV)                [ -r ~/${sid}_setenv.sh ] && source ~/${sid}_setenv.sh ;;
 # opndb)                    [ -r ~/BRSKDB_setenv.sh && source ~/BRSKDB_setenv.sh ; login_str="tal/tal@'(DESCRIPTION=(ADDRESS=(COMMUNITY=TCP.WORLD)(PROTOCOL=TCP)(HOST=172.16.104.36)(PORT=1525))(CONNECT_DATA=(SERVICE_NAME=opndb)))'" ;;
 opndb*|obk*)                : ;;
-INSIS*|insis*|alfa|ALFA)    : ;;
+INSIS*|alfa)                : ;;
 dbprod|dbprog)              : ;;
 *) #        if [ -r ~/.bashrc ]; then . ~/.bashrc ; fi
    #        if [ -r ~/.bash_profile ]; then . ~/.bash_profile ; fi
@@ -49,6 +50,7 @@ dbprod|dbprog)              : ;;
 ;;
 esac
 
+
 export ORACLE_SID=$sid
 
 VALUE=$(sqlplus -s '/as sysdba' <<'EOS'
@@ -59,6 +61,7 @@ EOS
 
 echo "diagnostic_dest: "$VALUE
 cd $VALUE
+show homes
 
 trc=$(echo "show homes;"  | adrci | grep 'diag/rdbms/.*/'$sid'$')
 tns3=$(echo "show homes;"  | adrci | grep 'diag/tnslsnr/.*/')
@@ -84,8 +87,14 @@ for tns3_ in $(echo $tns3 | xargs); do
   adrci exec="set home $tns3_ ; purge -age $age -type ALERT"
   adrci exec="set home $tns3_ ; purge -age $age -type TRACE"
   find $VALUE/$tns3_/trace -type f -name "*lsn*.log" -size +$size_lim
-  find $VALUE/$tns3_/trace -type f -name "*lsn*.log" -size +$size_lim -exec /bin/bash -c 'echo > {}' \;
+  find $VALUE/$tns3_/trace -type f -name "*lsn*.log" -size +$size_lim -exec cp /dev/null {} \;
 done
+
+echo "BEGIN purge non-standard listener:"
+echo find "$ORACLE_BASE/diag/tnslsnr/$(hostname)/ -type f -name '*.'"
+find $ORACLE_BASE/diag/tnslsnr/$(hostname)/ -type f -name "*.log" -size +$size_lim  -exec cp /dev/null {} \;
+find $ORACLE_BASE/diag/tnslsnr/$(hostname)/ -type f -name "*.*" -mtime +$audit  -exec rm {} \; 
+echo "END purge non-standard listener"
 
 VALUE=$(sqlplus -S '/ as sysdba' <<'END'
   set pagesize 0 feedback off verify off heading off echo off timing off
