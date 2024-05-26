@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="15.05.24"
+TPIVER="26.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -3758,7 +3758,7 @@ ttitle left "V\$ARCHIVE_DEST :"
 column DEST_ID for 99 heading "ID"
 column LOG_SEQUENCE for 9999999 heading "SEQUENCE"
 column binding for a10
-column status for a10
+column status for a16
 column target for a7
 column compression for a7
 column valid_type for a15
