@@ -18,7 +18,7 @@ psql_="psql -q $db "
 init_msg()
 {
   p__="p [parameter] - parameter from pg_file_settings and pg_settings"
-  sess__="sess [ PID | a | idle | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
+  sess__="sess [ PID | a | idle in transaction | idle | trx [min] | cancel PID1 ... | kill PID1 ... ]  - sessions, trx - long transactions > 60 min (def), cancel - cancel query with pg_cancel_backend,  kill - kill process with pg_terminate_backend(pid)"
   exec__="exec - execute any command, sample: '\0134\0134\0164'  '\\\\\! OScmd'  '\\\\\dt+ *.table_name'  '\\\\\dt+ \*.\*'  '\\\\\d+ \*.\*' '\\\\\dv+ \*.\*' '\\\\\dm+ \*.\*' "
   activity__="activity  - activity sessions in DB"
   lock__="lock [ all | dead | tree ] - locks"
