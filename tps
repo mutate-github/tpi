@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 04/04/2024 Talgat Mukhametshin  email: mutate@mail.ru
+# version 26/05/2024 Talgat Mukhametshin  email: mutate@mail.ru
 
 set -f
 
@@ -136,9 +136,9 @@ SELECT  datname, client_addr, COUNT(*) AS session_count
 FROM pg_stat_activity
 GROUP BY  datname, client_addr
 ORDER BY session_count desc;
-\pset title "pg_stat_activity where state like '$P1_%'"
+\pset title "pg_stat_activity where state like '$ALL%'"
 SELECT datname, pid, usename, application_name, client_addr, (clock_timestamp() - query_start) AS query_age, /*state_change, */ state,  wait_event_type, wait_event,  query
-FROM pg_stat_activity WHERE state like '$P1_%' 
+FROM pg_stat_activity WHERE state like '$ALL%' 
 ORDER BY query_start ASC;
 --LIMIT 50;
 
