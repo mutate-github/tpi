@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="26.05.24"
+TPIVER="27.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2417,6 +2417,7 @@ P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 REL=$(db_version)
 case $REL in
   8|9) SQL_TEXT1=""; SQL_TEXT2=""; SQL_TEXT3="" ;;
+  12|19|21) SQL_TEXT4=", external" ;;
   *)   SQL_TEXT1=" t.compression, t.compress_for, "; SQL_TEXT2=" ,HISTOGRAM "; SQL_TEXT3=" ,VISIBILITY " ;;
 esac
 
@@ -2522,7 +2523,7 @@ column iot_type for a8
 column external for a3
 select t.tablespace_name, owner, table_name, t.logging, t.cache,  num_rows, avg_row_len,
 ROUND((BLOCKS*tbs.block_size/1024/1024),0) "SIZE_MB", ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "EST_MB", ROUND((BLOCKS*tbs.block_size/1024/1024),0) - ROUND((NUM_ROWS*AVG_ROW_LEN/1024/1024),0) "DIFF_MB",
-last_analyzed, $SQL_TEXT1 partitioned, iot_type,external, temporary
+last_analyzed, $SQL_TEXT1 partitioned, iot_type, temporary $SQL_TEXT4 
 from dba_tables t, dba_tablespaces tbs where t.tablespace_name=tbs.tablespace_name(+) and table_name like upper('$P1_') and owner like nvl('$P2_','%') order by owner;
 
 prompt
@@ -3417,13 +3418,13 @@ $SP <<'EOF' >$LOGF
 TTitle left "TEMP Tablespace Usage information:" skip 1
 SET PAGESIZE 60
 SET LINESIZE 230
-COLUMN tablespace FORMAT A12
+COLUMN tablespace FORMAT A18
 COLUMN temp_size FORMAT 99,999,999 heading "TEMP_SIZE Mb"
 COLUMN spid FORMAT a8
 COLUMN sid_serial FORMAT A15
 COLUMN username FORMAT A20
 COLUMN osuser FORMAT A20
-COLUMN machine FORMAT A30
+COLUMN machine FORMAT A46
 COLUMN program FORMAT A45
 COLUMN STATUS FORMAT A8
 SELECT b.tablespace,
@@ -3832,7 +3833,7 @@ P2_="$2"
 shopt -s nocasematch
 case "$P1_" in
   tbs)      shift; ALL=$*; tbs $ALL ;;
-  temp)     temp ;;
+  temp)     temp $ALL ;;
   sysaux)   sysaux ;;
   df)       shift; ALL=$*; df $ALL ;;
   maxseg)   shift; ALL=$*; maxseg $ALL ;;
