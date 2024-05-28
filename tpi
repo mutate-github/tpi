@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="27.05.24"
+TPIVER="28.05.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2416,9 +2416,9 @@ P2_=$(tr '[:lower:]' '[:upper:]' <<< "$2")
 P3_=$(tr '[:lower:]' '[:upper:]' <<< "$3")
 REL=$(db_version)
 case $REL in
-  8|9) SQL_TEXT1=""; SQL_TEXT2=""; SQL_TEXT3="" ;;
-  12|19|21) SQL_TEXT4=", external" ;;
-  *)   SQL_TEXT1=" t.compression, t.compress_for, "; SQL_TEXT2=" ,HISTOGRAM "; SQL_TEXT3=" ,VISIBILITY " ;;
+  8|9|10) SQL_TEXT1=""; SQL_TEXT2=""; SQL_TEXT3="" ;;
+  11)    SQL_TEXT1=" t.compression, t.compress_for, "; SQL_TEXT2=" ,HISTOGRAM "; SQL_TEXT3=" ,VISIBILITY " ;;
+  *)     SQL_TEXT1=" t.compression, t.compress_for, "; SQL_TEXT2=" ,HISTOGRAM "; SQL_TEXT3=" ,VISIBILITY "; SQL_TEXT4=", external" ;;
 esac
 
 shopt -s nocasematch
