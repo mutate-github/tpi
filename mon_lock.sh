@@ -25,7 +25,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     echo "DB="$DB
     LOGF=$LOGDIR/mon_lock_${HOST}_${DB}.log
     $WRTPI $HOST $DB lock  > $LOGF
-    CUR_VAL=$(egrep "Waiter" $LOGF | awk '{print $NF}' | sort -n | awk -v lim=$THRESHOLD '{if($NF+0>=lim) {print $NF}}' | head -1 )
+    CUR_VAL=$(egrep "Waiter" $LOGF | awk '{print $NF}' | sort -n | awk -v lim=$THRESHOLD '{if($NF+0>=lim) {print $NF}}')
 
     if [ -n "$CUR_VAL" ]; then
        cat $LOGF | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "Locks warning: (current: $CUR_VAL min, threshold: $THRESHOLD min)"
