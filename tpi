@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="28.05.24"
+TPIVER="10.06.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -3623,6 +3623,7 @@ column status format a10
 column enabled format a15
 ttitle left "DataFiles information:"
 $SQL_
+# select FILE_NAME, AUTOEXTENSIBLE, MAXBYTES/1024/1024, INCREMENT_BY INCREMENT_BY_BLK from dba_data_files;
 EOF
 ;;
 esac
