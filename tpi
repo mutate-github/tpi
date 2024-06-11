@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="10.06.24"
+TPIVER="11.06.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -30,7 +30,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days | tbs [free] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
+  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -2216,11 +2216,12 @@ column segment_type for a15
 column PARTITION_NAME for a20
 column SEGMENT_SUBTYPE for a15
 column max_size for 999,999,999,999
+column next_extent for 999,999,999
 column tablespace_name for a22
 ttitle left "Segment name from DBA_SEGMENTS:"
 BREAK ON REPORT
 COMPUTE SUM LABEL 'SUM' OF size_Mb on report
-select tablespace_name, owner, segment_name, PARTITION_NAME, segment_type, SEGMENT_SUBTYPE, bytes/(1024*1024) size_Mb, blocks, max_size
+select tablespace_name, owner, segment_name, PARTITION_NAME, segment_type, SEGMENT_SUBTYPE, next_extent, bytes/(1024*1024) size_Mb, blocks, max_size
 from dba_segments where segment_name like upper('$P1_') and owner like nvl(trim('$P2_'),'%')
 order by owner, segment_name, segment_type, PARTITION_NAME;
 
@@ -3347,19 +3348,21 @@ logf
 tbs()
 {
 P1_="$1"
+P2_="$2"
 shopt -s nocasematch
 case "$P1_" in
 free)
+[[ -z "$P2_" ]] && P2_='%_Used'
 $SP <<EOF >$LOGF
 set lines 230 pages 60
 set echo off feed off veri off tab off 
-select a.tablespace_name as "Tablespace Name",
-       round(maxbytes/1024 / 1024) "Max. Bytes (MB)",
-       round(a.bytes_alloc / 1024 / 1024) "Allocated (MB)",
-       round(nvl(b.bytes_free, 0) / 1024 / 1024) "Free (MB)",
-       round((a.maxbytes - nvl(b.bytes_free, 0)) / 1024 / 1024) "Used (MB)",
-       round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "% Free",
-       100 - round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "% Used"
+select a.tablespace_name as "Tablespace_Name",
+       round(maxbytes/1024 / 1024) "MaxBytes_MB",
+       round(a.bytes_alloc / 1024 / 1024) "Allocated_MB",
+       round(nvl(b.bytes_free, 0) / 1024 / 1024) "Free_MB",
+       round((a.maxbytes - nvl(b.bytes_free, 0)) / 1024 / 1024) "Used_MB",
+       round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "%_Free",
+       100 - round(((nvl(b.bytes_free, 0)) / a.maxbytes) * 100,2) "%_Used"
 from  ( select  f.tablespace_name,
                sum(f.bytes) bytes_alloc,
                sum(decode(f.autoextensible, 'YES', f.maxbytes, 'NO', f.bytes)) maxbytes
@@ -3387,7 +3390,7 @@ group by tablespace_name, block_size ) f,
  v\$sort_segment s
 where f.tablespace_name=s.tablespace_name
 group by f.tablespace_name
-ORDER BY "% Used" desc;
+ORDER BY "$P2_" desc;
 EOF
 ;;
 *)
@@ -3395,6 +3398,7 @@ $SP <<EOF >$LOGF
 set lines 230 pages 60
 column TABLESPACE_NAME for a30 
 column BLOCK_SIZE for 99999
+column max_size for 999,999,999,999
 column status for a10
 column contents for a10
 column logging for a10
@@ -3404,7 +3408,7 @@ column SEGMENT_SPACE_MANAGEMENT for a10
 column retention for a12
 column DEF_TAB_COMPRESSION for a13
 column encrypted for a10
-select TABLESPACE_NAME,BLOCK_SIZE,status,contents,logging,EXTENT_MANAGEMENT,ALLOCATION_TYPE,SEGMENT_SPACE_MANAGEMENT,retention,DEF_TAB_COMPRESSION,encrypted from dba_tablespaces order by contents,TABLESPACE_NAME;
+select TABLESPACE_NAME,max_size,BLOCK_SIZE,status,contents,logging,EXTENT_MANAGEMENT,ALLOCATION_TYPE,SEGMENT_SPACE_MANAGEMENT,retention,DEF_TAB_COMPRESSION,encrypted from dba_tablespaces order by contents,TABLESPACE_NAME;
 EOF
 ;;
 esac
