@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="11.06.24"
+TPIVER="19.06.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -3607,8 +3607,8 @@ EOF
 ;;
 *)
 case $(db_is_open) in
- OPEN) SQL_="select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
-select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.autoextensible from v\$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;"
+ OPEN) SQL_="select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.INCREMENT_BY*df.block_size INCREMENT_BY, ddf.autoextensible from v\$datafile df, dba_data_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;
+select ddf.tablespace_name,ddf.file_id,ddf.file_name,df.status,df.enabled, df.block_size, ddf.bytes, ddf.maxbytes, ddf.INCREMENT_BY*df.block_size INCREMENT_BY, ddf.autoextensible from v\$tempfile df, dba_temp_files ddf where ddf.file_id=df.file# order by ddf.tablespace_name,ddf.file_name;"
  ;;
  *) SQL_="select dfh.tablespace_name,dfh.file#,dfh.name,df.status,df.enabled, df.block_size, dfh.bytes, dfh.recover, dfh.CHECKPOINT_CHANGE# from v\$datafile df, V\$DATAFILE_HEADER dfh where dfh.file#=df.file# order by CHECKPOINT_CHANGE# /* dfh.tablespace_name,dfh.name */;"
  ;;
@@ -3625,9 +3625,11 @@ column file_name format a60
 column name format a60
 column status format a10
 column enabled format a15
+column bytes format 99999999999
+column maxbytes format 99999999999
+column INCREMENT_BY format 999999999
 ttitle left "DataFiles information:"
 $SQL_
-# select FILE_NAME, AUTOEXTENSIBLE, MAXBYTES/1024/1024, INCREMENT_BY INCREMENT_BY_BLK from dba_data_files;
 EOF
 ;;
 esac
@@ -5532,7 +5534,8 @@ plan)
 
   set pages 0
   --select * from table(dbms_xplan.display_awr('$SQL_ID_','',format => '-predicate +outline'));
-  select * from table(dbms_xplan.display_awr(sql_id=>'$SQL_ID_',plan_hash_value=>'$PHV_',format=>nvl('$FMT_', 'typical +outline last')));
+  --select * from table(dbms_xplan.display_awr(sql_id=>'$SQL_ID_',plan_hash_value=>'$PHV_',format=>nvl('$FMT_', 'typical +outline last')));
+  select * from table(dbms_xplan.display_awr(sql_id=>'$SQL_ID_',plan_hash_value=>'$PHV_',format=>nvl('$FMT_', 'advanced all allstats -PROJECTION +NOTE')));
 EOF
 ;;
 sqlstat)
@@ -6513,7 +6516,8 @@ plan)
   column OBJECT_NAME for a30
   BREAK ON plan_hash_value SKIP 1 NODUPLICATES
 -- select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', '-predicate') ));
-  select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', 'typical +outline last') ));
+  --select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', 'typical +outline last') ));
+  select plan_table_output from table(dbms_xplan.display_cursor('$P1_','',format=>nvl('$P2_', 'advanced all allstats -PROJECTION +NOTE') ));
 EOF
 ;;
 sqlstat)
