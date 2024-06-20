@@ -5,6 +5,7 @@ CLIENT="$1"
 BASEDIR=`dirname $0`
 echo $BASEDIR
 # cd $BASEDIR
+mkdir -p $BASEDIR/../log
 
 echo ""
 echo "START ALL MONITORING *****************************************************************************"`date`
