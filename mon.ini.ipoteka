@@ -1,8 +1,7 @@
 [servers]
 host=vhost0
 host=vhost1
-# host=standby !! too old bash 2 version !!
-host=standby
+# host=standby
 host=nas
 host=uno
 host=duo
