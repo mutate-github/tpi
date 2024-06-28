@@ -114,7 +114,7 @@ run {
   allocate channel cpu1 type disk;
   allocate channel cpu2 type disk;
   backup incremental level = $LVL database filesperset 1 $not_backed
-  format '/$NAS/$DB/level_$LVL_%d_%t_%U' TAG 'LEVEL_$LVL';
+  format '/$NAS/$DB/level_${LVL}_%d_%t_%U' TAG 'LEVEL_${LVL}';
   backup archivelog all format '/$NAS/$DB/logs_%d_%t_%U' delete input TAG 'ARCHIVELOGS';
   backup spfile format '/$NAS/$DB/spfile_%d_%U.bck' TAG 'SPFILE';
 }
