@@ -2,8 +2,8 @@
 
 git pull --rebase
 
-echo "oracle@amazon1"
-cat <<EOF | ssh oracle@a1 "/bin/bash"
+echo "oracle@c1"
+cat <<EOF | ssh oracle@c1 "/bin/bash"
 cd start/tpi
 git pull
 echo "scp to jet:"
