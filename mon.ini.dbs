@@ -18,6 +18,14 @@ host=p260unc4
 host=askona04
 host=dca-label-db
 host=dcb-label-db
+host=dca-egais-db
+host=dcb-egais-db
+
+[dca-egais-db]
+db=egais
+
+[dcb-egais-db]
+db=egais
 
 [dca-label-db]
 db=lbl
