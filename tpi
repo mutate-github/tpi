@@ -5291,6 +5291,7 @@ col sql_opname for a15
 col entry_name for a45
 column owner for a30
 column OBJECT_NAME for a35
+column OBJECT_type for a35
 column top_level_sql_id for a14
 column top_level_call_name for a20'
 
@@ -6296,6 +6297,7 @@ column IO for 99990.99
 column activity for 99990.99 heading "%ACTIVITY"
 col sql_opname for a15
 col entry_name for a45
+col owner for a30
 col object_name for a30
 col object_type for a30
 
