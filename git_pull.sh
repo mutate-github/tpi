@@ -17,6 +17,8 @@ echo "scp to aisprod:"
 scp tpi aisprod:start/bin
 echo "scp to beta:"
 scp tpi beta:start/bin
+echo "scp to alpha:"
+scp tpi alpha:start/bin
 EOL
 EOF
 
