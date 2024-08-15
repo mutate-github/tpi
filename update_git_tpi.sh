@@ -16,8 +16,8 @@ scp tpi 10.0.7.21:tal/
 scp tpi 10.0.17.21:tal/
 
 #as
-echo "as p260unc2"
-scp tpi p260unc2:tal/
+# echo "as p260unc2"
+# scp tpi p260unc2:tal/
 fi
 
 git add README.md
