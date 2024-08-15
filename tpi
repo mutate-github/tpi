@@ -30,7 +30,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
+  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -3708,7 +3708,7 @@ fra()
 {
 $SP <<EOF >$LOGF
 set lines 230
-set echo off feed off veri off tab off pages 50
+set echo off feed off veri off tab off pages 50 timing off
 column NAME for a32
 column DISPLAY_VALUE for a50
 column DEFAULT_VALUE for a13
@@ -3728,6 +3728,17 @@ ttitle left "View: v\$recovery_file_dest"
 select name, space_limit, (space_limit - space_used + space_reclaimable) space_available, round((space_used - space_reclaimable)/space_limit * 100, 1) as pct_full from v\$recovery_file_dest;
 select name,space_limit,space_used, space_reclaimable, number_of_files from v\$recovery_file_dest;
 ttitle off
+
+ttitle left "View: v\$restore_point"
+COLUMN scn FOR 999999999999999
+COLUMN Incar FOR 99
+COLUMN name FOR A25
+COLUMN storage_size FOR 999,999,999,999
+COLUMN guarantee_flashback_database FOR A3
+SELECT database_incarnation# as Incar, scn, name, to_char(time,'dd/mm/yy hh24:mi:ss') as time, storage_size, guarantee_flashback_database
+FROM  v\$restore_point
+ORDER BY 4
+/
 EOF
 logf
 }
