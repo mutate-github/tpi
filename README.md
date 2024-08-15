@@ -7,7 +7,7 @@ health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Mi
 oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V$SYSMETRIC_HISTORY V$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot
 sga - SGA information
 pga - PGA sessions information
-size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set "_enable_space_preallocation"=0 )
+size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set "_enable_space_preallocation"=0 )
 arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V$LOG V$ARCHIVE_DEST V$ARCHIVE_DEST_STATUS GV$MANAGED_STANDBY V$STANDBY_LOG information
 redo [logs] - redo information
 undo [recovery] - undo active transaction information, recovery information
