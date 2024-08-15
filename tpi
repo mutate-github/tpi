@@ -3184,7 +3184,7 @@ logf
 
 dbsize()
 {
-CNT=$1
+CNT="$1"
 if [ -z "$CNT" ]; then
  CNT=7
 fi
@@ -3282,11 +3282,29 @@ logf
 
 rbin()
 {
+P1_="$1"
+echo "P1_: "$P1_
+case "$P1_" in 
+all)
+$SP <<EOF >$LOGF
+set lines 230 pages 60
+col owner for a30
+col OBJECT_NAME for a30
+col ORIGINAL_NAME for a35
+PROMPT Recyclebin objects information from dba_recyclebin: 
+SELECT owner,OBJECT_NAME, ORIGINAL_NAME, TYPE, TS_NAME, CAN_UNDROP AS "UND", CAN_PURGE AS "PUR", DROPTIME FROM DBA_RECYCLEBIN order by droptime;
+EOF
+;;
+*)
 $SP <<EOF >$LOGF
 set lines 230 pages 60 
+col owner for a30
+col ts_name for a30
 PROMPT Recyclebin size information from dba_recyclebin group by owner, ts_name: 
 select owner, ts_name, sum(space)/(1024/1024) Mb from dba_recyclebin group by owner, ts_name order by owner, ts_name;
 EOF
+;;
+esac
 logf
 }
 
