@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="29.07.24"
+TPIVER="15.08.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -30,7 +30,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
+  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -3280,6 +3280,16 @@ EOF
 logf
 }
 
+rbin()
+{
+$SP <<EOF >$LOGF
+set lines 230 pages 60 
+PROMPT Recyclebin size information from dba_recyclebin group by owner, ts_name: 
+select owner, ts_name, sum(space)/(1024/1024) Mb from dba_recyclebin group by owner, ts_name order by owner, ts_name;
+EOF
+logf
+}
+
 
 grows()
 {
@@ -3845,6 +3855,7 @@ case "$P1_" in
   df)       shift; ALL=$*; df $ALL ;;
   maxseg)   shift; ALL=$*; maxseg $ALL ;;
   fra)      fra ;;
+  rbin)     rbin ;;
   grows)    shift; ALL=$*; grows $ALL ;;
   *)        dbsize $P1_ ;;
 esac
