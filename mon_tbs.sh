@@ -26,7 +26,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     LOGF=$LOGDIR/mon_tbs_${HOST}_${DB}.log
     LOGF_TRG=$LOGDIR/mon_tbs_${HOST}_${DB}_trg.log
     LOGF_HEAD=$LOGDIR/mon_tbs_${HOST}_${DB}_heading_$$.log
-    $WRTPI $HOST $DB tbs free | awk '/Tablespace Name/,/Elapsed/' | egrep -v "Elapsed" > $LOGF
+    $WRTPI $HOST $DB tbs free | awk '/Tablespace_Name/,/Elapsed/' | egrep -v "Elapsed" > $LOGF
 #    awk -v lim=$limPER '{if($NF+0>=lim) {print $0}}' $LOGF > $LOGF_TRG
     awk -v lim=$limPER -v gb=$limGB '{if($NF+0>=lim && $(NF-3)<gb*1024) {print $0}}' $LOGF > $LOGF_TRG
     echo "limPER: "$limPER

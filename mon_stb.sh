@@ -29,7 +29,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
     LOG_FILE=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_$$.log
-    $WRTPI $HOST $DB arch | awk '/LAG_MINUTES/,/Elapsed/' | egrep -v "Elapsed" > $LOG_FILE
+    $WRTPI $HOST $DB arch | awk '/LAG_MINUTES/{ getline; getline; print $0; }' > $LOG_FILE
     awk '!/LAG_MINUTES|--------/{print $2" "$(NF-1)" "$NF}' $LOG_FILE | while read DEST_ID SEQ_GAP_NOW LAG_MINUTES_NOW; do
       TRG_FILE_SEQ_GAP=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_seq_gap.log
       TRG_FILE_LAG_MINUTES=$LOGDIR/mon_stb_${HOST}_${DB}_${DEST_ID}_trgfile_lag_minutes.log
