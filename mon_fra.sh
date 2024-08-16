@@ -25,7 +25,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     LOGF=$LOGDIR/mon_fra_${HOST}_${DB}.log
     LOGF_HEAD=$LOGDIR/mon_fra_${HOST}_${DB}_head.log
     LOGF_TRG=$LOGDIR/mon_fra_${HOST}_${DB}_trg.log
-    $WRTPI $HOST $DB fra | awk '/PCT_FULL/,/Elapsed/' | egrep -v "Elapsed" > $LOGF
+    $WRTPI $HOST $DB fra | awk '/PCT_FULL/{ getline; getline; print $0; }' > $LOGF
     awk -v lim=$limPER '{if($NF+0>lim) {print $0}}' $LOGF >  $LOGF_TRG
 
     if [ -s $LOGF_TRG ]; then
