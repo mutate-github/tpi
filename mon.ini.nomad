@@ -5,6 +5,8 @@ host=unit
 host=alpha
 host=beta
 host=gw
+host=crm
+host=msfo
 
 [exclude]
 #host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
@@ -25,6 +27,12 @@ db=aisutf
 [beta]
 db=aisutf
 
+[crm]
+db=crm
+
+[msfo]
+db=msfo
+
 [mail]
 # script=mmail.nomad
 script=tgmail_html
@@ -38,6 +46,8 @@ host:db:set=unit:unit:%
 host:db:set=alpha:aisutf:%
 host:db:set=beta:aisutf:mon_disksp.sh:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh:%
 host:db:set=gw:%:mon_disksp.sh:mon_swap.sh:mon_ping_ssh.sh
+host:db:set=crm:crm:%
+host:db:set=msfo:msfo:%
 
 [admins]
 email=dba.almaty@gmail.com
