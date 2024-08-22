@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="15.08.24"
+TPIVER="22.08.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -43,7 +43,7 @@ init_msg()
   t__="t [part] TABLE_NAME [OWNER] - dba_tables, dba_part_tables, dba_tab_partitions, dba_tab_subpartitions information" 
   i__="i [part] INDEX_NAME | TABLE_NAME [OWNER] | candidate [TABLE_NAME|%] [TABLE_OWNER] - dba_indexes, dba_part_indexes, dba_ind_partitions, dba_ind_subpartitions information, candidate to rebulld" 
   l__="l [LOB_NAME] | [unused OWNER LOBSEGMENT] - dba_lobs information or show unused segment information" 
-  c__="c [ CONSTRAINT_NAME | T TABLE_NAME | PK PRIMARY_KEY | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
+  c__="c [ CONSTRAINT_NAME OWNER | T TABLE_NAME OWNER | PK PRIMARY_KEY OWNER | FK (TABLE_NAME [OWNER] | %) ]  - dba_constraints, dba_cons_columns information, PK - Who refs to the PK, FK - Tables with non-indexed foreign keys" 
   u__="u [ USERNAME [{sys|role|tab} PRIVILEGE] ]  - dba_users, dba_sys_privs, dba_role_privs, dba_tab_privs information"
   r__="r [ {role|granted_role} ROLE  ] - role_role_privs information"
   trg__="trg [ \"\" | [TRIGGER_NAME] [TRIGGER_OWNER] | t [TABLE_NAME] [TABLE_OWNER]  ]  - dba_triggers information, \"\" - LOGON or STARTUP triggers"
@@ -2790,7 +2790,7 @@ select col.owner,col.table_name,col.constraint_name,column_name,position,c.const
 c.r_owner,c.r_constraint_name,c.delete_rule,c.status, /*c.deferrable,c.deferred,*/ c.validated,c.last_change
 from DBA_CONS_COLUMNS col, dba_constraints c
 where c.owner=col.owner and c.table_name=col.table_name and c.constraint_name=col.constraint_name
---and c.owner='DMS'
+and c.owner='$P3_'
 and col.table_name='$P2_'
 order by col.table_name, col.constraint_name, col.position;
 EOF
@@ -2803,10 +2803,10 @@ column constraint_name for a30
 column table_name for a30
 PROMPT
 PROMPT What Foregin Key references to PK: $P2_
-select owner, constraint_name, table_name from all_constraints where constraint_type='R' and r_constraint_name='$P2_';
+select owner, constraint_name, table_name from all_constraints where constraint_type='R' and r_constraint_name='$P2_' and owner='$P3_';
 PROMPT
 PROMPT Script to disable the restriction that refers to the PK: $P2_:
-select 'alter table '||owner||'.'||table_name||' disable constraint '|| constraint_name||';' script from dba_constraints where constraint_type='R' and r_constraint_name='$P2_';
+select 'alter table '||owner||'.'||table_name||' disable constraint '|| constraint_name||';' script from dba_constraints where constraint_type='R' and r_constraint_name='$P2_' and owner='$P3_';
 EOF
 ;;
 fk)
@@ -2879,8 +2879,8 @@ select col.owner,col.table_name,col.constraint_name,column_name,position,c.const
 c.r_owner,c.r_constraint_name,c.delete_rule,c.status, /*c.deferrable,c.deferred,*/ c.validated,c.last_change
 from DBA_CONS_COLUMNS col, dba_constraints c 
 where c.owner=col.owner and c.table_name=col.table_name and c.constraint_name=col.constraint_name
---and c.owner='DMS' 
-and col.constraint_name='$P1_'
+and c.owner='$P2_' 
+and col.constraint_name like '$P1_'
 order by col.table_name, col.constraint_name, col.position;
 EOF
 ;;
