@@ -42,7 +42,8 @@ case "${P1_}:${sid}" in
   z14-0976-tfdb:middle)                                                              cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid '" $login_str "' $args" ;;
   z11-00341-otbd:opndb|SMOK-ORA01:obk|obkt:*|p750alife:*|alfa:*)                     cat $wtpi | ssh oracle@p260unc2 ". ~/unc10g_setenv.sh; /bin/bash -s $sid '" $login_str "' $args" ;;
 #  mdstock2:PSTOCK)                                                                  cat $wtpi | ssh oracle$P1_ "[ -r ~/.bash_profile ] && source ~/.bash_profile ; /bin/bash -s $sid $args" ;;
-  z11-*:*INS*|z14-*:INS*|z14-*:LFDWH*)                                               cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid '" $login_str "' $args" ;;
+  z11-*:*INS*|z14-*:INS*)                                                            cat $wtpi | ssh oracle@p550dev ". ~/pbuh_n_setenv.sh; /bin/bash -s $sid '" $login_str "' $args" ;;
+  z14-*:LFDWH*)                                                                      cat $wtpi | ssh oracle@p922bull2 ". ~/unc10g_19_setenv.sh; /bin/bash -s $sid '" $login_str "' $args" ;;
   [z]14-*:*|kem-ora01:*|brnsk-oracle-phenix:*|abkh-oracle-phenix:*)                  cat $wtpi | ssh $P1_ "if [ -f ${sid}_setenv.sh ]; then . ${sid}_setenv.sh >/dev/null 2>&1; fi; /bin/bash -s $sid $args" ;;
   SRV-ORA*:dbpro*)                                                                   cat $wtpi | ssh mp ". ~/.ora_env; /bin/bash -s $sid '" $login_str "' $args" ;;
 #  aisprod:aisutf)                                                                    $wtpi $sid $login_str $argsl ;;
