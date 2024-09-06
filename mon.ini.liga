@@ -1,21 +1,26 @@
 [servers]
 host=hathi
+host=phx-dev
+
+[hathi]
+db=hathi
+
+[phx-dev]
+db=PHXPRODLIKE
 
 [exclude]
 #host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
 #host:db:scripts=hathi:%:mon_swap.sh
 
-[hathi]
-db=hathi
-
 [mail]
 # script=mmail.nomad
-script=tgmail_html
+script=tyandex_html
 # script=tyandex
 prefix=LIGA->
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
 host:db:set=hathi:hathi:%
+host:db:set=phx-dev:PHXPRODLIKE:%
 #host:db:set=aisstb:aisutf:%
 #host:db:set=unit:unit:%
 #host:db:set=alpha:aisutf:%
@@ -31,6 +36,7 @@ chat_id=376048411
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
 host:db:set=hathi:hathi:mon_db.sh:mon_disksp.sh:mon_ping_ssh.sh:mon_limsess.sh:mon_tbs.sh:mon_fra.sh:mon_lock.sh
+host:db:set=phx-dev:PHXPRODLIKE:mon_db.sh:mon_disksp.sh:mon_ping_ssh.sh:mon_limsess.sh
 #host:db:set=%:aisutf:%
 
 [locks]
@@ -82,7 +88,6 @@ exclude=ORA-0
 exclude=ORA-28
 exclude=ORA-2396
 exclude=ORA-00060
-exclude=ORA-12012
 exclude=ORA-20200
 exclude=ORA-06512
 exclude=ORA-00030
@@ -96,6 +101,11 @@ exclude=ORA-279
 exclude=ORA-308
 exclude=ORA-00308
 exclude=ORA-27037
+# liga
+exclude=ORA-20949
+exclude=ORA-06550
+exclude=ORA-04063
+
 
 # backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 [backup]
@@ -110,4 +120,5 @@ target=/
 tns_catalog=rman/rman@TNS_CATALOG
 # #backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 host:db:set=hathi:hathi:mnt/backups-test:RECOVERY_WINDOW_OF:7:nocatalog
+host:db:set=phx-dev:PHXPRODLIKE:mnt/backups:RECOVERY_WINDOW_OF:30:nocatalog
 
