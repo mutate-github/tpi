@@ -109,10 +109,10 @@ exclude=ORA-04063
 
 # backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 [backup]
-hours_since_lvl0=170
-hours_since_lvl1=170
-hours_since_arch=6
-hours_since_ctrl=12
+hours_since_lvl0=194
+hours_since_lvl1=194
+hours_since_arch=48
+hours_since_ctrl=96
 level0=Sun
 level1=Tue,Thu,Sat
 level2=Mon,Wed,Fri
