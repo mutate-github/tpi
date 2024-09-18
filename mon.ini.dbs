@@ -13,13 +13,13 @@ host=mp
 host=mp2
 host=md
 host=mu
-host=p260unc2
-host=p260unc4
 host=askona04
 host=dca-label-db
 host=dcb-label-db
 host=dca-egais-db
 host=dcb-egais-db
+host=srv-vetdb-dca
+host=srv-vetdb-dcb
 
 [dca-egais-db]
 db=egais
@@ -44,17 +44,6 @@ db=mdev
 
 [mu]
 db=muat
-
-[p260unc2]
-db=unc10g
-
-[p260unc4]
-db=UKVDEV
-db=UNCKV2
-db=uncdv10
-db=uncdv13
-db=uncpprd
-db=uncunc
 
 [askona04]
 db=askona
@@ -124,6 +113,12 @@ db=cheldb
 db=dbklg
 db=RZN2
 db=catdb
+
+[srv-vetdb-dca]
+db=AGROS
+
+[srv-vetdb-dcb]
+db=AGROS
 
 [exclude]
 #host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
