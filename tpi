@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="19.09.24"
+TPIVER="20.09.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -2162,17 +2162,23 @@ logf
 pga()
 {
 $SP <<'EOF' >$LOGF
-set lines 170
+set lines 250
 set echo off feed off veri off tab off pages 80
-COLUMN sid FORMAT 9999 HEADING 'SID'
-COLUMN username FORMAT a15 HEADING 'Oracle User' JUSTIFY right TRUNC
-COLUMN osuser FORMAT a15 HEADING 'O/S User' JUSTIFY right TRUNC
-COLUMN program FORMAT a28 HEADING 'Session Program' TRUNC
-COLUMN machine FORMAT a20 HEADING 'Machine' JUSTIFY right TRUNC
-COLUMN session_pga_memory FORMAT 9,999,999,999 HEADING 'PGA Memory'
-COLUMN session_pga_memory_max FORMAT 9,999,999,999 HEADING 'PGA Memory Max'
-COLUMN session_uga_memory FORMAT 9,999,999,999 HEADING 'UGA Memory'
-COLUMN session_uga_memory_max FORMAT 9,999,999,999 HEADING 'UGA Memory MAX'
+COLUMN sid FORMAT 999999 
+COLUMN serial# FORMAT 999999 
+COLUMN username FORMAT a15 TRUNC
+COLUMN osuser FORMAT a15  TRUNC
+COLUMN program FORMAT a35  TRUNC
+COLUMN machine FORMAT a20  TRUNC
+COLUMN session_pga_memory FORMAT 999,999,999,999 
+COLUMN session_pga_memory_max FORMAT 999,999,999,999 
+COLUMN session_uga_memory FORMAT 999,999,999,999 
+COLUMN session_uga_memory_max FORMAT 999,999,999,999 
+BREAK ON REPORT
+COMPUTE SUM LABEL 'SUM' OF session_pga_memory on report
+COMPUTE SUM LABEL 'SUM' OF session_pga_memory_max on report
+COMPUTE SUM LABEL 'SUM' OF session_uga_memory on report
+COMPUTE SUM LABEL 'SUM' OF session_uga_memory_max on report
 SELECT /*+ RULE */
 s.sid sid
 , s.username
