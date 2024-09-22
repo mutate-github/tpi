@@ -138,4 +138,6 @@ tns_catalog=rman/rman@TNS_CATALOG
 # #backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
 host:db:set=aisprod:aisutf:nas:RECOVERY_WINDOW_OF:7:nocatalog
 host:db:set=unit:unit:nas:RECOVERY_WINDOW_OF:7:nocatalog
+host:db:set=crm:crm:nas:RECOVERY_WINDOW_OF:7:nocatalog
+host:db:set=msfo:msfo:nas:RECOVERY_WINDOW_OF:7:nocatalog
 
