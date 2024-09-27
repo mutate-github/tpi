@@ -30,7 +30,6 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
 #RESOURCE_NAME                            CURRENT_UTILIZATION LIMIT_VALUE     PERCENT
 #---------------------------------------- ------------------- --------------- -------
 #processes                                               1495      15000            9
-   $BASEDIR/iniget.sh $CONFIG resource_limit $RESOURCE_NAME
     PERLIM=$($BASEDIR/iniget.sh $CONFIG resource_limit $RESOURCE_NAME)
 
     if [[ -n "$PERLIM" && "$PERCENT" -gt "$PERLIM" ]]; then
