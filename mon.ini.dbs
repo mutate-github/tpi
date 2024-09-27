@@ -148,6 +148,13 @@ chat_id=376048411
 host:db:set=mp:%:mon_disksp.sh:mon_db.sh:mon_tbs.sh
 # host:db:set=dcb-retail-db:GOLD506:mon_db.sh:mon_alert.sh:mon_disksp.sh:mon_fra.sh:mon_ping_ssh.sh:mon_processes_sessions.sh:mon_stb.sh:mon_tbs.sh
 
+[resource_limit]
+processes=80
+sessions=80
+enqueue_locks=80
+max_rollback_segments=80
+
+
 [locks]
 threshold=30
 
