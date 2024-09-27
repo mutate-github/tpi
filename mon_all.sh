@@ -32,8 +32,8 @@ echo "Monitor: =================================================================
 $BASEDIR/mon_bck.sh $CLIENT
 echo "Monitor: ================================================================================ mon_db_files.sh"
 $BASEDIR/mon_db_files.sh $CLIENT
-echo "Monitor: ================================================================================ mon_limsess.sh"
-$BASEDIR/mon_limsess.sh $CLIENT
+echo "Monitor: ================================================================================ mon_reslim.sh"
+$BASEDIR/mon_reslim.sh $CLIENT
 echo "Monitor: ================================================================================ mon_lock.sh"
 $BASEDIR/mon_lock.sh $CLIENT
 echo "FINISH ALL MONITORING ****************************************************************************"`date`
