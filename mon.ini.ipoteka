@@ -53,6 +53,9 @@ sessions=80
 enqueue_locks=80
 max_rollback_segments=80
 
+[others]
+# in counts
+resumable=0
 
 [locks]
 threshold=30
