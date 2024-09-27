@@ -60,6 +60,12 @@ chat_id=376048411
 host:db:set=aisprod:aisutf:mon_db.sh:mon_disksp.sh:mon_ping_ssh.sh:mon_limsess.sh:mon_tbs.sh
 #host:db:set=%:aisutf:%
 
+[resource_limit]
+processes=80
+sessions=80
+enqueue_locks=80
+max_rollback_segments=80
+
 [locks]
 threshold=30
 
