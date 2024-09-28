@@ -24,7 +24,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
-    ALLRL=$($WRTPI $HOST $DB resource_limit | awk '/RESOURCE_NAME/,0' | awk '/RESOURCE_NAME/{x=NR+1}(NR>x){print}')
+    ALLRL=$($WRTPI $HOST $DB resource_limit | awk '/RESOURCE_NAME/{f=1;getline;getline}f')
     echo $ALLRL | xargs -n4 echo | while read RESOURCE_NAME CURRENT_UTILIZATION LIMIT_VALUE PERCENT; do
 
 #RESOURCE_NAME                            CURRENT_UTILIZATION LIMIT_VALUE     PERCENT

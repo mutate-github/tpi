@@ -24,7 +24,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
-    RCNT=$($WRTPI $HOST $DB resumable | awk '/RESUMABLE_COUNT/,0' | awk '/RESUMABLE_COUNT/{x=NR+1}(NR>x){print}')
+    RCNT=$($WRTPI $HOST $DB resumable | awk '/RESUMABLE_COUNT/{f=1;getline;getline}f')
     RCNTLIM=$($BASEDIR/iniget.sh $CONFIG others resumable)
 
     if [[ -n "$RCNTLIM" && "$RCNT" -gt "$RCNTLIM" ]]; then
