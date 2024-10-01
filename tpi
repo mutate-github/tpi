@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="26.09.24"
+TPIVER="01.10.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -117,7 +117,8 @@ if [ -n "$login_str" ]; then
   ls2=$(awk -F@ '{print $2}' <<< "$login_str")
   ls1=$(xor 127 $ls1)
   ls1=$(dec2ascii $ls1)
-  login_str=${ls1}"@"\'${ls2}\'
+  ls1lower=$(tr '[:upper:]' '[:lower:]' <<< $ls1)
+  [[ "$ls1lower" =~ "sys/" ]] && login_str=${ls1}"@"\'${ls2}\'" as sysdba" || login_str=${ls1}"@"\'${ls2}\'
   SP="eval sqlplus -S $login_str"
 else
   SP="eval sqlplus -S '/ as sysdba'"
@@ -3675,7 +3676,7 @@ column file# for 999
 column block_size for 99999
 column tablespace_name format a25
 column file_name format a60
-column name format a60
+column name format a70
 column status format a10
 column enabled format a15
 column bytes format 99999999999

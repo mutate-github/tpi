@@ -48,6 +48,7 @@ case "${P1_}:${sid}" in
   SRV-ORA*:dbpro*)                                                                   cat $wtpi | ssh mp ". ~/.ora_env; /bin/bash -s $sid '" $login_str "' $args" ;;
 #  aisprod:aisutf)                                                                    $wtpi $sid $login_str $argsl ;;
 #  beta:aisutf)                                                                       $wtpi $sid $login_str $argsl ;;
+  orclcdb:*)                                                                       $wtpi $sid $login_str $args ;;
   ais*:*|unit*:*|alpha:*|beta:*|crm:*)                                               cat $wtpi | ssh oracle@$P1_ ". ~/.ora_env; /bin/bash -s $sid $args" ;;
   jet:*|ja:*)                                                                        cat $wtpi | ssh oracle@$P1_ ". /etc/profile.ora; /bin/bash -s $sid $args" ;;
 #  cft*:*|kik*:*|bd*:*|prov*:*)                                                       cat $wtpi | ssh oracle@$P1_ ". ~/db12kik.env; /bin/bash -s $sid $args" ;;
