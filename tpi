@@ -3675,7 +3675,7 @@ column file_id for 999
 column file# for 999
 column block_size for 99999
 column tablespace_name format a25
-column file_name format a60
+column file_name format a70
 column name format a70
 column status format a10
 column enabled format a15
