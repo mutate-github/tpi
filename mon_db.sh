@@ -18,10 +18,10 @@ HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
+  ssh -q $HOST exit && : || ( echo "SSH on $HOST not answered. loop for hosts continues..."; $BASEDIR/send_msg.sh $CONFIG $HOST NULL "SSH on $HOST not answered"; continue)
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB
-    ssh -q $HOST exit && : || echo "Host: $HOST not answer, continue..."; continue
     LOGF=$LOGDIR/mon_db_${HOST}_${DB}.log
     $WRTPI $HOST $DB db | sed -n '/v$instance:/,/v$database:/p' | egrep -v '\----|v\$database:' | sed '/^$/d' > $LOGF
 
