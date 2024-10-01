@@ -17,7 +17,6 @@ WRTPI="$BASEDIR/rtpi"
 HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=$(<$SET_ENV_F)
-PERCENT=80
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
@@ -26,7 +25,6 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     echo "DB="$DB
     ALLRL=$($WRTPI $HOST $DB resource_limit | awk '/RESOURCE_NAME/{f=1;getline;getline}f')
     echo $ALLRL | xargs -n4 echo | while read RESOURCE_NAME CURRENT_UTILIZATION LIMIT_VALUE PERCENT; do
-
 #RESOURCE_NAME                            CURRENT_UTILIZATION LIMIT_VALUE     PERCENT
 #---------------------------------------- ------------------- --------------- -------
 #processes                                               1495      15000            9
