@@ -17,7 +17,6 @@ WRTPI="$BASEDIR/rtpi"
 HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 SET_ENV_F="$BASEDIR/set_env"
 SET_ENV=$(<$SET_ENV_F)
-PERCENT=80
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
