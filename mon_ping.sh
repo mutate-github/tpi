@@ -17,21 +17,18 @@ SCRIPT_NAME=$(basename $0)
 HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
-  MSG=""
-  ping -w3 -W 10 $HOST
-  if [ $? -eq 0 ]; then
-    ssh -q $HOST exit
-    if [ $? -eq 0 ]; then
-      :
-    else MSG="SSH warning: "
-    fi
-  else MSG="PING warning: "
-  fi
   TRG_FILE="$LOGDIR/${SCRIPT_NAME}_${HOST}.trg"
-  if [ ! -f $TRG_FILE ]; then
-    [[ -n $MSG ]] && (touch $TRG_FILE; echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "TRIGGER: $MSG host $HOST - not responding")
+  ping -w3 -W 10 $HOST
+  if [ $? -ne 0 ]; then
+    if [ ! -f $TRG_FILE ]; then
+      touch $TRG_FILE
+      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "TRIGGER: PING to host $HOST - not responding"
+    fi
   else
-    [[ -z $MSG ]] && (rm $TRG_FILE; echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "RECOVER: $MSG host $HOST - is responding now")
+    if [ -f $TRG_FILE ]; then
+      rm -f $TRG_FILE
+      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "RECOVER: PING to host $HOST - responds"
+    fi
   fi
 done
 

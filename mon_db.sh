@@ -13,12 +13,14 @@ echo "Using config: ${CONFIG}"
 
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi
+SCRIPT_NAME=$(basename $0)
 WRTPI="$BASEDIR/rtpi"
 HOSTS=$($BASEDIR/iniget.sh $CONFIG servers host)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
-  ssh -q $HOST exit && : || ( echo "SSH on $HOST not answered. loop for hosts continues..."; $BASEDIR/send_msg.sh $CONFIG $HOST NULL "SSH on $HOST not answered"; continue)
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB

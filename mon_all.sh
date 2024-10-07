@@ -9,16 +9,18 @@ mkdir -p $BASEDIR/../log
 
 echo ""
 echo "START ALL MONITORING *****************************************************************************"`date`
-echo "Monitor: ================================================================================ mon_ping_ssh.sh"
-$BASEDIR/mon_ping_ssh.sh $CLIENT
+echo "Monitor: ================================================================================ mon_ping.sh"
+$BASEDIR/mon_ping.sh $CLIENT
+echo "Monitor: ================================================================================ mon_ssh.sh"
+$BASEDIR/mon_ssh.sh $CLIENT
+echo "Monitor: ================================================================================ mon_db.sh"
+$BASEDIR/mon_db.sh $CLIENT
 echo "Monitor: ================================================================================ mon_disksp.sh"
 $BASEDIR/mon_disksp.sh $CLIENT
 echo "Monitor: ================================================================================ mon_swap.sh"
 $BASEDIR/mon_swap.sh $CLIENT
 echo "Monitor: ================================================================================ mon_load.sh"
 $BASEDIR/mon_load.sh $CLIENT
-echo "Monitor: ================================================================================ mon_db.sh"
-$BASEDIR/mon_db.sh $CLIENT
 echo "Monitor: ================================================================================ mon_alert.sh"
 $BASEDIR/mon_alert.sh $CLIENT
 #$BASEDIR/mon_adrcial.sh $CLIENT

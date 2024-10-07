@@ -23,6 +23,8 @@ echo "ME: "$ME
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "------------------------------------"
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   skip_outer_loop=0
   for EXCL in $(xargs -n1 echo <<< $EXCLUDE); do
      SCRIPTS=$(cut -d':' -f3- <<< $EXCL)

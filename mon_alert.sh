@@ -26,6 +26,8 @@ LINES=$($BASEDIR/iniget.sh $CONFIG alert lines)
 EXCLUDE=$($BASEDIR/iniget.sh $CONFIG alert exclude)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     LOGF=$LOGDIR/mon_alert_${HOST}_${DB}.log

@@ -56,6 +56,7 @@ max_rollback_segments=80
 [others]
 # in counts
 resumable=0
+SSHConnectTimeout=5
 
 [locks]
 threshold=30

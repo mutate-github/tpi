@@ -23,6 +23,8 @@ hours_since_ctrl=$($BASEDIR/iniget.sh $CONFIG backup hours_since_ctrl)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   for DB in $(xargs -n1 echo <<< "$DBS"); do
     echo "DB="$DB

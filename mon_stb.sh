@@ -24,6 +24,8 @@ REPEAT_AT=$($BASEDIR/iniget.sh $CONFIG standby repeat_at)
 
 for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   echo "HOST="$HOST
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   DBS=$($BASEDIR/iniget.sh $CONFIG $HOST db)
   echo "DBS="$DBS
   for DB in $(xargs -n1 echo <<< "$DBS"); do

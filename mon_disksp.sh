@@ -21,6 +21,8 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   LOGF=$LOGDIR/mon_diskspace_${HOST}.log
   LOGF_HEAD=$LOGDIR/mon_diskspace_${HOST}_head.log
   echo "HOST: "$HOST
+  $BASEDIR/test_ssh.sh $CLIENT $HOST
+  if [ "$?" -ne 0 ]; then echo "test_ssh.sh not return 0, continue"; continue; fi
   OS=$(ssh $HOST "uname")
   case "$OS" in
    Linux)
