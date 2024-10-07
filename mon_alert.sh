@@ -123,7 +123,7 @@ if [ "$ERRCT" -gt 1 ]; then
  cat $LOGF_HEAD | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "ALERT_LOG warning:"
 fi
 
-rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
+#rm $LOGF $LOGF_HEAD $EXCLFILE $AWKFILE
 # rm $LASTALERTTIME
 
   done    # DB
