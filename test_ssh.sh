@@ -26,15 +26,15 @@ if [ "$?" -eq 0 ]; then
   if [ -f $TRG_FILE ]; then
     rm $TRG_FILE
     MSG="SSH responds"
-    echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "RECOVER: On $HOST $MSG"
+    echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "RECOVER: $MSG"
   fi
   exit 0
 else
   if [ ! -f $TRG_FILE ]; then
     touch $TRG_FILE
-    MSG="SSH not responding"
+    MSG="SSH is NOT responding"
     echo "$TRG_FILE is not exists. created. For host: $HOST $MSG"
-    echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "TRIGGER: On $HOST $MSG" 
+    echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "TRIGGER: $MSG" 
   else
     echo "$TRG_FILE is exists. Skip for host: $HOST"
   fi

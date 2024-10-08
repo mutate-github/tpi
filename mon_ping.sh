@@ -22,12 +22,12 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
   if [ $? -ne 0 ]; then
     if [ ! -f $TRG_FILE ]; then
       touch $TRG_FILE
-      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "TRIGGER: PING to host $HOST - not responding"
+      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "TRIGGER: PING is NOT responding"
     fi
   else
     if [ -f $TRG_FILE ]; then
       rm -f $TRG_FILE
-      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "RECOVER: PING to host $HOST - responds"
+      echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "RECOVER: PING responds"
     fi
   fi
 done
