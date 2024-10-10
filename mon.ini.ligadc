@@ -1,12 +1,12 @@
 [servers]
 host=hathi
-# host=phx-dev
+host=phx-dev
 
 [hathi]
 db=hathi
 
-# [phx-dev]
-# db=PHXPRODLIKE
+[phx-dev]
+db=PHXPRODLIKE
 
 [exclude]
 #host:db:scripts=crm:%:mon_swap.sh:mon_tbs.sh:mon_ping_ssh.sh
