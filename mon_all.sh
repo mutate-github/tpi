@@ -1,11 +1,28 @@
 #!/bin/bash
 
 CLIENT="$1"
-
 BASEDIR=`dirname $0`
 echo $BASEDIR
 # cd $BASEDIR
 mkdir -p $BASEDIR/../log
+CONFIG="mon.ini"
+if [ -n "$CLIENT" ]; then
+  shift
+  CONFIG=${CONFIG}.${CLIENT}
+  if [ ! -s "$BASEDIR/$CONFIG" ]; then echo "Exiting... Config not found: "$CONFIG ; exit 128; fi
+fi
+echo "Using config: ${CONFIG}"
+
+echo "Checking if previous script did finish... "`date`
+echo $0
+etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
+if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
+   echo "Previous script did not finish. "`date`
+   ps -eo 'pid,ppid,lstart,etime,args' | grep $0 | awk '!/grep|00:0[0123]/'
+   echo "Cancelling running now, send alert message and exiting ..."
+   echo"" | $BASEDIR/send_msg.sh $CONFIG "Script" $0 "did not finish, do check for hung previous"
+   exit 127
+fi
 
 echo ""
 echo "START ALL MONITORING *****************************************************************************"`date`
