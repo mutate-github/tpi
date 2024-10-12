@@ -92,6 +92,7 @@ part_of_day=24
 lines=60000
 exclude=ORA-01005
 exclude=ORA-01422
+exclude=ORA-06508
 exclude=ORA-06512
 exclude=ORA-12012
 # nomad
