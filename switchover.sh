@@ -32,7 +32,7 @@ next_step()
 {
 step=$*
 while [ 1 ]; do
-  echo -n "Proceed with the step: $step (y -yes / n -no / p -previous / q -quit)?"
+  echo -n "Proceed with the step: $step ( [y]es / [n]o / [p]revious / [q]uit )?"
   if [ "$DEBUG" = "1" ]; then
     read ans
   else
