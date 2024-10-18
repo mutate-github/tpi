@@ -19,11 +19,20 @@ me=$$
 one_exec_f="one_exec_switchover_${me}.sh"
 
 
+# GOTO for bash, based upon https://stackoverflow.com/a/31269848/5353461
+goto() {
+  label=$1
+  cmd=$(sed -En "/^[[:space:]]*#[[:space:]]*$label:[[:space:]]*#/{:a;n;p;ba};" "$0")
+  eval "$cmd"
+  exit
+}
+
+
 next_step()
 {
 step=$*
 while [ 1 ]; do
-  echo -n "Proceed with the step: $step (y/n/q)?"
+  echo -n "Proceed with the step: $step (y -yes / n -no / p -previous / q -quit)?"
   if [ "$DEBUG" = "1" ]; then
     read ans
   else
@@ -33,13 +42,16 @@ while [ 1 ]; do
   case "$ans" in
    y) return 0 ;;
    n) return 1 ;;
+   p) STEP=$(expr $STEP - 1); goto step${STEP} ;;
    q) rm one_exec_switchover_*.sh ; exit ;;
    *) : ;;
   esac
 done
 }
 
-echo "\nSTEP 0: Switch logfile DB: $ORACLE_SID  on host: $primary_host"
+#step0:#
+STEP=0
+echo -e "\nSTEP 0: Switch logfile DB: $ORACLE_SID  on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -55,8 +67,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 1: Show arch lag for DB: $ORACLE_SID on $primary_host"
+#step1:#
+STEP=1
+echo -e "\nSTEP 1: Show arch lag for DB: $ORACLE_SID on $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -86,8 +99,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 2: Show standby redo log for DB: $ORACLE_SID on host: $standby_host"
+#step2:#
+STEP=2
+echo -e "\nSTEP 2: Show standby redo log for DB: $ORACLE_SID on host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -108,8 +122,9 @@ cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
-
-echo "\nSTEP 3: Restart DB: $ORACLE_SID in restrict mode on host: $primary_host"
+#step3:#
+STEP=3
+echo -e "\nSTEP 3: Restart DB: $ORACLE_SID in restrict mode on host: $primary_host"
 next_step && ( 
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -124,8 +139,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID" 
 ) 
 
-
-echo "\nSTEP 4: Show switchover_status DB: $ORACLE_SID  on host: $primary_host"
+#step4:#
+STEP=4
+echo -e "\nSTEP 4: Show switchover_status DB: $ORACLE_SID  on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -141,8 +157,9 @@ cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
-
-echo "\nSTEP 5: Switchover DB: $ORACLE_SID to standby on host: $primary_host"
+#step5:#
+STEP=5
+echo -e "\nSTEP 5: Switchover DB: $ORACLE_SID to standby on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -158,8 +175,9 @@ cat ${one_exec_f} | ssh oracle@$primary_host "/bin/bash -s $ORACLE_SID"
 )
 
 
-
-echo "\nSTEP 6: Show alert_log on standby host: $standby_host"
+#step6:#
+STEP=6
+echo -e "\nSTEP 6: Show alert_log on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -179,8 +197,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 7: Show switchover_status for DB: $ORACLE_SID  on standby host: $standby_host"
+#step7:#
+STEP=7
+echo -e "\nSTEP 7: Show switchover_status for DB: $ORACLE_SID  on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -196,8 +215,9 @@ cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
 
-
-echo "\nSTEP 8: Switchover $ORACLE_SID to primary on standby host: $standby_host"
+#step8:#
+STEP=8
+echo -e "\nSTEP 8: Switchover $ORACLE_SID to primary on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -212,8 +232,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 9: Show alert_log on standby host: $standby_host"
+#step9:#
+STEP=9
+echo -e "\nSTEP 9: Show alert_log on standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -233,8 +254,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 10: Open database: $ORACLE_SID on old standby host: $standby_host"
+#step10:#
+STEP=10
+echo -e "\nSTEP 10: Open database: $ORACLE_SID on old standby host: $standby_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
@@ -249,8 +271,9 @@ EOF_CREATE_SCP
 cat ${one_exec_f} | ssh oracle@$standby_host "/bin/bash -s $ORACLE_SID"
 )
 
-
-echo "\nSTEP 11: Startup and enable manage recovery new standby database: $ORACLE_SID on host: $primary_host"
+#step11:#
+STEP=11
+echo -e "\nSTEP 11: Startup and enable manage recovery new standby database: $ORACLE_SID on host: $primary_host"
 next_step && (
 cat << EOF_CREATE_SCP > ${one_exec_f}
 #!/bin/bash
