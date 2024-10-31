@@ -35,6 +35,7 @@ for HOST in $(xargs -n1 echo <<< "$HOSTS"); do
     LASTALERTTIME=$LOGDIR/mon_alert_${HOST}_${DB}_lastalerttime.tmp
     EXCLFILE=$LOGDIR/mon_alert_${HOST}_${DB}_exclude.tmp
     echo $EXCLUDE > $EXCLFILE
+    $BASEDIR/iniget.sh $CONFIG alert:${HOST}:${DB} exclude >> $EXCLFILE
     AWKFILE=$LOGDIR/mon_alert_${HOST}_${DB}_awkfile.awk
 
     echo "START HOST="$HOST "DB="$DB "at: "$(date)
