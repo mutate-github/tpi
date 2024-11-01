@@ -16,7 +16,7 @@ fi
 echo "Using config: ${CONFIG}"
 
 export NLS_LANG=AMERICAN_AMERICA.CL8MSWIN1251
-#export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+# export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
 
 LOGDIR="$BASEDIR/../log"
 if [ ! -d "$LOGDIR" ]; then mkdir -p "$LOGDIR"; fi

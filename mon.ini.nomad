@@ -37,6 +37,7 @@ db=msfo
 # script=mmail.nomad
 script=tgmail_html
 # script=tyandex
+# script=tyandex_html
 prefix=NOMAD->
 # % - mask send mail for all host or db or scripts
 # host:db:set=%:%:%
