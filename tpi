@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="01.10.24"
+TPIVER="02.11.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -30,7 +30,7 @@ init_msg()
   oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set \"_enable_space_preallocation\"=0 )"
+  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | maxext | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -3729,6 +3729,44 @@ EOF
 logf
 }
 
+maxext()
+{
+$SP <<EOF >$LOGF
+set lines 230
+set echo off feed off veri off tab off pages 500 numw 15 timing off
+column TABLESPACE_NAME for a30
+column MESSAGE for a100
+SELECT SEG.TABLESPACE_NAME,
+       TBS.FREE,
+       SEG.MAX_OBJECT_NEXT_EXTENT_SIZE,
+       DFS.LARGEST_FREE_CONT_EXTENT_SIZE,
+       CASE
+           WHEN SEG.MAX_OBJECT_NEXT_EXTENT_SIZE * 2 >
+                LARGEST_FREE_CONT_EXTENT_SIZE
+           THEN  'FREE CONTIGUOUS EXTENT SIZE IS LESS THAN DOUBLE OF THE MAX OBJECT NEXT SIZE'
+           ELSE  'THERE IS SUFFICIENT FREE CONTIGUOUS EXTENT SIZE'
+       END MESSAGE
+  FROM (  SELECT SEG.TABLESPACE_NAME,
+                 MAX (SEG.NEXT_EXTENT)     MAX_OBJECT_NEXT_EXTENT_SIZE
+            FROM DBA_SEGMENTS SEG
+        GROUP BY SEG.TABLESPACE_NAME) SEG,
+       (  SELECT DFS.TABLESPACE_NAME,
+                 MAX (DFS.BYTES)     LARGEST_FREE_CONT_EXTENT_SIZE
+            FROM DBA_FREE_SPACE DFS
+        GROUP BY DFS.TABLESPACE_NAME) DFS,
+        (select  t.tablespace_name, FREE  from
+          (select tablespace_name,sum(total) total from
+             (select tablespace_name, case when autoextensible='YES' then maxbytes else bytes end total from dba_data_files)
+             group by tablespace_name) t,
+          (select tablespace_name, sum(free) free from
+             (select d.tablespace_name, d.file_name, case when autoextensible='YES' then (d.maxbytes-d.bytes)+nvl(f.bytes,0) else nvl(f.bytes,0) end free
+             from (select tablespace_name, file_id, sum(bytes) bytes from dba_free_space group by tablespace_name,file_id) f, dba_data_files d where f.file_id(+)=d.file_id)
+             group by tablespace_name) f
+          where t.tablespace_name = f.tablespace_name) TBS
+ WHERE SEG.TABLESPACE_NAME = DFS.TABLESPACE_NAME AND TBS.TABLESPACE_NAME = SEG.TABLESPACE_NAME AND TBS.FREE < SEG.MAX_OBJECT_NEXT_EXTENT_SIZE;
+EOF
+logf
+}
 
 
 fra()
@@ -3909,6 +3947,7 @@ case "$P1_" in
   sysaux)   sysaux ;;
   df)       shift; ALL=$*; df $ALL ;;
   maxseg)   shift; ALL=$*; maxseg $ALL ;;
+  maxext)   shift; ALL=$*; maxext $ALL ;;
   fra)      fra ;;
   rbin)     rbin $ALL;;
   grows)    shift; ALL=$*; grows $ALL ;;
