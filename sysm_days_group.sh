@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # average sysmetric statistics by Hours
-# Usage: ./sysm_days_group.sh | diagram.sh
+# Usage: ./sysm_days_group.sh file_name | diagram.sh
 
-FF='/home/t.mukhametshin/start/log/dcb-retail-db_GOLD506_sysmetric_h.log'
+# FF='/home/t.mukhametshin/start/log/dcb-retail-db_GOLD506_sysmetric_h.log'
+FF="$1"
 HH="00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23"
 #DD="01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31"
-DD="01"
+DD="30 31"
 
 echo "BEGIN_TIME HCPUB CPUUPS LOAD"
 while read D; do 
