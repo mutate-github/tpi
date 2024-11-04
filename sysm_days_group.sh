@@ -20,5 +20,5 @@ done <<< $(echo $DD | xargs -n1 echo)
 exit
 
 # for days 30-31/10/24
-# cat  ~/start/log/aisprod_aisutf_sysmetric_h.log  | sed -n -e "/BEGIN_TIME/ { h; }; /^3[01]\/10\/24-/  { x; p; x; p; }" | uniq | diagram.sh 3 11 15 17 19 20 22 23 24
+# cat  ~/start/log/aisprod_aisutf_sysmetric_h.log  | sed -n -e "/BEGIN_TIME/ { h; }; /^3[01]\/10\/24-/  { x; p; x; p; }" | sort | uniq | diagram.sh 3 11 15 17 19 20 22 23 24
 
