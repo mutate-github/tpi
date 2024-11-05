@@ -59,6 +59,8 @@ echo "Monitor: =================================================================
 $BASEDIR/mon_resumab.sh $CLIENT
 echo "Monitor: ================================================================================ mon_lock.sh"
 $BASEDIR/mon_lock.sh $CLIENT
+echo "Kill sniped: ================================================================================ kill_sniped.sh"
+$BASEDIR/kill_sniped.sh $CLIENT
 echo "FINISH ALL MONITORING ****************************************************************************"`date`
 
 
