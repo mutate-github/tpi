@@ -35,22 +35,19 @@ tmpfile=/tmp/kill_sniped_tmp.\$\$
 echo 'tempfile: ' \$tmpfile
 sqlplus -s '/ as sysdba' <<'END' > \$tmpfile
 set pagesize 0 lines 255 feedback off verify off heading off echo off timing off
-rem spool \$tmpfile
 select 'date > '||to_char(sysdate,'dd/mm/yyyy hh24:mi:ss') from dual;
 column username format a15
 column osuser format a12
 column machine format a20
 column terminal format a15
 column module format a30
-column action format a6
+column action format a16
 column logon_time format a19
 column spid format a10
-select s.username,s.osuser,s.machine,s.terminal,s.module,s.action,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time,p.spid from v\$process p,v\$session s where s.paddr=p.addr and s.status in ('SNIPED','KILLED') and s.server = 'DEDICATED';
-select p.spid from v\$process p,v\$session s
-where s.paddr=p.addr
-and s.status in ('SNIPED','KILLED') and s.server = 'DEDICATED';
+select p.spid, s.username,s.osuser,s.machine,s.terminal,s.module,s.action,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time from v\$process p,v\$session s where s.paddr=p.addr and s.status in ('SNIPED','KILLED') and s.server = 'DEDICATED';
 END
-for x in $(grep '^[0123456789]' <<< $tmpfile)
+cat \$tmpfile
+for x in \$(awk '/^[0123456789]/{print \$1}' \$tmpfile)
  do
   kill -9 \$x
 #  echo  \$x
