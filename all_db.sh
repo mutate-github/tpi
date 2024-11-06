@@ -24,9 +24,14 @@ SCRIPT_NAME="$BASEDIR/exec_one_all_db_$$.sh"
 
 
 for srv in $lst; do
-#  echo $svr
+  echo $svr
+  SSHConnectTimeout=7
+  [[ -z "$SSHConnectTimeout" ]] && SSHConnectTimeout=5
+  ssh -o ConnectTimeout=$SSHConnectTimeout -q $srv exit
+  if [ "$?" -eq 0 ]; then
   $WRTPI $srv | awk -F" ora_pmon_" '/ ora_pmon_/{print $2}' |  while read sid; do
       echo "SERVER: "$srv ", DB: "$sid
+
 #       $WRTPI $srv $sid db nls | grep NLS_CHARACTERSET
 #       $WRTPI $srv $sid exec 'alter system set "_enable_space_preallocation"=0'
 
@@ -75,6 +80,9 @@ rm $SQL_NAME
 #       cat $BASEDIR/purge_traces.sh | ssh oracle@$srv "/bin/bash -s $sid"
       echo "================================================================================="
   done
+  else 
+    echo "Not answered host: "$srv
+  fi
 done
 
 rm $SCRIPT_NAME
