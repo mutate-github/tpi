@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="08.11.24"
+TPIVER="17.11.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -22,15 +22,15 @@ fi
 
 init_msg()
 {
-  a__="\"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
+  a__="[in=INST_ID] [con=[CON_ID]] \"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
   p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir | resource_limit | resumable - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
-  db__="db [ nls|option|properties|fusage|acl ] - v\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
+  db__="db [ nls|option|properties|fusage|acl ] - gv\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
   audit__="audit [login | maxcon [dd/mm/yy-HH:MI-HH:MI(hours)] [CNT] | 1017 [dd/mm/yy-HH:MI-HH:MI(hours)] [USR] | obj [dd/mm/yy-HH:MI-HH:MI(hours)] [OBJ] ] - DDL users audit, login - check all users for simple password, maxcon - max of db connections above CNT (def 100) for a period (def 1H), 1017 - failed login, obj - obj audit"
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
-  oratop__="oratop [ h | dhsh [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
+  oratop__="oratop [ h [in=INST_ID] [con=[CON_ID]] | dhsh [in=INST_ID] [con=[CON_ID]] [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
   pga__="pga - PGA sessions information"
-  size__="size [days | tbs [free [sort_col_name]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | maxext | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set \"_enable_space_preallocation\"=0 )"
+  size__="size [days | tbs [free [SORT_COL_NAME]] | temp | sysaux | df [io|usage|lastseg[TBS]] | maxseg TBS | maxext | fra | rbin [all] | grows (days)] - Size of DB+archl (7 def), tablespaces, datafiles (HWM in DF+script), maxseg in all DB\TBS, FRA info + db_recovery_file_dest usage; recyclebin; ( alter system set \"_enable_space_preallocation\"=0 )"
   arch__="arch [seq [SEQ|dd/mm/yy-HH:MI] | scn [SCN|dd/mm/yy-HH:MI]] - archivelog, V\$LOG V\$ARCHIVE_DEST V\$ARCHIVE_DEST_STATUS GV\$MANAGED_STANDBY V\$STANDBY_LOG information"
   redo__="redo [logs] - redo information" 
   undo__="undo [recovery] - undo active transaction information, recovery information" 
@@ -248,10 +248,12 @@ set echo off feed off veri off tab off timing on
 col spid for a8
 col sid for 99999
 col serial# for 999999
+col inst_id for 99 heading 'INS'
+col con_id for 99 heading 'CON'
 col username for a20 truncated
 col osuser for a17 truncated
 col machine for a17 truncated
-col pma for a60 heading 'PROGRAM / MODULE / ACTION' truncated
+col pma for a55 heading 'PROGRAM / MODULE / ACTION' truncated
 col pgau for 99999
 col logon_time for a11 heading 'LOGON'
 col last_call_et for 999999 heading 'LAST'
@@ -261,8 +263,8 @@ col sql_id for a13
 col event for a27 truncated
 col sw for 999999
 col oot for a40 heading 'ACCESS OBJECT' truncated
-SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
-       p.spid, s.sid, s.serial#, /* s.audsid,*/ s.username,
+SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
+       p.spid, s.sid, s.serial#, i.inst_id, s.con_id, /* i.host_name, */ /* s.audsid,*/ s.username,
        s.osuser,
        replace(s.machine,CHR(0),'') machine,
        s.program||' / '||s.module||' / '|| $SQLACTION_
@@ -271,25 +273,41 @@ SELECT /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
        case when w.seconds_in_wait>8640000 then w.seconds_in_wait/60/60/24*-1 else w.seconds_in_wait/60/60 end sw,
        to_char(s.logon_time,'dd/mm hh24:mi') logon_time,
        case when s.last_call_et>864000 then s.last_call_et/60/60/24*-1 else s.last_call_et end last_call_et, s.status  $access_p1_str
-   FROM v\$session s, v\$process p, v\$session_wait w  $SQLCMD2_  $access_p2_str
-   WHERE p.addr = s.paddr $access_p3_str $SQLCMD3_
-       AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL $SQL_STATUS $SQL_TRACE
+   FROM gv\$instance i, gv\$session s, gv\$process p, gv\$session_wait w  $SQLCMD2_  $access_p2_str
+   WHERE (i.inst_id=s.inst_id) and (i.inst_id=p.inst_id) and (i.inst_id=w.inst_id) and p.addr = s.paddr $access_p3_str $SQLCMD3_
+       AND s.sid=w.sid AND p.spid IS NOT NULL AND s.type <> 'BACKGROUND' AND s.username IS NOT NULL $SQL_STATUS $SQL_TRACE $AND_INST_ID $AND_CON_ID
    order by to_char(s.last_call_et,'0000000.00') desc, s.osuser,w.event, to_char(s.logon_time,'hh24:mi') ;
 "
 }
 
 active_sessions()
 {
+shopt -s nocasematch
+k=0
+for ((i=1;i<=$#;i++)); do
+  PVAL=$(eval echo $(echo \${$i}))
+  if [[ "$PVAL" =~ "=" ]]; then
+    INPARVAL=$(awk -F= '{print $2}' <<< $PVAL)
+    case "$PVAL" in
+      IN=*)   AND_INST_ID=" and i.inst_id=$INPARVAL" ; k=$k+1 ;;
+      CON=*)  AND_CON_ID=" and s.con_id=$INPARVAL" ; k=$k+1 ;;
+    esac
+  fi
+done
+
+for ((j=1;j<=$k;j++)); do
+ shift
+done
+
 P1_="$1"
 P2_="$2"
 
-shopt -s nocasematch
 case "$P1_" in
-  access) access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",v\$access a" ; access_p3_str="and s.sid=a.sid and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
-       k)    SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
-      in)    SQL_STATUS="AND s.status in ('INACTIVE')  " ;;
-       a)    SQL_STATUS="AND s.status like '%' " ;;
-       *)    SQL_STATUS="AND s.status = 'ACTIVE' " ;;
+  access)  access_p1_str=",a.owner||'.'||a.object||' '||a.type oot" ; access_p2_str=",gv\$access a" ; access_p3_str="and s.sid=a.sid and i.inst_id=a.inst_id and a.OBJECT = upper('$P2_')" ; P1_="a" ;;
+       k)  SQL_STATUS="AND s.status in ('KILLED','SNIPED')  " ;;
+      in)  SQL_STATUS="AND s.status in ('INACTIVE')  " ;;
+       a)  SQL_STATUS="AND s.status like '%' " ;;
+       *)  SQL_STATUS="AND s.status = 'ACTIVE' " ;;
 esac
 
 case "$(db_version)" in
@@ -302,8 +320,8 @@ case "$(db_version)" in
  *) SQL_ID_="DECODE (s.plsql_subprogram_id, NULL, s.sql_id, NULL) sql_id,"
     SQLACTION_="CASE when '$NLS_VALUE'='$WINCP' then s.action when replace(REGEXP_REPLACE(convert(UNISTR(ASCIISTR(s.action)), '$NLS_VALUE','$WINCP'), '[-*\/_0-9a-zA-Z]', ''), ' ') is null then UTL_RAW.CAST_TO_VARCHAR2(UTL_RAW.CONVERT(UTL_RAW.CAST_TO_RAW(nvl(s.action,' ')),'AMERICAN_AMERICA.$NLS_VALUE', 'AMERICAN_AMERICA.$WINCP')) else s.action end pma,"
     SQLCMD1_="c.command_name, "
-    SQLCMD2_=", v\$sqlcommand c "
-    SQLCMD3_="and s.command = c.command_type "
+    SQLCMD2_=", gv\$sqlcommand c "
+    SQLCMD3_="and s.command = c.command_type and i.inst_id=c.inst_id "
     SQLCMD4_='alter session set "_optimizer_cartesian_enabled"=false;'
     ;;
 esac
@@ -901,32 +919,34 @@ prompt SCT    - Session Count Total                             SSRT   - Sql ser
 
 SET_COL_ORATOP="
 col BEGIN_TIME for a17 heading '1|BEGIN_TIME'
-col NCPU for 999 heading '2|NCPU'
-col HCPUB for 9999 heading '3|HCPUB'
-col CPUUPS for 99999 heading '4|CPUUPS'
-col LOAD for 999 heading '5|LOAD'
-col DCTR for 999 heading '6|DCTR'
-col DWTR for 999 heading '7|DWTR'
-col SPFR for 99999 heading '8|SPFR'
-col TPGA for 99999 heading '9|TPGA'
-col SCT for 9999 heading '10|SCT'
-col AAS for 9999 heading '11|AAS'
-col AST for 9999 heading '12|AST'
-col ASCPU for 9999 heading '13|ASCPU'
-col ASIO for 9999 heading '14|ASIO'
-col ASWA for 9999 heading '15|ASWA'
-col ASPQ for 9999 heading '16|ASPQ'
-col UTPS for 99999 heading '17|UTPS'
-col UCPS for 9999999 heading '18|UCPS'
-col SSRT for 9999999 heading '19|SSRT'
-col IOMBPS for 99999 heading '20|IOMBPS'
-col IOPS for 999999 heading '21|IOPS'
-col IORL for 99999 heading '22|IORL'
-col LOGR for 999999999 heading '23|LOGR'
-col PHYR for 999999 heading '24|PHYR'
-col PHYW for 999999 heading '25|PHYW'
-col TEMP for 99999 heading '26|TEMP'
-col DBTM for 99999 heading '27|DBTM'"
+col HCPUB for 9999 heading '2|HCPUB'
+col CPUUPS for 99999 heading '3|CPUUPS'
+col LOAD for 999 heading '4|LOAD'
+col DCTR for 999 heading '5|DCTR'
+col DWTR for 999 heading '6|DWTR'
+col SPFR for 99999 heading '7|SPFR'
+col TPGA for 99999 heading '8|TPGA'
+col SCT for 9999 heading '9|SCT'
+col AAS for 9999 heading '10|AAS'
+col AST for 9999 heading '11|AST'
+col ASCPU for 9999 heading '12|ASCPU'
+col ASIO for 9999 heading '13|ASIO'
+col ASWA for 9999 heading '14|ASWA'
+col ASPQ for 9999 heading '15|ASPQ'
+col UTPS for 99999 heading '16|UTPS'
+col UCPS for 9999999 heading '17|UCPS'
+col SSRT for 9999999 heading '18|SSRT'
+col IOMBPS for 99999 heading '19|IOMBPS'
+col IOPS for 999999 heading '20|IOPS'
+col IORL for 99999 heading '21|IORL'
+col LOGR for 999999999 heading '22|LOGR'
+col PHYR for 999999 heading '23|PHYR'
+col PHYW for 999999 heading '24|PHYW'
+col TEMP for 99999 heading '25|TEMP'
+col DBTM for 99999 heading '26|DBTM'
+col INST_ID for 999 heading '27|IN'
+col CON_ID for 999 heading '28|CON'
+col NCPU for 999 heading '29|NCPU'"
 
 oratop()
 {
@@ -938,6 +958,35 @@ esac
 P1_=$(awk '{print $1}' <<< "$ALL")
 case "$P1_" in
 dhsh)
+shift
+
+#for ((i=1;i<=$#;i++)); do
+#     __CMDVAR=$i
+#     eval 'PARAM'$__CMDVAR="$(echo \${$i})"
+#done
+#shopt -s nocasematch
+#case "$PARAM1" in 
+#  IN*) AND_INST_ID=" and m.instance_number="$(awk -F= '{print $2}'i <<< $PARAM1) ; shift ;;
+#esac
+
+shopt -s nocasematch
+k=0
+for ((i=1;i<=$#;i++)); do
+  PVAL=$(eval echo $(echo \${$i}))
+  if [[ "$PVAL" =~ "=" ]]; then
+    INPARVAL=$(awk -F= '{print $2}' <<< $PVAL)
+    case "$PVAL" in
+      IN=*)   AND_INST_ID=" and m.instance_number=$INPARVAL" ; k=$k+1 ;;
+      CON=*)  AND_CON_ID=" and m.con_id=$INPARVAL" ; k=$k+1 ;;
+    esac
+  fi
+done
+
+for ((j=1;j<=$k;j++)); do
+ shift
+done
+
+
 sysdate=$(date +%d/%m/%y\ %H:%M:%S)
 if [ $(is_number $(echo $* | awk -F"/" '{print $2}')) -eq 0 ]; then
  DD_=$(date +%d/%m/%Y)
@@ -945,7 +994,7 @@ if [ $(is_number $(echo $* | awk -F"/" '{print $2}')) -eq 0 ]; then
  HHE_=72     # 3 days
  INTERVAL_="between to_date('$sysdate','dd/mm/yy hh24:mi:ss') - interval '$HHE_' hour and sysdate"
 else
- shift
+# shift
  DD_=$(awk -F- '{print $1}' <<< "$*")
  HHB_=$(awk -F- '{print $2}' <<< "$*" )
  HHE_=$((awk -F- '{print $3}' | cut -d' ' -f1) <<< "$*")
@@ -1011,13 +1060,14 @@ col SSRT for 9999999 heading '21|SSRT'
 col tparspt for 99999 heading '22|TPARSPT'
 col UCPS for 9999999 heading '23|UCPS'
 col UTPS for 99999 heading '24|UTPS'
-col NCPU for 999 heading '25|NCPU'
-col instance_number for 99 noprint
+col NCPU for 999 heading '27|NCPU'
+col instance_number for 99 heading '25|IN'
+col con_id for 99 heading '26|CON'
+--noprint
 prompt "Stat from dba_hist_sysmetric_history dba_hist_snapshot in begin_interval_time $INTERVAL_"
 select dhsh.*, oss.ncpu
 from (
 SELECT  to_char(sn.begin_interval_time,'dd/mm/yy-hh24:mi:ss') begin_time
-  , sn.instance_number 
   , ROUND(avg(CASE WHEN metric_name = 'Average Active Sessions'                       THEN m.value END)) aas
   , nvl(ROUND(avg(CASE WHEN metric_name = 'Background CPU Usage Per Sec'                  THEN m.value END)),0) bcpuups
   , nvl(ROUND(avg(CASE WHEN metric_name = 'CPU Usage Per Sec'                             THEN m.value END)),0) cpuups
@@ -1041,24 +1091,55 @@ SELECT  to_char(sn.begin_interval_time,'dd/mm/yy-hh24:mi:ss') begin_time
   , ROUND(AVG(CASE WHEN metric_name = 'Total Parse Count Per Txn'                     THEN m.value END)) tparspt
   , ROUND(avg(CASE WHEN metric_name = 'User Calls Per Sec'                            THEN m.value END)) ucps
   , ROUND(avg(CASE WHEN metric_name = 'User Transaction Per Sec'                      THEN m.value END)) utps
+  , sn.instance_number 
+  , m.con_id
 FROM   dba_hist_snapshot sn, dba_hist_sysmetric_history m
 WHERE  sn.snap_id = m.snap_id
 AND sn.dbid    = m.dbid
-AND sn.instance_number = m.instance_number
+AND sn.instance_number = m.instance_number $AND_INST_ID $AND_CON_ID
 AND begin_interval_time $INTERVAL_  --sn.begin_interval_time > SYSDATE - 3
-GROUP BY    sn.begin_interval_time, sn.instance_number 
+GROUP BY    sn.begin_interval_time, sn.instance_number , m.con_id
 ORDER BY    sn.begin_interval_time) dhsh, (SELECT inst_id, VALUE ncpu FROM gv\$osstat WHERE   stat_name = 'NUM_CPUS') oss
  where dhsh.instance_number=oss.inst_id order by to_date(begin_time,'dd/mm/yy-hh24:mi:ss');
 EOF
 ;;
 h)
+shift
+#for ((i=1;i<=$#;i++)); do
+#     __CMDVAR=$i
+#     eval 'PARAM'$__CMDVAR="$(echo \${$i})"
+#done
+#shopt -s nocasematch
+#case "$PARAM1" in
+#  IN*) AND_INST_ID=" and sh.inst_id="$(awk -F= '{print $2}'i <<< $PARAM1) ; shift ;;
+#esac
+
+
+shopt -s nocasematch
+k=0
+for ((i=1;i<=$#;i++)); do
+  PVAL=$(eval echo $(echo \${$i}))
+  if [[ "$PVAL" =~ "=" ]]; then
+    INPARVAL=$(awk -F= '{print $2}' <<< $PVAL)
+    case "$PVAL" in
+      IN=*)   AND_INST_ID=" and sh.inst_id=$INPARVAL" ; k=$k+1 ;;
+      CON=*)  AND_CON_ID=" and sh.con_id=$INPARVAL" ; k=$k+1 ;;
+    esac
+  fi
+done
+
+for ((j=1;j<=$k;j++)); do
+ shift
+done
+
+
+
 $SP <<EOF >$LOGF
 set lines 230 pages 100 tab off
 $legend_oratop
 $SET_COL_ORATOP
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
-      to_char(begin_time,'dd/mm/yy-hh24:mi:ss') begin_time, 
-      ncpu,                           --  'NUM_CPUS'
+      to_char(begin_time,'dd/mm/yy-hh24:mi:ss') begin_time,
       trunc(hcpu) hcpub,              --   %CPU      [m,N]: host cpu busy %(busy/busy+idle). (red if > 90%)
       trunc(dcpu) cpuups,             --  'CPU Usage Per Sec'  'CentiSeconds Per Second'
       trunc(load) load,               --   LOAD      [m,N]: current os load. (red if > 2*#cpu and high cpu)
@@ -1083,8 +1164,11 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(phyr) phyr,               --   PHYR      [s,N]: physical reads per sec
       trunc(phyw) phyw,               --   PHYW      [s,N]: physical writes per sec
       round(temp/1024/1024,0) temp,   --   TEMP      [s,N]: temp space used (Mb)
-      trunc(dbtm) dbtm                --   Database Time Per Sec
-  FROM   (  SELECT  begin_time, end_time,
+      trunc(dbtm) dbtm,               --   Database Time Per Sec
+      SH.inst_id,
+      SH.con_id,
+      ncpu                           --  'NUM_CPUS'
+  FROM   (  SELECT inst_id, con_id, begin_time, end_time,
                      SUM(DECODE (metric_name, 'CPU Usage Per Sec', VALUE, 0)) dcpu,
                      SUM(DECODE (metric_name, 'Host CPU Utilization (%)', VALUE, 0)) hcpu,
                      SUM(DECODE (metric_name, 'I/O Megabytes per Second', VALUE, 0)) mbps,
@@ -1106,7 +1190,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                      SUM(DECODE (metric_name, 'Physical Writes Per Sec', VALUE, 0)) phyw,
                      SUM(DECODE (metric_name, 'Temp Space Used', VALUE, 0)) temp,
                      SUM(DECODE (metric_name, 'Database Time Per Sec', VALUE, 0)) dbtm
-              FROM   V\$SYSMETRIC_HISTORY
+              FROM   GV\$SYSMETRIC_HISTORY
              WHERE   metric_name IN
                              ('CPU Usage Per Sec',
                               'Host CPU Utilization (%)',
@@ -1130,24 +1214,24 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
                               'Session Count',
                               'Total PGA Allocated')
                      AND GROUP_ID in (2,3)
-          GROUP BY  begin_time, end_time ),
-          (SELECT inst_id id3, TO_NUMBER (VALUE) ncpu  FROM   gv\$osstat  WHERE   stat_name = 'NUM_CPUS')
- , ( select trunc(sample_time, 'mi') sample_time, trunc(avg(asct)) ast, nvl(round((avg(asct)/sum(asct))*sum(cpas)),0) ascpu, nvl(round((avg(asct)/sum(asct))*sum(ioas)),0) asio, nvl(round((avg(asct)/sum(asct))*sum(waas)),0) aswa
+          GROUP BY inst_id, con_id, begin_time, end_time ) SH,
+          (SELECT inst_id, TO_NUMBER (VALUE) ncpu  FROM   gv\$osstat  WHERE   stat_name = 'NUM_CPUS') OS
+ , ( select inst_id, trunc(sample_time, 'mi') sample_time, trunc(avg(asct)) ast, nvl(round((avg(asct)/sum(asct))*sum(cpas)),0) ascpu, nvl(round((avg(asct)/sum(asct))*sum(ioas)),0) asio, nvl(round((avg(asct)/sum(asct))*sum(waas)),0) aswa
 from(
-SELECT cast(sample_time as date) sample_time,
+SELECT inst_id, cast(sample_time as date) sample_time,
   COUNT ( * ) asct,
   SUM(DECODE(wait_time, 0, 0, 1)) cpas,
   SUM(DECODE(wait_class, 'User I/O', 1, 0)) ioas,
   SUM(DECODE(wait_time, 0, DECODE (wait_class,'User I/O', 0, 1))) waas
-FROM V\$ACTIVE_SESSION_HISTORY
+FROM GV\$ACTIVE_SESSION_HISTORY
 WHERE SESSION_TYPE <> 'BACKGROUND' --AND user_id > 0
-group by cast(sample_time as date)
+group by inst_id,cast(sample_time as date)
 order by sample_time
 )
-group by trunc(sample_time, 'mi')
+group by inst_id, trunc(sample_time, 'mi')
 order by sample_time
 ) act_sess
-where act_sess.sample_time between begin_time and end_time
+where SH.inst_id=OS.inst_id and SH.inst_id=act_sess.inst_id and act_sess.sample_time between begin_time and end_time $AND_INST_ID $AND_CON_ID
 ORDER BY to_date(begin_time,'dd/mm/yy-hh24:mi:ss');
 EOF
 ;;
@@ -1161,8 +1245,6 @@ $legend_oratop
 $SET_COL_ORATOP
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR */
       to_char(sysdate,'dd/mm/yy-hh24:mi:ss')  BEGIN_TIME,
-      ncpu,                           --'NUM_CPUS'
---      inid,                         --   ID        [c,N]: inst_id (instance id)
       trunc(hcpu) HCPUB,              --   %CPU      [m,N]: host cpu busy %(busy/busy+idle). (red if > 90%)
       trunc(dcpu) CPUUPS,             --'CPU Usage Per Sec'  'CentiSeconds Per Second'
       trunc(load) load,               --   LOAD      [m,N]: current os load. (red if > 2*#cpu "&" high cpu)
@@ -1188,7 +1270,9 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
       trunc(phyr) phyr,               --   PHYR      [s,N]: physical reads per sec
       trunc(phyw) phyw,               --   PHYW      [s,N]: physical writes per sec
       round(temp/1024/1024,0) temp,   --   TEMP      [s,N]: temp space used
-      trunc(dbtm) dbtm                --'Database Time Per Sec'
+      trunc(dbtm) dbtm,                --'Database Time Per Sec'
+      inid INST_ID,                    --   ID        [c,N]: inst_id (instance id)
+      ncpu                           --'NUM_CPUS'
   FROM   (  SELECT   inst_id  inid,
                      SUM(DECODE (metric_name, 'CPU Usage Per Sec', VALUE, 0)) dcpu,
                      SUM(DECODE (metric_name, 'Host CPU Utilization (%)', VALUE, 0)) hcpu,
@@ -1274,6 +1358,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */   /*+ NO_MONITOR *
 ORDER BY   dbtm DESC;
 
 set numw 15
+column inst_id for 999 heading "INS"
 column event for a65 heading "EVENT   (Cumulative Top 5 Timed Events)"
 column totwa for 999,999,999,999
 column twsec for 999,999,999,999
@@ -1281,6 +1366,7 @@ column AVGMS for 999,999,999.00
 column wclas for a15
 -- ttitle left "Cumulative Top 5 Timed Events:"
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
+         inst_id,
          event,
          totwa,
          twsec,
@@ -1289,7 +1375,7 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
          wclas
 --         ,evtid
   FROM   (  SELECT
-                  event,
+                  inst_id, event,
                      SUM (total_waits) totwa,
                      SUM (time_waited) / 100 twsec,
                      AVG (average_wait) * 10 avgms,
@@ -1297,19 +1383,28 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                      event_id evtid
               FROM   gv\$system_event
              WHERE   wait_class <> 'Idle'
-          GROUP BY   event, wait_class, event_id
+          GROUP BY   inst_id, event, wait_class, event_id
             HAVING   SUM (total_waits) > 0
           UNION
-          SELECT
-                  'DB CPU'
+          select   inst_id,
+                   'DB CPU'
                    event,
                    0 totwa,
                    SUM (VALUE) / 100 twsec,
                    0 avgms,
                    NULL wclas,
                    19 evtid
+          from ( SELECT inst_id,
+                   'DB CPU'
+                   event,
+                   0 totwa,
+                   VALUE,
+                   0 avgms,
+                   NULL wclas,
+                   19 evtid
             FROM   gv\$sysstat
            WHERE   name LIKE '%CPU used by this session%'
+           ) group by inst_id
           ORDER BY   twsec DESC)
  WHERE   ROWNUM < 6;
 ttitle off
@@ -1320,6 +1415,7 @@ column twsec for 999,999,999,999
 column AVGMS for 999,999,999.00
 column wclas for a15
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
+      inst_id,
       event,
       totwa,
       twsec,
@@ -1327,22 +1423,26 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
       ROUND (ratio_to_report (twsec) OVER () * 100) pctwa,
       wclas
 --      ,evtid
-  FROM   (  SELECT   sw .event,
+  FROM   (  SELECT   se.inst_id, 
+                     sw .event,
                      SUM (se.total_waits) totwa,
                      SUM (se.time_waited) / 100 twsec,
-                     SUM (se.time_waited) / (GREATEST (SUM (se.total_waits), 1) * 10)
-                     avgms,
+                     SUM (se.time_waited) / (GREATEST (SUM (se.total_waits), 1) * 10) avgms,
                      sw.wait_class wclas,
                      sw.event# evtid
               FROM   gv\$session_wait_class se  JOIN   gv\$session sw
                      ON se.inst_id = sw.inst_id AND se.sid = sw.sid
              WHERE   se.wait_class != 'Idle' AND sw.wait_class != 'Idle'
-          GROUP BY   sw.event, sw.wait_class, sw.event#
+          GROUP BY   se.inst_id,sw.event, sw.wait_class, sw.event#
             HAVING   SUM (se.total_waits) > 0
           UNION
-          SELECT   'DB CPU' event,
+            select inst_id,'DB CPU' event,  0 totwa,
+               SUM (VALUE) / 100 twsec,
+               0 avgms,  NULL wclas, 19 evtid
+               from ( SELECT   se.inst_id,
+                   'DB CPU' event,
                    0 totwa,
-                   SUM (VALUE) / 100 twsec,
+                   VALUE,
                    0 avgms,
                    NULL wclas,
                    19 evtid
@@ -1350,11 +1450,13 @@ SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */  /*+ NO_MONITOR */
                    ON se.inst_id = s2.inst_id AND se.sid = s2.sid
            WHERE   se.statistic# = 19
                    AND se.VALUE > 0
-                   AND s2.wait_class != 'Idle'
+                   AND s2.wait_class != 'Idle')
+           group by inst_id
           ORDER BY   twsec DESC)
  WHERE   ROWNUM < 6;
 ttitle off
 
+column inst_id for 99  HEADING "INS"
 column PID4 for a8   HEADING "PPID"
 column SID4 for 99999 HEADING "SID"
 column SERIAL for 99999 HEADING "SERIAL"
@@ -1376,7 +1478,7 @@ column lcet for 99999999 HEADING "LCET m"
 ttitle left "Database active sessions:"
   SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans','false') */ /*+ NO_MONITOR */
 --           s.wait_time trm4,
---           s.inst_id id4,
+           s.inst_id,
            p.spid pid4,
            s.sid sid4,
            s.serial# serial,
@@ -1628,18 +1730,30 @@ SQL_TEXT12="prompt DBA_REGISTRY_SQLPATCH:
 "
  REL=$(db_version)
  VERSION="VERSION" ; BANNER="BANNER"
+ SQL_TEXT_3="select inst_id,CON_ID,dbid,NAME,OPEN_MODE,restricted,cast(open_time as date) open_time,total_size/1024/1024 total_size_Mb,block_size,recovery_status from GV\$CONTAINERS order by inst_id, con_id;"
  case $REL in
-   9)        SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ;;
-   10|11)    SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,FLASHBACK_ON,supplemental_log_data_min,platform_name from v\$database;" ;;
-   12)       SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID VERSION, ACTION, STATUS, ACTION_TIME, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"  ;;
-   18|19|21) SQL_TEXT12_=$SQL_TEXT12; SQL_TEXT_2="select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
-	      VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
+   9)        SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,supplemental_log_data_min from v\$database;" ; SQL_TEXT_3="" ;;
+   10|11)    SQL_TEXT="select dbid,name,to_char(created,'dd/mm/yyyy') created,log_mode, resetlogs_time,open_mode,database_role,protection_level,switchover_status,force_logging,FLASHBACK_ON,supplemental_log_data_min,platform_name from v\$database;" ; SQL_TEXT_3="" ;;
+   12)       SQL_TEXT12_=$SQL_TEXT12; 
+             SQL_TEXT_2="select PATCH_ID, PATCH_UID VERSION, ACTION, STATUS, ACTION_TIME, DESCRIPTION from DBA_REGISTRY_SQLPATCH order by action_time;"  ;;
+   18|19|21) SQL_TEXT12_=$SQL_TEXT12; 
+             SQL_TEXT_2="select PATCH_ID, PATCH_UID, PATCH_TYPE, ACTION, STATUS, ACTION_TIME, DESCRIPTION, LOGFILE, RU_LOGFILE, SOURCE_VERSION, SOURCE_BUILD_DESCRIPTION, TARGET_VERSION, TARGET_BUILD_DESCRIPTION, TARGET_BUILD_TIMESTAMP from DBA_REGISTRY_SQLPATCH order by action_time;"
+	     VERSION="VERSION_FULL" ; BANNER="BANNER_FULL" ;;
   esac
 $SP <<EOF > $LOGF
 set lines 230 timing off
 set echo off feed off veri off tab off pages 50
-show pdbs
-prompt v\$instance:
+--show pdbs
+col inst_id for 999
+col CON_ID for 999
+col NAME for a20
+col restricted for a10
+col block_size for 999999
+col total_size_Mb for 9999999999999
+ttitle left "GV\$CONTAINERS:"
+$SQL_TEXT_3
+ttitle off
+column INST_ID for 999
 column instance_name for a15
 column host_name for a30
 column version for a10
@@ -1648,9 +1762,10 @@ column ARCHIVER for a10
 column LOGINS for a10
 column DATABASE_STATUS for a15
 column instance_role for a20
-select INSTANCE_NAME, HOST_NAME, $VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from v\$instance;
-prompt
-prompt v\$database:
+ttitle left "GV\$INSTANCE:"
+select INST_ID, HOST_NAME, INSTANCE_NAME, $VERSION, STARTUP_TIME,STATUS, ARCHIVER, LOGINS, DATABASE_STATUS, INSTANCE_ROLE from gv\$instance order by INST_ID;
+ttitle off
+
 column current_scn for 99999999999999
 column resetlogs_time for a19 heading "RESLOGTIME"
 column dbid for 99999999999
@@ -1665,7 +1780,9 @@ column force_logging for a8 heading "FORCELOG"
 column supplemental_log_data_min for a8 heading "SUPPLLOG"
 column FLASHBACK_ON for a9 heading "FLASHB_ON"
 column platform_name for a28
+ttitle left "V\$DATABASE:"
 $SQL_TEXT
+ttitle off
 col banner for a81
 col banner_full for a91
 select $BANNER from v\$version;
@@ -1683,18 +1800,18 @@ column STATUS for a12
 column MODIFIED for a20
 column SCHEMA for a15
 column procedure for a45
-prompt
-prompt DBA_REGISTRY:
+ttitle left "DBA_REGISTRY:"
 select comp_id, comp_name, $VERSION, status, modified, schema, procedure from dba_registry;
+ttitle off
 column action_time for a19
 column action for a15
 column namespace for a15
 column version for a15
 column comments for a70
 column BUNDLE_SERIES for a20
-prompt
-prompt REGISTRY\$HISTORY:
+ttitle left "REGISTRY\$HISTORY:"
 select * from sys.registry\$history;
+ttitle off
 $SQL_TEXT12_
 $SQL_TEXT_2
 END
@@ -7829,8 +7946,9 @@ esac
 
 
 # echo "ID: "$ID
+shopt -s nocasematch
 case "$ID" in
-""|a|k|in|access)   echo $a__ ${reset}; active_sessions $ALL ;;
+""|in=*|con=*|a|k|in|access)   echo $a__ ${reset}; active_sessions $ALL ;;
 p|ph|services|dir|resource_limit|resumable)  echo $p__ ", parameters like: "$ALL ${reset}; parameters $ALL ;;
 db)        shift; ALL=$*; echo $db__ ${reset}; db $ALL ;;
 lock)      shift; ALL=$*; echo $lock__ ${reset}; lock $ALL ;;
