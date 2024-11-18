@@ -5858,8 +5858,8 @@ EOF
 ;;
 sqlstat)
  if [ -n "$AND_INST_ID" ]; then AND_INST_ID=" and hs.instance_number=$AND_INST_ID"; fi
- if [ -n "$AND_CON_ID" ]; then AND_CON_ID=" and hs.con_id=$AND_CON_ID"; fi
- if [ -n "$CON_ID" ]; then XCON_ID=" hs.con_id, "; fi
+ if [ -n "$AND_CON_ID" ]; then AND_CON_ID=" and st.con_id=$AND_CON_ID"; fi
+ if [ -n "$CON_ID" ]; then XCON_ID=" st.con_id, "; fi
  SQL_ID_=$(awk '{print $2}' <<< "$*")
  P2_=$(awk '{print $3}' <<< "$*")
  if [ -n "$SQL_ID_" ]; then LEN_=$(expr length $SQL_ID_); fi
