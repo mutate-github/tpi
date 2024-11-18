@@ -44,7 +44,7 @@ column module format a30
 column action format a16
 column logon_time format a19
 column spid format a10
-select p.spid, s.username,s.osuser,s.machine,s.terminal,s.module,s.action,to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time from v\$process p,v\$session s where s.paddr=p.addr and s.status in ('SNIPED','KILLED') and s.server = 'DEDICATED';
+select p.spid, s.username,s.osuser,s.machine,s.terminal,s.module, /* s.action,*/ to_char(s.logon_time,'dd/mm/yyyy hh24:mi:ss') logon_time from v\$process p,v\$session s where s.paddr=p.addr and s.status in ('SNIPED','KILLED') and s.server = 'DEDICATED';
 END
 cat \$tmpfile
 for x in \$(awk '/^[0123456789]/{print \$1}' \$tmpfile)
