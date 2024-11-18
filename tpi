@@ -1570,7 +1570,7 @@ col current_utilization for 999999999
 col limit_value for a15
 col percent for 999
 prompt v\$resource_limit:
-select resource_name,current_utilization,limit_value,trunc(current_utilization/limit_value*100) percent from v\$resource_limit where instr(limit_value,'UNLIMITED') = 0 and limit_value<>0;
+select resource_name,current_utilization,limit_value,trunc(current_utilization/limit_value*100) percent from v\$resource_limit where instr(limit_value,'UNLIMITED') = 0 and trim(to_char(limit_value))<>'0';
 EOF
 ;;
 resumable)
