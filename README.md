@@ -1,4 +1,4 @@
-Usage: /cygdrive/c/work/scripts/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | e . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
+Usage: /home/t.mukhametshin/start/tpi/tpi <DBSID/PDB> sess_id [p|ph [FALSE] <param>] [services] [dir] | a [SPID\SID\OS_client_PID] | lock | db | audit | health | oratop | sga | pga | size | arch | redo | undo | sesstat | topseg | o . | s . | e . | t . | i . | l . | c . | u . | r. | trg . | profile | links | latch | bind | pipe | longops | scheduler | job | rman | get_ddl | trace | kill | exec | alert | report ash/awr | corrupt | sql | ash | dhash | spm
 [in=INST_ID] [con=[CON_ID]] "" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V$SES_OPTIMIZER_ENV by [param_name]
 p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir | resource_limit | resumable - instance parameters or hidden parameters, [FALSE] - only changed parameters, v$services, dba_directories
 db [ nls|option|properties|fusage|acl ] - gv$instance, v$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v$option, database_properties information
@@ -36,7 +36,7 @@ job [OWNER] - dba_jobs information
 rman [DAYS|dftb|cfg|last|arch [SEQUENCE] ] - RMAN backups | df_to_backup | v$rman_configuration information | last - hours passed since the last backup | arch - last backup archivelog
 get_ddl TYPE OBJECT (OWNER) - dbms_metadata.get_ddl extract dml, OBJECT - may be % or %mask%
 trace [SID SERIAL LEVEL] [db {on|off}] - Trace for session, Level: 0-Disable, 1-Enable, 4-Enable with Binds, 8-Enable with Waits, 12-4+8, Trace all db sessions: on \ off
-kill [SID SERIAL] | [idle NUM] | [where USERNAME="\'"SomeUser"\'"] - Kill session, idle 5 - kill idle sessions for 5 hours and more
+kill [SID SERIAL INST_ID] | [idle NUM_HOURS] | [where USERNAME="\'"SomeUser"\'"] - Kill session, idle 5 - kill idle sessions for 5 hours and more
 exec - execute "SQL Commands" Note: Must be escaped with \ characters: * ; ' ! ( ) ( alter system set "_ash_sample_all"=true )
 alert [num] - tail -num alert_[sid].log, default num = 100
 report [ash {text|html} -60] -for last hour, [awr {text|html} DD/MM/YYYY HH24_begin HH24_end], [awrdd {text|html} DD1/MM/YYYY HH24_begin HH24_end DD2/MM/YYYY HH24_begin HH24_end], [awrsql {text|html} DD/MM/YYYY HH24_begin HH24_end sql_id], [addm text DD/MM/YYYY HH24_begin HH24_end] - oracle reports
