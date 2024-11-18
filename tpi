@@ -264,7 +264,7 @@ col event for a27 truncated
 col sw for 999999
 col oot for a40 heading 'ACCESS OBJECT' truncated
 SELECT  /*+ OPT_PARAM('_optimizer_adaptive_plans' 'false') */   /*+ NO_MONITOR */
-       p.spid, s.sid, s.serial#, i.inst_id, s.con_id, /* i.host_name, */ /* s.audsid,*/ s.username,
+       p.spid, s.sid, s.serial#, i.inst_id, $CON_ID /* i.host_name, */ /* s.audsid,*/ s.username,
        s.osuser,
        replace(s.machine,CHR(0),'') machine,
        s.program||' / '||s.module||' / '|| $SQLACTION_
@@ -298,6 +298,9 @@ done
 for ((j=1;j<=$k;j++)); do
  shift
 done
+
+if [ -n "$AND_CON_ID" ]; then CON_ID=" s.con_id, "; fi
+
 
 P1_="$1"
 P2_="$2"
