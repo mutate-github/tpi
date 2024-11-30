@@ -117,7 +117,11 @@ exclude=ORA-01422
 exclude=ORA-06512
 exclude=ORA-12012
 
-# nomad
+# nomad aisprod
+[alert:aisprod:aisutf]
+exclude=ORA-12012
+
+# nomad beta
 [alert:beta:aisutf]
 exclude=ORA-0
 exclude=ORA-28
@@ -133,7 +137,7 @@ exclude=ORA-29283
 exclude=ORA-29266
 exclude=ORA-27366
 
-# nomad_stb
+# nomad aisstb
 [alert:aisstb:aisutf]
 exclude=ORA-279
 exclude=ORA-308
