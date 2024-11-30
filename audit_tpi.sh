@@ -1,5 +1,6 @@
 #!/bin/bash
 set -f
+set -o xtrace
 # version 2
 
 DTL=$(date '+%d-%m-%y-%H:%M:-%S')
