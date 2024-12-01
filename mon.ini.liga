@@ -114,8 +114,8 @@ exclude=ORA-308
 exclude=ORA-00308
 exclude=ORA-27037
 
-[alert:phx-dev:PHXPRODLIKE]
 # liga
+[alert:phx-dev:PHXPRODLIKE]
 exclude=ORA-20949
 exclude=ORA-06550
 exclude=ORA-04063
@@ -128,6 +128,9 @@ exclude=ORA-04063
 exclude=ORA-06508
 exclude=ORA-01403
 exclude=ORA-22288
+exclude=ORA-20000
+exclude=ORA-20249
+exclude=ORA-30554
 
 
 # backup param where host:db:set=HOST:DB:NAS:RETENTION_POLICY:RETENTION_POLICY_NUM:CATALOG\NOCATALOG:LEVEL - 0 1 2 OR ANY OTHER for statement: "not backed up since time 'sysdate-1'"
