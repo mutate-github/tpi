@@ -120,6 +120,7 @@ exclude=ORA-12012
 # nomad aisprod
 [alert:aisprod:aisutf]
 exclude=ORA-12012
+exclude=ORA-20001
 
 # nomad beta
 [alert:beta:aisutf]
