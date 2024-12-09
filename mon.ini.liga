@@ -113,11 +113,13 @@ exclude=ORA-279
 exclude=ORA-308
 exclude=ORA-00308
 exclude=ORA-27037
+# liga
+exclude=ORA-20949
+exclude=ORA-06550
 
 # liga
 [alert:phx-dev:PHXPRODLIKE]
 exclude=ORA-20949
-exclude=ORA-06550
 exclude=ORA-04063
 exclude=ORA-12012
 exclude=ORA-06502
