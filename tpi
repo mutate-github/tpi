@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="18.11.24"
+TPIVER="20.12.24"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -6098,10 +6098,10 @@ TRE_MBS  - TotalReads
 TRE_IOPS - TotalReadsIOPS
 TWR_MBS  - TotalWrites
 TWR_IOPS - TotoalWritesIOPS
-SRE_MBS  - SingleReads
-SRE_IOPS - SingleReads
-SWR_MBS  - SingleWrites
-SWR_IOPS - SmallReadIOPS
+SRE_MBS  - SingleReadsMBS
+SRE_IOPS - SingleReadsIOPS
+SWR_MBS  - SingleWritesMBS
+SWR_IOPS - SingleWritesIOPS
 SMRE_LAT - Small_read_servicetime/Small_read_reqs
 SMWR_LAT - Small_write_servicetime/Small_write_reqs
 LARE_LAT - Large_read_servicetime/Large_read_reqs 
