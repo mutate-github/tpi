@@ -37,12 +37,18 @@ else
     echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "TRIGGER: $MSG" 
   else
     echo "$TRG_FILE is exists."
-    REPEAT_MINUTES=$($BASEDIR/iniget.sh $CONFIG standby repeat_minutes)
-    FF=$(find "$TRG_FILE" -mmin +$REPEAT_MINUTES 2>/dev/null | wc -l)
-    if [ "$FF" -eq 1 ]; then
-       echo $MSG | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES})"
-       echo "TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES}   host: "${HOST} " database: "${DB}
-    fi
+    REPEAT_AT=$($BASEDIR/iniget.sh $CONFIG standby repeat_at)
+    HH=$(date +%H)
+    case "$HH" in
+      "${REPEAT_AT}")
+           REPEAT_MINUTES=$($BASEDIR/iniget.sh $CONFIG standby repeat_minutes)
+           FF=$(find "$TRG_FILE" -mmin +$REPEAT_MINUTES 2>/dev/null | wc -l)
+           if [ "$FF" -eq 1 ]; then
+               echo $MSG | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES} REPEAT_AT=${REPEAT_AT} )"
+               echo "TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES} REPEAT_AT=${REPEAT_AT}   host: "${HOST} " database: "${DB}
+           fi
+      ;;
+    esac
   fi
   exit 127
 fi
