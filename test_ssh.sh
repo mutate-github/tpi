@@ -30,13 +30,19 @@ if [ "$?" -eq 0 ]; then
   fi
   exit 0
 else
+  MSG="SSH is NOT responding"
   if [ ! -f $TRG_FILE ]; then
     touch $TRG_FILE
-    MSG="SSH is NOT responding"
     echo "$TRG_FILE is not exists. created. For host: $HOST $MSG"
     echo "" | $BASEDIR/send_msg.sh $CONFIG $HOST NULL "TRIGGER: $MSG" 
   else
-    echo "$TRG_FILE is exists. Skip for host: $HOST"
+    echo "$TRG_FILE is exists."
+    REPEAT_MINUTES=$($BASEDIR/iniget.sh $CONFIG standby repeat_minutes)
+    FF=$(find "$TRG_FILE" -mmin +$REPEAT_MINUTES 2>/dev/null | wc -l)
+    if [ "$FF" -eq 1 ]; then
+       echo $MSG | $BASEDIR/send_msg.sh $CONFIG $HOST $DB "- TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES})"
+       echo "TRIGGER REPEAT: $(date +%H:%M:%S-%d/%m/%y) $MSG REPEAT_MINUTES=${REPEAT_MINUTES}   host: "${HOST} " database: "${DB}
+    fi
   fi
   exit 127
 fi
