@@ -11,7 +11,7 @@ if [ -n "$CLIENT" ]; then
 fi
 echo "Using config: ${CONFIG}"
 
-etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}'`
+etime=`ps -eo 'pid,etime,args' | grep $0 | awk '!/grep|00:0[0123]/{print $2}' | head -1`
 echo "etime: "$etime
 if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
    echo "Previous script did not finish. "`date`
@@ -20,7 +20,7 @@ if [[ -n "$etime" ]] && [[ ! "$etime" =~ "00:0[0123]" ]]; then
    exit 127
 fi
 
-# $1 is clietn name
+# $1 is client name
 # $2 is optional parameter, sample usage:
 # $0 nomad aisprod:aisutf:nas:REDUNDANCY:1:nocatalog:0   - start single backup archivelogs with partucular parameters
 # $0 nomad aisprod                                    - start multiple backups archivelogs with partucular parameters from mon.ini.$CLIENT
