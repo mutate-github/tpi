@@ -2105,7 +2105,7 @@ done
 echo "Wait... Check users for account_status='OPEN' and simple password:"
 chmod u+x $FNAME
 ./$FNAME | egrep ' \- CONNECTED'  > $LOGF
-# rm $FNAME login.sql
+rm $FNAME login.sql
 ;;
 *)
 $SP <<EOF > $LOGF
