@@ -1,6 +1,6 @@
 #!/bin/bash
 set -f
-TPIVER="20.12.24"
+TPIVER="02.01.25"
 # echo "version $TPIVER by Talgat Mukhametshin dba.almaty@gmail.com  last version: https://github.com/mutate-github/tpi"
 
 # echo "tpi: "$* 
@@ -123,6 +123,7 @@ if [ -n "$login_str" ]; then
 else
   SP="eval sqlplus -S '/ as sysdba'"
 fi
+# echo "login_str: "$login_str
 # echo "tpi_SP: "$SP
 
 cd /tmp
@@ -2088,6 +2089,7 @@ set lines 350 pages 0 echo off termout off feedback off echo off timing off
 col cmd for a350
 spool $FNAME
 select q'[echo "select ']'||username||'/'||lower(username)||' - CONNECTED'' from dual;" | sqlplus -S '||username||'/'||lower(username)||'${TNS}'||decode(username,'SYS',' as sysdba')||'"' cmd  from dba_users  where account_status='OPEN' $COND1 order by username;
+select q'[echo "select ']'||username||'/'||username||' - CONNECTED'' from dual;" | sqlplus -S '||username||'/'||username||'${TNS}'||decode(username,'SYS',' as sysdba')||'"' cmd  from dba_users  where account_status='OPEN' $COND1 order by username;
 spool off
 EOF
 
@@ -2103,7 +2105,7 @@ done
 echo "Wait... Check users for account_status='OPEN' and simple password:"
 chmod u+x $FNAME
 ./$FNAME | egrep ' \- CONNECTED'  > $LOGF
-rm $FNAME login.sql
+# rm $FNAME login.sql
 ;;
 *)
 $SP <<EOF > $LOGF
