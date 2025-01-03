@@ -25,7 +25,7 @@ init_msg()
   a__="[in=INST_ID] [con=[CON_ID]] \"\" - ACTIVE | a - Allsess | in - INACTIVE | k - KILLED  | [access OBJECT] - active sess which accessing OBJECT | SPID\SID\OS_client_PID [PEEKED_BINDS OUTLINE all ALLSTATS ADVANCED last adaptive PREDICATE partition|p] [param_name] - sess param info from V\$SES_OPTIMIZER_ENV by [param_name]"
   p__="p [FALSE] [PAR1 PAR2 ..] | ph [FALSE] [PARAMETER] | services | dir | resource_limit | resumable - instance parameters or hidden parameters, [FALSE] - only changed parameters, v\$services, dba_directories" 
   db__="db [ nls|option|properties|fusage|acl ] - gv\$instance, v\$database, dba_registry, dba_registry_sqlpatch, nls_database_paramters, v\$option, database_properties information" 
-  audit__="audit [login | maxcon [dd/mm/yy-HH:MI-HH:MI(hours)] [CNT] | 1017 [dd/mm/yy-HH:MI-HH:MI(hours)] [USR] | obj [dd/mm/yy-HH:MI-HH:MI(hours)] [OBJ] ] - DDL users audit, login - check all users for simple password, maxcon - max of db connections above CNT (def 100) for a period (def 1H), 1017 - failed login, obj - obj audit"
+  audit__="audit [login | logons [dd/mm/yy-HH:MI-HH:MI(hours)] | maxcon [dd/mm/yy-HH:MI-HH:MI(hours)] [CNT] | 1017 [dd/mm/yy-HH:MI-HH:MI(hours)] [USR] | obj [dd/mm/yy-HH:MI-HH:MI(hours)] [OBJ] ] - DDL users audit, login - check all users for simple password, logons - all logon, maxcon - max of db connections above CNT (def 100) for a period (def 1H), 1017 - failed login, obj - obj audit"
   health__="health [cr | hot] - Database health parameters (HWM sessions, Hit Ratio / Get Misses cache, System Events Waits, Consistent Read buffers in SGA | Hot buffers)"
   oratop__="oratop [ h [in=INST_ID] [con=[CON_ID]] | dhsh [in=INST_ID] [con=[CON_ID]] [dd/mm/yy-HH:MI-HH:MI(hours) - def3d] ] - Database and Instance parameters, h - history V\$SYSMETRIC_HISTORY V\$ACTIVE_SESSION_HISTORY, dhsh - dba_hist_sysmetric_history dba_hist_snapshot"
   sga__="sga - SGA information" 
@@ -1862,7 +1862,7 @@ where username like '$USR_'
 --and userhost='VL20-SRV64'
 and timestamp $INTERVAL_
 and returncode in ('1017','28000') 
-and returncode <> '0'
+--and returncode <> '0' 
 order by date_time;
 EOF
 ;;
@@ -1896,15 +1896,34 @@ col OS_USERNAME for a30
 col USERNAME for a20
 col USERHOST  for a40
 col TERMINAL for a20
+col RETURNCODE for 999999
 col hh24 for a15
 PROMPT "dba_audit_trail where from the db connections above $CNT_ for a period $INTERVAL_ grouped by hour:"
-select username,os_username,userhost,terminal, to_char(cast(timestamp as date), 'dd/mm/yyyy hh24') hh24, count(*) count
+select username,os_username,userhost,terminal, to_char(cast(timestamp as date), 'dd/mm/yyyy hh24') hh24, RETURNCODE, count(*) count
 from dba_audit_trail
 where timestamp $INTERVAL_
 and action=100
-group by username,os_username,userhost,terminal,to_char(cast(timestamp as date), 'dd/mm/yyyy hh24') 
+group by username,os_username,userhost,terminal,to_char(cast(timestamp as date), 'dd/mm/yyyy hh24'), RETURNCODE
 having count(*) >= $CNT_
 order by hh24, count desc;
+EOF
+;;
+logons)
+$SP <<EOF > $LOGF
+set lines 230
+set echo off feed off veri off tab off pages 240 numw 6
+col OS_USERNAME for a30
+col USERNAME for a20
+col USERHOST  for a40
+col TERMINAL for a20
+col RETURNCODE for 999999
+col hh24 for a19
+PROMPT "dba_audit_trail where from the db connections for period $INTERVAL_ :"
+select username,os_username,userhost,terminal, to_char(cast(timestamp as date), 'dd/mm/yyyy hh24:mi:ss') hh24, RETURNCODE
+from dba_audit_trail
+where timestamp $INTERVAL_
+and action=100
+order by hh24;
 EOF
 ;;
 login)
